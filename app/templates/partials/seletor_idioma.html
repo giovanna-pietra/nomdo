@@ -1,0 +1,87 @@
+{#
+  app/templates/partials/seletor_idioma.html
+  Dropdown de idioma (bandeiras) pras páginas PÚBLICAS — login, cadastro,
+  esqueci/resetar senha, convite, guia do hóspede etc. Só troca um cookie
+  (rota main.trocar_idioma), sem precisar de conta — quem já está logado
+  troca de idioma pelo seletor em Configurações (User.language).
+
+  Uso: {% include "partials/seletor_idioma.html" %}
+#}
+<div class="nomdo-lang-switch">
+    <button type="button" class="nomdo-lang-btn" onclick="NomdoLangSwitch.toggle(event)" aria-label="{{ t('Idioma') }}">
+        <span class="nomdo-lang-flag">
+            {% if current_lang == 'en' %}🇺🇸{% elif current_lang == 'es' %}🇪🇸{% else %}🇧🇷{% endif %}
+        </span>
+        <i class="fa-solid fa-chevron-down"></i>
+    </button>
+    <div class="nomdo-lang-menu" id="nomdo-lang-menu">
+        <a href="{{ url_for('main.trocar_idioma', codigo='pt-br') }}" class="{% if current_lang == 'pt-br' %}ativo{% endif %}">🇧🇷 Português</a>
+        <a href="{{ url_for('main.trocar_idioma', codigo='en') }}" class="{% if current_lang == 'en' %}ativo{% endif %}">🇺🇸 English</a>
+        <a href="{{ url_for('main.trocar_idioma', codigo='es') }}" class="{% if current_lang == 'es' %}ativo{% endif %}">🇪🇸 Español</a>
+    </div>
+</div>
+
+<style>
+    .nomdo-lang-switch { position: relative; display: inline-block; }
+
+    .nomdo-lang-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0,82,212,0.08);
+        color: #0052D4;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .nomdo-lang-btn:hover { background: rgba(0,82,212,0.14); }
+    .nomdo-lang-btn i { font-size: 0.7rem; }
+    .nomdo-lang-flag { font-size: 1.05rem; line-height: 1; }
+
+    .nomdo-lang-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+        padding: 6px;
+        min-width: 170px;
+        z-index: 200;
+    }
+    .nomdo-lang-menu.aberto { display: block; }
+
+    .nomdo-lang-menu a {
+        display: block;
+        padding: 9px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #334155;
+        font-size: 0.88rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .nomdo-lang-menu a:hover { background: rgba(0,82,212,0.08); }
+    .nomdo-lang-menu a.ativo { color: #0052D4; font-weight: 700; background: rgba(0,82,212,0.06); }
+</style>
+
+<script>
+    window.NomdoLangSwitch = window.NomdoLangSwitch || {
+        toggle: function (event) {
+            if (event) event.stopPropagation();
+            var menu = document.getElementById('nomdo-lang-menu');
+            if (menu) menu.classList.toggle('aberto');
+        }
+    };
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.nomdo-lang-switch')) return;
+        document.querySelectorAll('.nomdo-lang-menu.aberto').forEach(function (m) {
+            m.classList.remove('aberto');
+        });
+    });
+</script>

@@ -1,0 +1,979 @@
+<style>
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 920px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+.btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+    /* Vira width:100% no mobile (regra lá embaixo) — sem border-box, o
+       padding lateral somava e o botão estourava a largura do container,
+       causando scroll horizontal na página inteira. */
+    box-sizing: border-box;
+}
+.btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+.page-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn-mini {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-3);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background var(--t), color var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+.btn-mini:hover { background: var(--red-bg); color: var(--red); }
+.btn-mini:disabled { opacity: .5; cursor: default; }
+
+/* ── FILTROS ─────────────────────────────────────────────── */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.filtros label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-right: 4px;
+}
+.filtros select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.filtros select:focus { outline: none; border-color: var(--p-mid); }
+.filtro-contagem { margin-left: auto; font-size: 12.5px; color: var(--ink-4); font-weight: 600; }
+
+/* ── LISTA DE ROTINAS ────────────────────────────────────── */
+.lista-rotinas { display: flex; flex-direction: column; gap: 10px; }
+
+.rotina-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.rotina-card.removendo { opacity: 0 !important; transform: scale(.97); pointer-events: none; }
+.rotina-card.inativa { opacity: .55; }
+
+.rotina-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.rotina-info { flex: 1; min-width: 0; }
+.rotina-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+.rotina-info .rotina-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.rotina-info .rotina-desc { margin-top: 4px; font-size: 12.5px; color: var(--ink-3); }
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge.vencido { background: var(--red-bg); color: var(--red); }
+
+/* ── SWITCH (ativo/inativo) ──────────────────────────────── */
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: var(--t); border-radius: 999px;
+}
+.switch .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: #fff; transition: var(--t); border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.switch input:checked + .slider { background: linear-gradient(135deg, var(--p), var(--p-mid)); }
+.switch input:checked + .slider:before { transform: translateX(18px); }
+
+.rotina-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rotina-actions button {
+    width: 34px; height: 34px; border: none; background: var(--bg);
+    color: var(--ink-3); cursor: pointer; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background var(--t), color var(--t);
+}
+.rotina-actions button.acao-editar:hover { background: var(--p-soft); color: var(--p); }
+.rotina-actions button.acao-excluir:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.modal-box {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    border: none;
+    margin: auto;
+    animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+    /* Sem isso, os 32px de padding lateral somavam aos 92% de largura e o
+       modal ficava mais largo que a tela em qualquer celular. */
+    box-sizing: border-box;
+}
+dialog.modal-box::backdrop { background: rgba(15,15,26,.55); backdrop-filter: blur(5px); }
+@keyframes modalIn { from{transform:scale(.88);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+}
+.modal-close:hover { background: var(--red-bg); color: var(--red); transform: rotate(90deg); }
+.modal-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-box p  { margin: 0 0 22px; font-size: 13px; color: var(--ink-3); }
+.form-group   { margin-bottom: 16px; }
+/* Combinador de filho direto (>) é proposital: dentro de #rotinas-grupo-imoveis-multi
+   os <label class="checkbox-item"> também são <label>, mas são netos (não filhos
+   diretos) de .form-group — sem o ">" essa regra vazava pra eles e sobrescrevia o
+   `display:flex` do .checkbox-item (maior especificidade), fazendo o checkbox e o
+   texto empilharem em vez de ficarem lado a lado. */
+.form-group > label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+.form-group select:disabled, .form-group input:disabled { opacity: .6; cursor: not-allowed; }
+.form-group textarea { resize: vertical; min-height: 70px; }
+
+.form-row-inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.form-row-inline label { margin-bottom: 0; }
+
+/* ── SELETOR DE IMÓVEIS (dropdown com busca + tags) ─────── */
+.imv-select { position: relative; }
+
+.imv-select-control {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    min-height: 46px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 6px 8px;
+    background: var(--bg);
+    cursor: text;
+    transition: border-color var(--t), box-shadow var(--t);
+}
+.imv-select-control:focus-within {
+    border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+
+.imv-select-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.imv-select-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--p-soft); color: var(--p);
+    font-size: 12.5px; font-weight: 700;
+    padding: 5px 8px 5px 10px; border-radius: 999px;
+    white-space: nowrap;
+}
+.imv-select-tag button {
+    border: none; background: none; color: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; font-size: 10px;
+    opacity: .75; transition: opacity var(--t), background var(--t);
+}
+.imv-select-tag button:hover { opacity: 1; background: rgba(0,82,212,.15); }
+
+.imv-select-input {
+    flex: 1 1 90px; min-width: 90px;
+    border: none; outline: none; background: transparent;
+    font-size: 13.5px; color: var(--ink); font-family: inherit;
+    padding: 6px 4px;
+}
+
+.imv-select-dropdown {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    z-index: 20;
+    max-height: 220px; overflow-y: auto;
+    background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+}
+.imv-select-dropdown::-webkit-scrollbar { width: 6px; }
+.imv-select-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+.imv-select-option {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: var(--ink); cursor: pointer;
+    padding: 10px 12px; border-radius: 10px;
+    transition: background var(--t), color var(--t);
+}
+.imv-select-option:hover { background: var(--bg); }
+.imv-select-option--todos {
+    font-weight: 800; color: var(--p);
+    border-bottom: 1.5px solid var(--border);
+    border-radius: 10px 10px 0 0;
+    padding-bottom: 12px; margin-bottom: 4px;
+}
+.imv-select-empty {
+    padding: 14px 12px; text-align: center;
+    font-size: 12.5px; color: var(--ink-4);
+}
+
+.btn-salvar {
+    width: 100%; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: white; font-weight: 800; font-size: 14px; cursor: pointer;
+    margin-top: 6px; box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-salvar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── UTILITÁRIOS ─────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .page-header { flex-direction: column; }
+    .btn-primario { width: 100%; justify-content: center; }
+    .page-header-actions { width: 100%; }
+    .btn-mini { width: 100%; justify-content: center; }
+    .filtros select { flex: 1 1 140px; }
+
+    /* Título primeiro (linha cheia), depois ícone + selo/switch/ações numa
+       segunda linha — em vez de deixar o wrap padrão do flex decidir a
+       ordem (que jogava o título pra baixo de tudo), fica mais legível e
+       evita qualquer aperto/corte de conteúdo em telas de ~320-375px. */
+    .rotina-card { flex-wrap: wrap; row-gap: 10px; }
+    .rotina-info { flex-basis: 100%; order: 0; }
+    .rotina-icon { order: 1; }
+    .badge.vencido { order: 2; }
+    .switch { order: 3; margin-left: auto; }
+    .rotina-actions { order: 4; }
+    .rotina-actions button { width: 38px; height: 38px; }
+
+    .imv-select-tag button { width: 22px; height: 22px; font-size: 11px; }
+
+    .modal-box { padding: 24px 20px 20px; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  var(--dm-surface, #1e1f24);
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .filtros,
+body.theme-dark .rotina-card,
+body.theme-dark .empty-state,
+body.theme-dark .imv-select-dropdown {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .switch .slider {
+    background-color: rgba(255,255,255,0.18);
+}
+/* .acao-editar:hover usa var(--p-soft)/var(--p) pensado pra contrastar com
+   card branco no tema claro — no dark o card (.rotina-card) já é --surface
+   (mesmo azul), então o wash ficava fraco e o texto/ícone invisível. */
+body.theme-dark .rotina-actions button.acao-editar:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Lápis/lixeira sempre visíveis (não só no hover): amarelo e vermelho. */
+body.theme-dark .rotina-actions button.acao-editar {
+    color: #facc15 !important;
+}
+body.theme-dark .rotina-actions button.acao-excluir {
+    color: #ef4444 !important;
+}
+/* .imv-select-control é uma <div> customizada (seletor de imóveis com
+   busca), não um <input> nativo — não é coberta pela regra genérica de
+   input/select/textarea do theme_dark.css. border-color:var(--p-mid)
+   ficava invisível sobre o fundo --surface (mesmo azul) ao focar. */
+body.theme-dark .imv-select-control:focus-within {
+    border-color: rgba(255,255,255,0.35) !important;
+}
+/* Tag/chip do imóvel selecionado e a opção "Todos os imóveis" do dropdown:
+   color:var(--p) fica azul sobre o fundo azul (--surface/--p-soft no dark)
+   — troca pro azul claro de marca, legível. */
+body.theme-dark .imv-select-tag,
+body.theme-dark .imv-select-option--todos {
+    color: #9dc1ff !important;
+}
+/* Ícones de título do modal (h3) usam style="color:var(--p-mid)" inline —
+   o modal (.modal-box) tem fundo --surface escuro, então ficavam invisíveis.
+   Um único seletor cobre os 3 casos (HTML estático + os 2 montados via JS
+   em abrirModalNova/abrirModalEdicao), já que todos são <i> dentro de h3
+   dentro de .modal-box. */
+body.theme-dark .modal-box h3 i {
+    color: #9dc1ff !important;
+}
+</style>
+
+<!-- ── MODAL DE ROTINA (criar/editar) ──────────────────────── -->
+<dialog class="modal-box" id="rotinas-modal">
+    <button class="modal-close" type="button" id="rotinas-modal-close">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h3 id="rotinas-modal-titulo"><i class="fa-solid fa-bell" style="color:var(--p-mid);margin-right:8px;"></i>{{ t('Nova Rotina') }}</h3>
+    <p id="rotinas-modal-subtitulo">{{ t('Defina uma regra recorrente para ser lembrado automaticamente.') }}</p>
+
+    <input type="hidden" id="rotinas-id" value="">
+
+    <div class="form-group">
+        <label>{{ t('Tipo') }}</label>
+        <select id="rotinas-tipo">
+            {% for chave, meta in tipos_lembrete.items() %}
+            <option value="{{ chave }}">{{ meta.icone }} {{ t(meta.label) }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group is-hidden" id="rotinas-grupo-titulo">
+        <label>{{ t('Título') }}</label>
+        <input type="text" id="rotinas-titulo" placeholder="{{ t('Ex: Trocar filtro do ar-condicionado') }}">
+    </div>
+
+    <div class="form-group" id="rotinas-grupo-intervalo">
+        <label>{{ t('Frequência (dias)') }}</label>
+        <input type="number" id="rotinas-intervalo" min="1" placeholder="{{ t('Ex: 90') }}">
+    </div>
+
+    <div class="form-group">
+        <label>{{ t('Descrição') }} <span style="font-weight:400;text-transform:none;">{{ t('(opcional)') }}</span></label>
+        <textarea id="rotinas-descricao" placeholder="{{ t('Detalhes adicionais…') }}"></textarea>
+    </div>
+
+    <!-- CRIAÇÃO: multi-seleção de imóveis via dropdown com busca (fan-out em N regras) -->
+    <div class="form-group" id="rotinas-grupo-imoveis-multi">
+        <label>{{ t('Imóveis') }}</label>
+        <div class="imv-select" id="rotinas-imv-select">
+            <div class="imv-select-control" id="rotinas-imv-control">
+                <div class="imv-select-tags" id="rotinas-imv-tags"></div>
+                <input type="text" id="rotinas-imv-busca" class="imv-select-input"
+                       placeholder="{{ t('Buscar imóvel…') }}" autocomplete="off">
+            </div>
+            <div class="imv-select-dropdown is-hidden" id="rotinas-imv-dropdown">
+                <div class="imv-select-option imv-select-option--todos" data-value="todos" data-label="{{ t('Todos os imóveis')|lower }}">
+                    <i class="fa-solid fa-layer-group"></i> {{ t('Todos os imóveis') }}
+                </div>
+                {% for im in imoveis %}
+                <div class="imv-select-option" data-value="{{ im.id }}" data-label="{{ im.titulo|e|lower }}">
+                    {{ im.titulo }}
+                </div>
+                {% endfor %}
+                <div class="imv-select-empty is-hidden">{{ t('Nenhum imóvel encontrado.') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIÇÃO: um único imóvel — a API nunca faz fan-out ao editar -->
+    <div class="form-group is-hidden" id="rotinas-grupo-imovel-unico">
+        <label>{{ t('Imóvel') }}</label>
+        <select id="rotinas-imovel-select">
+            {% for im in imoveis %}
+            <option value="{{ im.id }}">{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group form-row-inline">
+        <label>{{ t('Rotina ativa') }}</label>
+        <label class="switch">
+            <input type="checkbox" id="rotinas-ativo" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <button class="btn-salvar" type="button" id="rotinas-btn-salvar">
+        <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+    </button>
+</dialog>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Rotinas e Lembretes') }}</h1>
+            <p>{{ t('Configure regras recorrentes por imóvel — troca de pilha, reposição de itens, checkups e outras rotinas personalizadas.') }}</p>
+        </div>
+        <div class="page-header-actions">
+            <button type="button" class="btn-mini" id="rotinas-btn-excluir-todas">
+                <i class="fa-solid fa-trash-can"></i> {{ t('Excluir todas') }}
+            </button>
+            <button type="button" class="btn-primario" id="rotinas-btn-nova">
+                <i class="fa-solid fa-plus"></i> {{ t('Nova Rotina') }}
+            </button>
+        </div>
+    </div>
+
+    <div class="filtros">
+        <label for="rotinas-filtro-imovel">{{ t('Imóvel') }}</label>
+        <select id="rotinas-filtro-imovel">
+            <option value="">{{ t('Todos') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}" {% if filtro_imovel_id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="rotinas-filtro-tipo">{{ t('Tipo') }}</label>
+        <select id="rotinas-filtro-tipo">
+            <option value="">{{ t('Todos') }}</option>
+            {% for chave, meta in tipos_lembrete.items() %}
+            <option value="{{ chave }}" {% if filtro_tipo == chave %}selected{% endif %}>{{ meta.icone }} {{ t(meta.label) }}</option>
+            {% endfor %}
+        </select>
+
+        <span class="filtro-contagem">{{ rotinas|length }} {{ t('rotina(s)') }}</span>
+    </div>
+
+    <div class="lista-rotinas" id="rotinas-lista">
+        {% for r in rotinas %}
+        <div class="rotina-card {% if not r.ativo %}inativa{% endif %}"
+             data-id="{{ r.id }}"
+             data-tipo="{{ r.tipo }}"
+             data-titulo="{{ r.titulo|e }}"
+             data-descricao="{{ r.descricao|e }}"
+             data-imovel-id="{{ r.imovel_id }}"
+             data-intervalo-dias="{{ r.intervalo_dias or '' }}"
+             data-ativo="{{ '1' if r.ativo else '0' }}">
+            <div class="rotina-icon" style="background:{{ r.cor }}22;color:{{ r.cor }};">{{ r.icone }}</div>
+            <div class="rotina-info">
+                <strong>{{ t(r.label) }}</strong>
+                <div class="rotina-meta">
+                    <span><i class="fa-solid fa-building"></i> {{ r.imovel }}</span>
+                    {% if r.por_evento %}
+                    <span><i class="fa-solid fa-bolt"></i> {{ t('Disparado por evento (checkout)') }}</span>
+                    {% elif r.proxima_data %}
+                    <span><i class="fa-solid fa-calendar"></i> {{ t('Próxima:') }} {{ r.proxima_data }} {{ t('(a cada %(dias)s dias)', dias=r.intervalo_dias) }}</span>
+                    {% endif %}
+                </div>
+                {% if r.descricao %}
+                <div class="rotina-desc">{{ r.descricao }}</div>
+                {% endif %}
+            </div>
+            {% if r.vencido %}
+            <span class="badge vencido"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Vencido') }}</span>
+            {% endif %}
+            <label class="switch">
+                <input type="checkbox" data-action="toggle-ativo" data-id="{{ r.id }}" {% if r.ativo %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+            <div class="rotina-actions">
+                <button type="button" class="acao-editar" data-action="editar" data-id="{{ r.id }}" title="{{ t('Editar') }}">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button type="button" class="acao-excluir" data-action="excluir" data-id="{{ r.id }}" title="{{ t('Excluir') }}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state" id="rotinas-estado-vazio">
+            <i class="fa-solid fa-bell"></i>
+            <p>{{ t('Nenhuma rotina cadastrada ainda. Use o botão acima para criar a primeira.') }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+<script>
+window.__initTab_rotinas = function() {
+
+    /* Tipos que são disparados por evento (não usam intervalo_dias) — vem do
+       back-end (app/models/hub.py :: TIPOS_EVENTO) pra não duplicar a regra. */
+    const TIPOS_EVENTO = {{ tipos_evento|tojson }};
+
+    const modal = document.getElementById('rotinas-modal');
+
+    /* ─────────────────────────────────────────────
+       FILTROS — recarrega a página via query params
+    ───────────────────────────────────────────── */
+    function aplicarFiltros() {
+        const imovel = document.getElementById('rotinas-filtro-imovel').value;
+        const tipo = document.getElementById('rotinas-filtro-tipo').value;
+        const params = new URLSearchParams();
+        if (imovel) params.set('imovel_id', imovel);
+        if (tipo) params.set('tipo', tipo);
+        const qs = params.toString();
+        window.location.href = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    }
+
+    document.getElementById('rotinas-filtro-imovel').addEventListener('change', aplicarFiltros);
+    document.getElementById('rotinas-filtro-tipo').addEventListener('change', aplicarFiltros);
+
+    /* ─────────────────────────────────────────────
+       MODAL — criar / editar
+       Diferença chave entre os dois modos: CRIAR permite multi-seleção de
+       imóveis (o back-end faz fan-out — uma LembreteConfig por imóvel
+       escolhido); EDITAR só permite trocar UM imóvel (o back-end nunca faz
+       fan-out numa edição, só re-aponta o imovel_id da própria regra), então
+       escondemos o multi-select e mostramos um <select> simples nesse modo.
+    ───────────────────────────────────────────── */
+    function aoMudarTipoRotina() {
+        const tipo = document.getElementById('rotinas-tipo').value;
+
+        const grupoTitulo = document.getElementById('rotinas-grupo-titulo');
+        if (tipo === 'outro') grupoTitulo.classList.remove('is-hidden');
+        else grupoTitulo.classList.add('is-hidden');
+
+        const grupoIntervalo = document.getElementById('rotinas-grupo-intervalo');
+        const campoIntervalo = document.getElementById('rotinas-intervalo');
+        if (TIPOS_EVENTO.includes(tipo)) {
+            grupoIntervalo.classList.add('is-hidden');
+            campoIntervalo.disabled = true;
+        } else {
+            grupoIntervalo.classList.remove('is-hidden');
+            campoIntervalo.disabled = false;
+        }
+    }
+
+    /* ─────────────────────────────────────────────
+       SELETOR DE IMÓVEIS — dropdown com busca + tags (multi-seleção)
+       Estado: `imvTodos` (bool) OU `imvSelecionados` (array de ids, em
+       ordem de seleção). Mutuamente exclusivos — igual à regra antiga dos
+       checkboxes: escolher "Todos" limpa os individuais e vice-versa.
+    ───────────────────────────────────────────── */
+    const imvControl   = document.getElementById('rotinas-imv-control');
+    const imvBusca     = document.getElementById('rotinas-imv-busca');
+    const imvDropdown  = document.getElementById('rotinas-imv-dropdown');
+    const imvTagsEl    = document.getElementById('rotinas-imv-tags');
+    const imvOpcoes    = Array.from(imvDropdown.querySelectorAll('.imv-select-option'));
+    const imvVazio     = imvDropdown.querySelector('.imv-select-empty');
+
+    let imvTodos = false;
+    let imvSelecionados = []; // ids (int), em ordem de seleção
+
+    function _resetCheckboxesImoveis() {
+        imvTodos = false;
+        imvSelecionados = [];
+        imvBusca.value = '';
+        _renderImvSelect();
+    }
+
+    function _tituloImovel(id) {
+        const opt = imvOpcoes.find(o => o.dataset.value === String(id));
+        return opt ? opt.textContent.trim() : `{{ t('Imóvel') }} #${id}`;
+    }
+
+    function _renderImvSelect() {
+        // Tags
+        imvTagsEl.innerHTML = '';
+        if (imvTodos) {
+            imvTagsEl.appendChild(_criarTagImv('todos', '{{ t("Todos os imóveis") }}'));
+        } else {
+            imvSelecionados.forEach(id => {
+                imvTagsEl.appendChild(_criarTagImv(id, _tituloImovel(id)));
+            });
+        }
+        imvBusca.placeholder = (imvTodos || imvSelecionados.length) ? '' : '{{ t("Buscar imóvel…") }}';
+
+        // Opções visíveis: escondemos a já selecionada, e escondemos tudo se
+        // "Todos" estiver ativo (não faz sentido adicionar mais nada).
+        const termo = imvBusca.value.trim().toLowerCase();
+        let algumaVisivel = false;
+        imvOpcoes.forEach(opt => {
+            const valor = opt.dataset.value;
+            const jaSelecionado = valor === 'todos' ? imvTodos : imvSelecionados.includes(parseInt(valor));
+            const bateBusca = !termo || opt.dataset.label.includes(termo);
+            const visivel = !jaSelecionado && bateBusca && !(imvTodos && valor !== 'todos');
+            opt.classList.toggle('is-hidden', !visivel);
+            if (visivel) algumaVisivel = true;
+        });
+        imvVazio.classList.toggle('is-hidden', algumaVisivel);
+    }
+
+    function _criarTagImv(valor, label) {
+        const tag = document.createElement('span');
+        tag.className = 'imv-select-tag';
+        tag.innerHTML = `${label} <button type="button" aria-label="{{ t('Remover') }}"><i class="fa-solid fa-xmark"></i></button>`;
+        tag.querySelector('button').addEventListener('click', ev => {
+            ev.stopPropagation();
+            if (valor === 'todos') imvTodos = false;
+            else imvSelecionados = imvSelecionados.filter(id => id !== valor);
+            _renderImvSelect();
+        });
+        return tag;
+    }
+
+    function _abrirImvDropdown() {
+        imvDropdown.classList.remove('is-hidden');
+        _renderImvSelect();
+    }
+    function _fecharImvDropdown() {
+        imvDropdown.classList.add('is-hidden');
+    }
+
+    imvControl.addEventListener('click', () => { imvBusca.focus(); _abrirImvDropdown(); });
+    imvBusca.addEventListener('focus', _abrirImvDropdown);
+    imvBusca.addEventListener('input', _renderImvSelect);
+    imvBusca.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { _fecharImvDropdown(); imvBusca.blur(); }
+    });
+
+    imvDropdown.addEventListener('click', e => {
+        const opt = e.target.closest('.imv-select-option');
+        if (!opt || opt.classList.contains('is-hidden')) return;
+        const valor = opt.dataset.value;
+        if (valor === 'todos') {
+            imvTodos = true;
+            imvSelecionados = [];
+        } else {
+            imvTodos = false;
+            const id = parseInt(valor);
+            if (!imvSelecionados.includes(id)) imvSelecionados.push(id);
+        }
+        imvBusca.value = '';
+        _renderImvSelect();
+        imvBusca.focus();
+    });
+
+    document.addEventListener('click', e => {
+        if (!document.getElementById('rotinas-imv-select').contains(e.target)) _fecharImvDropdown();
+    });
+
+    function abrirModalNova() {
+        document.getElementById('rotinas-id').value = '';
+        document.getElementById('rotinas-tipo').value = 'outro';
+        document.getElementById('rotinas-tipo').disabled = false;
+        document.getElementById('rotinas-titulo').value = '';
+        document.getElementById('rotinas-descricao').value = '';
+        document.getElementById('rotinas-intervalo').value = '';
+        document.getElementById('rotinas-ativo').checked = true;
+
+        _resetCheckboxesImoveis();
+        document.getElementById('rotinas-grupo-imoveis-multi').classList.remove('is-hidden');
+        document.getElementById('rotinas-grupo-imovel-unico').classList.add('is-hidden');
+
+        document.getElementById('rotinas-modal-titulo').innerHTML =
+            '<i class="fa-solid fa-bell" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Nova Rotina") }}';
+        document.getElementById('rotinas-modal-subtitulo').innerText = '{{ t("Defina uma regra recorrente para ser lembrado automaticamente.") }}';
+
+        aoMudarTipoRotina();
+        modal.showModal();
+    }
+
+    function abrirModalEdicao(card) {
+        document.getElementById('rotinas-id').value = card.dataset.id;
+        document.getElementById('rotinas-tipo').value = card.dataset.tipo;
+        document.getElementById('rotinas-titulo').value = card.dataset.titulo || '';
+        document.getElementById('rotinas-descricao').value = card.dataset.descricao || '';
+        document.getElementById('rotinas-intervalo').value = card.dataset.intervaloDias || '';
+        document.getElementById('rotinas-ativo').checked = card.dataset.ativo === '1';
+
+        document.getElementById('rotinas-grupo-imoveis-multi').classList.add('is-hidden');
+        document.getElementById('rotinas-grupo-imovel-unico').classList.remove('is-hidden');
+        document.getElementById('rotinas-imovel-select').value = card.dataset.imovelId || '';
+
+        document.getElementById('rotinas-modal-titulo').innerHTML =
+            '<i class="fa-solid fa-pen" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Editar Rotina") }}';
+        document.getElementById('rotinas-modal-subtitulo').innerText = '{{ t("Uma edição atualiza somente esta regra (um único imóvel).") }}';
+
+        aoMudarTipoRotina();
+        modal.showModal();
+    }
+
+    function fecharModal() {
+        modal.close();
+    }
+
+    modal.addEventListener('click', e => {
+        if (e.target === modal) modal.close();
+    });
+
+    document.getElementById('rotinas-modal-close').addEventListener('click', fecharModal);
+    document.getElementById('rotinas-tipo').addEventListener('change', aoMudarTipoRotina);
+    document.getElementById('rotinas-btn-nova').addEventListener('click', abrirModalNova);
+    document.getElementById('rotinas-btn-salvar').addEventListener('click', salvarRotina);
+
+    function _imovelIdsSelecionados() {
+        if (imvTodos) return ['todos'];
+        return imvSelecionados.slice();
+    }
+
+    async function salvarRotina() {
+        const id = document.getElementById('rotinas-id').value;
+        const tipo = document.getElementById('rotinas-tipo').value;
+        const titulo = document.getElementById('rotinas-titulo').value.trim();
+        const descricao = document.getElementById('rotinas-descricao').value.trim();
+        const ativo = document.getElementById('rotinas-ativo').checked;
+        const porEvento = TIPOS_EVENTO.includes(tipo);
+        const intervaloValor = document.getElementById('rotinas-intervalo').value;
+
+        if (tipo === 'outro' && !titulo) {
+            mostrarToast('{{ t("Descreva o nome dessa rotina personalizada.") }}', 'error');
+            return;
+        }
+        if (!porEvento && (!intervaloValor || parseInt(intervaloValor) <= 0)) {
+            mostrarToast('{{ t("Informe a frequência em dias (maior que zero).") }}', 'error');
+            return;
+        }
+
+        const payload = {
+            tipo,
+            titulo: tipo === 'outro' ? titulo : '',
+            descricao,
+            ativo,
+            intervalo_dias: porEvento ? null : parseInt(intervaloValor),
+        };
+
+        if (id) {
+            payload.id = parseInt(id);
+            payload.imovel_ids = [parseInt(document.getElementById('rotinas-imovel-select').value)];
+        } else {
+            const imovelIds = _imovelIdsSelecionados();
+            if (!imovelIds.length) {
+                mostrarToast('{{ t("Selecione ao menos um imóvel.") }}', 'error');
+                return;
+            }
+            payload.imovel_ids = imovelIds;
+        }
+
+        const btn = document.getElementById('rotinas-btn-salvar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t("Salvando…") }}';
+
+        try {
+            const data = await apiRequest('/api/hub/lembretes/salvar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            mostrarToast(data.message || '{{ t("Rotina salva com sucesso.") }}', 'success');
+            fecharModal();
+            // Criar pode fazer fan-out (N linhas novas) e editar pode mudar o
+            // imóvel/ordenação por vencimento — reload é o jeito mais simples e
+            // confiável de refletir isso sem duplicar a lógica do servidor.
+            setTimeout(() => window.location.reload(), 400);
+        } catch (e) {
+            // apiRequest já mostrou o toast de erro.
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> {{ t("Salvar") }}';
+        }
+    }
+
+    /* ─────────────────────────────────────────────
+       TOGGLE ATIVO / EXCLUIR — UI otimista com um único listener delegado
+    ───────────────────────────────────────────── */
+    function _mostrarEstadoVazioSeNecessario() {
+        const lista = document.getElementById('rotinas-lista');
+        if (lista && !lista.querySelector('.rotina-card')) {
+            lista.innerHTML = `
+                <div class="empty-state" id="rotinas-estado-vazio">
+                    <i class="fa-solid fa-bell"></i>
+                    <p>{{ t("Nenhuma rotina cadastrada ainda. Use o botão acima para criar a primeira.") }}</p>
+                </div>`;
+        }
+    }
+
+    async function toggleAtivo(id, checkbox, card) {
+        const novoValor = checkbox.checked;
+        card.classList.toggle('inativa', !novoValor);
+        card.dataset.ativo = novoValor ? '1' : '0';
+
+        try {
+            const data = await apiRequest(`/api/hub/lembretes/toggle/${id}`, { method: 'POST' });
+            mostrarToast(data.ativo ? '{{ t("Rotina ativada.") }}' : '{{ t("Rotina pausada.") }}', 'success');
+        } catch (e) {
+            checkbox.checked = !novoValor;
+            card.classList.toggle('inativa', novoValor);
+            card.dataset.ativo = novoValor ? '1' : '0';
+        }
+    }
+
+    async function excluirRotina(id, card) {
+        const result = await Swal.fire({
+            title: '{{ t("Excluir rotina?") }}',
+            text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0052D4',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '{{ t("Sim, excluir") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true,
+        });
+        if (!result.isConfirmed) return;
+
+        card.classList.add('removendo');
+        try {
+            await apiRequest(`/api/hub/lembretes/excluir/${id}`, { method: 'DELETE' });
+            mostrarToast('{{ t("Rotina excluída.") }}', 'success');
+            setTimeout(() => { card.remove(); _mostrarEstadoVazioSeNecessario(); }, 220);
+        } catch (e) {
+            card.classList.remove('removendo');
+        }
+    }
+
+    const rotinasListaEl = document.getElementById('rotinas-lista');
+
+    rotinasListaEl.addEventListener('click', e => {
+        const card = e.target.closest('.rotina-card');
+        if (!card) return;
+        const id = card.dataset.id;
+
+        const btnEditar = e.target.closest('[data-action="editar"]');
+        if (btnEditar) { abrirModalEdicao(card); return; }
+
+        const btnExcluir = e.target.closest('[data-action="excluir"]');
+        if (btnExcluir) { excluirRotina(id, card); return; }
+    });
+
+    rotinasListaEl.addEventListener('change', e => {
+        const toggle = e.target.closest('[data-action="toggle-ativo"]');
+        if (!toggle) return;
+        const card = toggle.closest('.rotina-card');
+        toggleAtivo(toggle.dataset.id, toggle, card);
+    });
+
+    /* ─────────────────────────────────────────────
+       EXCLUIR TODAS — exclui em lote as rotinas mostradas (respeitando os
+       filtros de imóvel/tipo ativos no momento).
+    ───────────────────────────────────────────── */
+    const btnExcluirTodas = document.getElementById('rotinas-btn-excluir-todas');
+    if (btnExcluirTodas) {
+        btnExcluirTodas.addEventListener('click', async () => {
+            if (!rotinasListaEl.querySelector('.rotina-card')) {
+                mostrarToast('{{ t("Não há rotinas para excluir.") }}', 'info');
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: '{{ t("Excluir todas as rotinas?") }}',
+                text: '{{ t("Isso exclui permanentemente todas as rotinas desta lista. Essa ação não poderá ser desfeita.") }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#0052D4',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ t("Sim, excluir todas") }}',
+                cancelButtonText: '{{ t("Cancelar") }}',
+                reverseButtons: true,
+            });
+            if (!result.isConfirmed) return;
+
+            const imovel = document.getElementById('rotinas-filtro-imovel').value;
+            const tipo = document.getElementById('rotinas-filtro-tipo').value;
+            const params = new URLSearchParams();
+            if (imovel) params.set('imovel_id', imovel);
+            if (tipo) params.set('tipo', tipo);
+
+            btnExcluirTodas.disabled = true;
+            try {
+                const data = await apiRequest(`/api/hub/lembretes/excluir-todas?${params.toString()}`, { method: 'DELETE' });
+                rotinasListaEl.innerHTML = `
+                    <div class="empty-state" id="rotinas-estado-vazio">
+                        <i class="fa-solid fa-bell"></i>
+                        <p>{{ t("Nenhuma rotina cadastrada ainda. Use o botão acima para criar a primeira.") }}</p>
+                    </div>`;
+                const cont = document.querySelector('.filtros .filtro-contagem');
+                if (cont) cont.textContent = `0 {{ t("rotina(s)") }}`;
+                mostrarToast(`${data.quantidade} {{ t("rotina(s) excluída(s).") }}`, 'success');
+            } catch (e) {
+                // apiRequest já mostrou o toast de erro
+            } finally {
+                btnExcluirTodas.disabled = false;
+            }
+        });
+    }
+
+};
+</script>

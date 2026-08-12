@@ -1,0 +1,693 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Checklists de Hospedagem') }}{% endblock %}
+{% block titulo %}{{ t('Checklists de Hospedagem') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 980px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+.btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn-primario:disabled { opacity: .6; cursor: default; transform: none; }
+
+.btn-mini {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-3);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background var(--t), color var(--t);
+    white-space: nowrap;
+}
+.btn-mini:hover { background: var(--p-soft); color: var(--p); }
+
+/* ── SELETOR DE IMÓVEL ───────────────────────────────────── */
+.seletor-imovel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.seletor-imovel label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-right: 4px;
+}
+.seletor-imovel select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 220px;
+}
+.seletor-imovel select:focus { outline: none; border-color: var(--p-mid); }
+
+/* ── CARD ────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
+}
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.card-title-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.card-title-row h2 i { color: var(--p); font-size: 14px; }
+.card-subtitulo { margin: 0 0 16px; font-size: 12.5px; color: var(--ink-3); }
+
+/* ── EDITOR DE MODELO ────────────────────────────────────── */
+.editor-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.editor-coluna-titulo {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.editor-coluna-titulo i { color: var(--p); }
+
+.modelo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--bg);
+    margin-bottom: 8px;
+}
+.modelo-item input.modelo-item-texto {
+    flex: 1;
+    min-width: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+}
+.modelo-item input.modelo-item-texto:focus { outline: none; border-color: var(--p-mid); }
+.modelo-item button {
+    width: 30px; height: 30px; border: none; background: transparent;
+    color: var(--ink-3); cursor: pointer; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px; flex-shrink: 0;
+    transition: background var(--t), color var(--t);
+}
+.modelo-item button[data-action="mover-item"]:hover { background: var(--p-soft); color: var(--p); }
+.modelo-item button[data-action="remover-item"]:hover { background: var(--red-bg); color: var(--red); }
+
+.btn-add-item {
+    width: 100%;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--ink-3);
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background var(--t), color var(--t), border-color var(--t);
+}
+.btn-add-item:hover { background: var(--p-soft); color: var(--p); border-color: var(--p-border); }
+
+.editor-vazio { font-size: 12.5px; color: var(--ink-4); padding: 8px 2px 12px; }
+
+.editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* ── CHECKLIST DA ESTADIA ATUAL ──────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge.situacao-em_andamento { background: var(--green-bg); color: var(--green); }
+.badge.situacao-proxima      { background: var(--blue-bg);  color: var(--blue); }
+.badge.situacao-recente      { background: var(--amber-bg); color: var(--amber); }
+
+.estadia-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--ink-3);
+}
+.estadia-meta strong { color: var(--ink); }
+
+.check-progresso {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-4);
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: opacity var(--t);
+}
+.check-item input[type="checkbox"] {
+    width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--p); cursor: pointer;
+}
+.check-item span { font-size: 13px; color: var(--ink); }
+.check-item.concluido span { color: var(--ink-4); text-decoration: line-through; }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+.empty-state-mini {
+    text-align: center;
+    padding: 20px 12px;
+    color: var(--ink-4);
+    font-size: 12.5px;
+}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#6FB1FC,#6FB1FC); }
+.toast.error { background: linear-gradient(135deg,#0052D4,#0052D4); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+    .pagina { padding: 14px; }
+    .page-header { flex-direction: column; }
+    .editor-colunas { grid-template-columns: 1fr; }
+    .toast { width: 90%; text-align: center; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  #0052D4;
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .seletor-imovel,
+body.theme-dark .modelo-item,
+body.theme-dark .check-item,
+body.theme-dark .empty-state {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .modelo-item input.modelo-item-texto {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="toast" id="toast"></div>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Checklists de Hospedagem') }}</h1>
+            <p>{{ t('Defina o que precisa ser conferido antes de cada check-in e depois de cada check-out, e acompanhe o progresso da estadia atual de cada imóvel.') }}</p>
+        </div>
+    </div>
+
+    {% if not imoveis %}
+    <div class="empty-state">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <p>{{ t('Cadastre um imóvel primeiro para configurar o checklist de hospedagem dele.') }}</p>
+    </div>
+    {% else %}
+
+    <div class="seletor-imovel">
+        <label for="seletor-imovel-select">{{ t('Imóvel') }}</label>
+        <select id="seletor-imovel-select">
+            {% for im in imoveis %}
+            <option value="{{ im.id }}" {% if imovel_selecionado and imovel_selecionado.id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- ── EDITOR DE MODELO ─────────────────────────────────── -->
+    <div class="card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-list-check"></i> {{ t('Editor de Modelo') }}</h2>
+        </div>
+        <p class="card-subtitulo">{{ t('Esta lista vale para todas as estadias futuras de') }} <strong>{{ imovel_selecionado.titulo }}</strong> {{ t('— o progresso marcado a cada estadia não é afetado ao editar aqui.') }}</p>
+
+        <div class="editor-colunas">
+            <div>
+                <div class="editor-coluna-titulo"><i class="fa-solid fa-door-open"></i> {{ t('Antes do check-in') }}</div>
+                <div id="listaModeloAntes"></div>
+                <button type="button" class="btn-add-item" data-action="add-item" data-momento="antes">
+                    <i class="fa-solid fa-plus"></i> {{ t('Adicionar item') }}
+                </button>
+            </div>
+            <div>
+                <div class="editor-coluna-titulo"><i class="fa-solid fa-door-closed"></i> {{ t('Depois do check-out') }}</div>
+                <div id="listaModeloDepois"></div>
+                <button type="button" class="btn-add-item" data-action="add-item" data-momento="depois">
+                    <i class="fa-solid fa-plus"></i> {{ t('Adicionar item') }}
+                </button>
+            </div>
+        </div>
+
+        <div class="editor-footer">
+            <button type="button" class="btn-primario" id="btnSalvarModelo">
+                <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- ── CHECKLIST DA ESTADIA ATUAL ───────────────────────── -->
+    <div class="card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-square-check"></i> {{ t('Checklist da Estadia Atual') }}</h2>
+            {% if estadia_atual %}
+            <span class="badge situacao-{{ estadia_atual.situacao }}">
+                {% if estadia_atual.situacao == 'em_andamento' %}{{ t('Em andamento') }}
+                {% elif estadia_atual.situacao == 'proxima' %}{{ t('Próxima estadia') }}
+                {% else %}{{ t('Checkout recente') }}{% endif %}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if estadia_atual %}
+        <div class="estadia-meta">
+            <span><i class="fa-solid fa-user"></i> <strong>{{ estadia_atual.antes.hospede or estadia_atual.depois.hospede }}</strong></span>
+        </div>
+
+        <div class="editor-colunas">
+            <div>
+                <div class="editor-coluna-titulo">
+                    <i class="fa-solid fa-door-open"></i> {{ t('Antes do check-in') }}
+                    <span class="check-progresso" id="progressoAntes">{{ estadia_atual.antes.concluidos }}/{{ estadia_atual.antes.total }}</span>
+                </div>
+                <div id="listaCheckAntes" data-estadia-id="{{ estadia_atual.antes.estadia_id }}">
+                    {% for item in estadia_atual.antes.itens %}
+                    <label class="check-item {% if item.concluido %}concluido{% endif %}" data-item-key="{{ item.key }}">
+                        <input type="checkbox" data-action="toggle-check" data-item-key="{{ item.key }}" {% if item.concluido %}checked{% endif %}>
+                        <span>{{ item.texto }}</span>
+                    </label>
+                    {% else %}
+                    <div class="empty-state-mini">{{ t('Nenhum item cadastrado para "antes".') }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <div class="editor-coluna-titulo">
+                    <i class="fa-solid fa-door-closed"></i> {{ t('Depois do check-out') }}
+                    <span class="check-progresso" id="progressoDepois">{{ estadia_atual.depois.concluidos }}/{{ estadia_atual.depois.total }}</span>
+                </div>
+                <div id="listaCheckDepois" data-estadia-id="{{ estadia_atual.depois.estadia_id }}">
+                    {% for item in estadia_atual.depois.itens %}
+                    <label class="check-item {% if item.concluido %}concluido{% endif %}" data-item-key="{{ item.key }}">
+                        <input type="checkbox" data-action="toggle-check" data-item-key="{{ item.key }}" {% if item.concluido %}checked{% endif %}>
+                        <span>{{ item.texto }}</span>
+                    </label>
+                    {% else %}
+                    <div class="empty-state-mini">{{ t('Nenhum item cadastrado para "depois".') }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state-mini">{{ t('Nenhuma estadia em andamento, futura ou com checkout recente para este imóvel no momento.') }}</div>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   TOAST + CLIENTE HTTP CENTRAL
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = `toast ${tipo} show`;
+    setTimeout(() => { t.className = `toast ${tipo}`; }, 3200);
+}
+
+async function apiRequest(url, options = {}) {
+    try {
+        const resp = await fetch(url, options);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.success === false) throw new Error(data.message || `Erro ${resp.status}`);
+        return data;
+    } catch (e) {
+        console.error(`[checklists] Erro em ${url}:`, e);
+        mostrarToast(e.message || '{{ t("Erro de conexão.") }}', 'error');
+        throw e;
+    }
+}
+
+/* ─────────────────────────────────────────────
+   SELETOR DE IMÓVEL — recarrega a página via query param, igual às
+   demais páginas de gestão (não precisa de SPA/AJAX pra isso).
+───────────────────────────────────────────── */
+const seletorImovel = document.getElementById('seletor-imovel-select');
+if (seletorImovel) {
+    seletorImovel.addEventListener('change', () => {
+        const params = new URLSearchParams();
+        params.set('imovel_id', seletorImovel.value);
+        window.location.href = `${window.location.pathname}?${params.toString()}`;
+    });
+}
+
+/* ─────────────────────────────────────────────
+   EDITOR DE MODELO — estado local + render, com add/remover/mover
+   item entre "antes" e "depois" e edição de texto inline.
+───────────────────────────────────────────── */
+const IMOVEL_ID = seletorImovel ? parseInt(seletorImovel.value, 10) : null;
+
+let itensModelo = [
+    {{ (modelo_antes + modelo_depois) | tojson }}
+][0].map(i => ({ texto: i.texto, momento: i.momento }));
+
+function renderModelo() {
+    const listaAntes = document.getElementById('listaModeloAntes');
+    const listaDepois = document.getElementById('listaModeloDepois');
+    if (!listaAntes || !listaDepois) return;
+
+    listaAntes.innerHTML = '';
+    listaDepois.innerHTML = '';
+
+    itensModelo.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'modelo-item';
+        row.dataset.idx = idx;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'modelo-item-texto';
+        input.value = item.texto;
+        input.placeholder = '{{ t("Descreva o item…") }}';
+        input.dataset.idx = idx;
+        input.dataset.action = 'editar-texto';
+
+        const btnMover = document.createElement('button');
+        btnMover.type = 'button';
+        btnMover.dataset.action = 'mover-item';
+        btnMover.dataset.idx = idx;
+        btnMover.title = item.momento === 'antes' ? '{{ t('Mover para "depois"') }}' : '{{ t('Mover para "antes"') }}';
+        btnMover.innerHTML = '<i class="fa-solid fa-right-left"></i>';
+
+        const btnRemover = document.createElement('button');
+        btnRemover.type = 'button';
+        btnRemover.dataset.action = 'remover-item';
+        btnRemover.dataset.idx = idx;
+        btnRemover.title = '{{ t("Remover item") }}';
+        btnRemover.innerHTML = '<i class="fa-solid fa-trash"></i>';
+
+        row.appendChild(input);
+        row.appendChild(btnMover);
+        row.appendChild(btnRemover);
+
+        (item.momento === 'antes' ? listaAntes : listaDepois).appendChild(row);
+    });
+
+    if (!itensModelo.some(i => i.momento === 'antes')) {
+        listaAntes.innerHTML = '<div class="editor-vazio">{{ t("Nenhum item ainda.") }}</div>';
+    }
+    if (!itensModelo.some(i => i.momento === 'depois')) {
+        listaDepois.innerHTML = '<div class="editor-vazio">{{ t("Nenhum item ainda.") }}</div>';
+    }
+}
+
+document.querySelectorAll('[data-action="add-item"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        itensModelo.push({ texto: '', momento: btn.dataset.momento });
+        renderModelo();
+        const inputs = document.querySelectorAll('.modelo-item-texto');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+});
+
+function _onEditorClick(e) {
+    const btnMover = e.target.closest('[data-action="mover-item"]');
+    if (btnMover) {
+        const idx = parseInt(btnMover.dataset.idx, 10);
+        itensModelo[idx].momento = itensModelo[idx].momento === 'antes' ? 'depois' : 'antes';
+        renderModelo();
+        return;
+    }
+    const btnRemover = e.target.closest('[data-action="remover-item"]');
+    if (btnRemover) {
+        const idx = parseInt(btnRemover.dataset.idx, 10);
+        itensModelo.splice(idx, 1);
+        renderModelo();
+    }
+}
+
+function _onEditorInput(e) {
+    const input = e.target.closest('[data-action="editar-texto"]');
+    if (!input) return;
+    const idx = parseInt(input.dataset.idx, 10);
+    itensModelo[idx].texto = input.value;
+}
+
+['listaModeloAntes', 'listaModeloDepois'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('click', _onEditorClick);
+        el.addEventListener('input', _onEditorInput);
+    }
+});
+
+const btnSalvarModelo = document.getElementById('btnSalvarModelo');
+if (btnSalvarModelo) {
+    btnSalvarModelo.addEventListener('click', async () => {
+        if (!IMOVEL_ID) return;
+        const itens = itensModelo
+            .map(i => ({ texto: (i.texto || '').trim(), momento: i.momento === 'depois' ? 'depois' : 'antes' }))
+            .filter(i => i.texto);
+
+        btnSalvarModelo.disabled = true;
+        try {
+            await apiRequest(`/api/hub/checklist-modelo/${IMOVEL_ID}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itens }),
+            });
+            mostrarToast('{{ t("Checklist salvo com sucesso!") }}', 'success');
+        } catch (e) {
+            /* apiRequest já mostrou o toast de erro */
+        } finally {
+            btnSalvarModelo.disabled = false;
+        }
+    });
+}
+
+renderModelo();
+
+/* ─────────────────────────────────────────────
+   CHECKLIST DA ESTADIA ATUAL — toggle com UI otimista, um listener
+   delegado por coluna (antes/depois).
+───────────────────────────────────────────── */
+function _atualizarProgresso(containerId, progressoId) {
+    const container = document.getElementById(containerId);
+    const progresso = document.getElementById(progressoId);
+    if (!container || !progresso) return;
+    const total = container.querySelectorAll('.check-item').length;
+    const concluidos = container.querySelectorAll('.check-item.concluido').length;
+    progresso.innerText = `${concluidos}/${total}`;
+}
+
+async function _toggleChecklistItem(container, label, checkbox) {
+    const estadiaId = container.dataset.estadiaId;
+    const itemKey = checkbox.dataset.itemKey;
+    if (!estadiaId || !itemKey) return;
+
+    // UI otimista: já vira o estado antes da resposta do servidor.
+    const novoEstado = checkbox.checked;
+    label.classList.toggle('concluido', novoEstado);
+    _atualizarProgresso(container.id, container.id === 'listaCheckAntes' ? 'progressoAntes' : 'progressoDepois');
+
+    try {
+        await apiRequest('/api/hub/checklist/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estadia_id: parseInt(estadiaId, 10), item_key: itemKey }),
+        });
+    } catch (e) {
+        // reverte em caso de falha
+        checkbox.checked = !novoEstado;
+        label.classList.toggle('concluido', !novoEstado);
+        _atualizarProgresso(container.id, container.id === 'listaCheckAntes' ? 'progressoAntes' : 'progressoDepois');
+    }
+}
+
+['listaCheckAntes', 'listaCheckDepois'].forEach(id => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    container.addEventListener('change', e => {
+        const checkbox = e.target.closest('[data-action="toggle-check"]');
+        if (!checkbox) return;
+        const label = checkbox.closest('.check-item');
+        _toggleChecklistItem(container, label, checkbox);
+    });
+});
+</script>
+{% endblock %}

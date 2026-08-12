@@ -1,0 +1,649 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ t('Financeiro') }} — Admin{% endblock %}
+{% block titulo %}{{ t('Financeiro') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary: #0052D4;
+    --primary-light: rgba(0,82,212,0.10);
+    --primary-soft: rgba(0,82,212,0.08);
+
+    --success: #16a34a;
+    --success-soft: rgba(22,163,74,0.10);
+
+    --danger: #dc2626;
+    --danger-soft: rgba(220,38,38,0.08);
+
+    --warning: #d97706;
+    --warning-soft: rgba(217,119,6,0.12);
+
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.fin-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* GRID DE METRICAS FINANCEIRAS */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.kpi-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.25s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+}
+
+.kpi-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.kpi-details .kpi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.kpi-details .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.fin-card {
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+}
+
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.top-header h2 {
+    color: var(--text-main);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge-total {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(90, 26, 155, 0.15);
+}
+
+.filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search-container-box {
+    position: relative;
+    flex: 2;
+    min-width: 280px;
+}
+
+.search-container-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.search-container-box input {
+    width: 100%;
+    padding: 12px 14px 12px 40px !important;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+    font-size: 0.9rem;
+}
+
+.search-container-box input:focus {
+    border-color: var(--primary-light);
+    background: white;
+    transform: translateY(-1px);
+}
+
+.btn-light {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-light:hover {
+    transform: translateY(-2px);
+    background: rgba(0,82,212,0.08);
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead tr {
+    border-bottom: 2px solid var(--border-color);
+}
+
+th {
+    text-align: left;
+    padding: 14px 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+td {
+    padding: 18px 12px;
+    border-bottom: 1px solid #f8fafc;
+    vertical-align: middle;
+    color: var(--text-main);
+}
+
+tbody tr:hover {
+    background: rgba(0,82,212,0.08);
+}
+
+.valor-badge {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.valor-subtracao {
+    font-weight: 600;
+    color: var(--danger);
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-badge.pago { background: var(--success-soft); color: var(--success); }
+.status-badge.estornado { background: var(--danger-soft); color: var(--danger); }
+
+/* Estado Vazio Customizado */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state-icon-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.empty-state-icon-container .fa-chart-line {
+    font-size: 3.5rem;
+    color: #cbd5e1;
+}
+
+.empty-state-icon-container .fa-ban {
+    position: absolute;
+    bottom: -4px;
+    right: -6px;
+    font-size: 1.6rem;
+    color: #cbd5e1;
+    background: white;
+    border-radius: 50%;
+    padding: 2px;
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    width: 100%;
+    max-width: 650px;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    padding: 24px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+
+.close-modal {
+    background: none; border: none;
+    color: white; font-size: 24px; cursor: pointer;
+    outline: none; box-shadow: none;
+}
+
+.modal-body {
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.info-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.info-card span { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+.info-card strong { color: var(--text-main); font-size: 15px; word-break: break-word; }
+
+/* Ícones coloridos na ficha de visualização — pra não ficar tudo no
+   mesmo tom neutro do texto do label. */
+.info-ic { font-size: 11px; }
+.info-ic-blue   { color: #0284c7; }
+.info-ic-purple { color: #9333ea; }
+.info-ic-orange { color: #f59e0b; }
+.info-ic-gray   { color: #94a3b8; }
+body.theme-dark .info-ic-blue   { color: #38bdf8; }
+body.theme-dark .info-ic-purple { color: #c084fc; }
+body.theme-dark .info-ic-orange { color: #fb923c; }
+body.theme-dark .info-ic-gray   { color: #94a3b8; }
+
+/* ============================================================
+   RESPONSIVIDADE — FINANCEIRO
+   ============================================================ */
+
+
+
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .kpi-row { grid-template-columns: 1fr; }
+    .kpi-card { padding: 16px; gap: 12px; }
+    .kpi-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+    .kpi-details .kpi-value { font-size: 1.2rem; }
+    .badge-total { font-size: 12px; padding: 6px 14px; }
+    .search-container-box input,
+    .btn-light { font-size: 0.85rem; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --text-main: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.70);
+    --card-bg: var(--dm-surface, #1e1f24);
+    --border-color: rgba(255,255,255,0.10);
+}
+
+body.theme-dark .kpi-card,
+body.theme-dark .fin-card {
+    box-shadow: none;
+}
+
+body.theme-dark .kpi-card i,
+body.theme-dark .fin-card i {
+    color: #9dc1ff !important;
+}
+
+body.theme-dark .search-container-box input {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.92);
+}
+
+body.theme-dark .search-container-box input::placeholder {
+    color: rgba(255,255,255,0.5);
+}
+
+body.theme-dark .search-container-box input:focus {
+    background: rgba(255,255,255,0.12);
+}
+
+body.theme-dark td {
+    border-bottom-color: rgba(255,255,255,0.08);
+}
+
+body.theme-dark tbody tr:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+body.theme-dark .empty-state-icon-container .fa-ban {
+    background: var(--dm-surface, #1e1f24);
+}
+
+body.theme-dark .modal-content {
+    background: var(--dm-surface, #1e1f24) !important;
+}
+
+body.theme-dark .info-card {
+    background: rgba(255,255,255,0.08);
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="fin-wrapper">
+
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: var(--primary-soft);">
+                <i class="fa-solid fa-wallet" style="color: var(--primary);"></i>
+            </div>
+            <div class="kpi-details">
+                <div class="kpi-label">{{ t('Faturamento Bruto') }}</div>
+                <div class="kpi-value">{{ (faturamento_bruto | default(0.00)) | moeda }}</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: var(--success-soft);">
+                <i class="fa-solid fa-money-check-dollar" style="color: var(--success);"></i>
+            </div>
+            <div class="kpi-details">
+                <div class="kpi-label">{{ t('Líquido Retido') }}</div>
+                <div class="kpi-value">{{ (faturamento_liquido | default(0.00)) | moeda }}</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: var(--warning-soft);">
+                <i class="fa-solid fa-credit-card" style="color: var(--warning);"></i>
+            </div>
+            <div class="kpi-details">
+                <div class="kpi-label">{{ t('Total de Transações') }}</div>
+                <div class="kpi-value">{{ total_registros | default(0) }}</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(0,82,212,0.08);">
+                <i class="fa-solid fa-user-check" style="color: #0052D4;"></i>
+            </div>
+            <div class="kpi-details">
+                <div class="kpi-label">{{ t('Assinantes Ativos') }}</div>
+                <div class="kpi-value">{{ total_usuarios_financas | default(0) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fin-card">
+        <div class="top-header">
+            <h2><i class="fa-solid fa-chart-pie"></i> {{ t('Histórico de Compras e Assinaturas') }}</h2>
+            <span class="badge-total" id="contador-linhas">{{ t('Total') }}: {{ registros|length if registros else 0 }}</span>
+        </div>
+
+        <div class="filters">
+            <div class="search-container-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="inputBuscaRealtime" placeholder="{{ t('Pesquise por cliente, e-mail, transação ou método de pagamento...') }}">
+            </div>
+            <button type="button" class="btn-light" id="btnLimparFiltros">{{ t('Limpar') }}</button>
+        </div>
+
+        <div class="table-wrapper">
+            {% if registros %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t('ID Transação') }}</th>
+                        <th>{{ t('Comprador') }}</th>
+                        <th>{{ t('Produto / Plano') }}</th>
+                        <th>{{ t('Método') }}</th>
+                        <th>{{ t('Valor Bruto') }}</th>
+                        <th>{{ t('Taxas Gateway') }}</th>
+                        <th>{{ t('Data Compra') }}</th>
+                        <th>{{ t('Status') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaFinancasBody">
+                    {% for r in registros %}
+                    <tr class="reserva-row-item"
+                        data-id="{{ r.id }}"
+                        data-cliente-nome="{{ (r.usuario.nome if r.usuario else 'usuário #' ~ r.user_id) | lower }}"
+                        data-cliente-email="{{ (r.usuario.email if r.usuario else '') | lower }}"
+                        data-produto="{{ (r.produto or 'Plano Nomdo') | lower }}"
+                        onclick='abrirFichaContexto(event, "{{ r.id }}", "{{ r.usuario.nome if r.usuario else t("Usuário #") ~ r.user_id }}", "{{ r.usuario.email if r.usuario else "—" }}", "{{ r.produto or t("Plano Mensal Nomdo") }}", "{{ r.metodo_pagamento or t("Cartão de Crédito") }}", "{{ r.bruto | moeda }}", "{{ (r.taxa or 0.00) | moeda }}", "{{ r.data_registro.strftime("%d/%m/%Y") if r.data_registro else "—" }}")'>
+                        
+                        <td><span style="font-weight: 700; font-size: 13px; color: var(--text-main);">#{{ r.id }}</span></td>
+                        <td>
+                            {% if r.usuario %}
+                                <strong>{{ r.usuario.nome }}</strong><br>
+                                <small style="color: var(--text-muted);">{{ r.usuario.email }}</small>
+                            {% else %}
+                                <span style="color: var(--text-muted);">{{ t('Usuário #') }}{{ r.user_id }}</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ r.produto or t('Plano Nomdo Pro') }}</strong></td>
+                        <td><span style="font-size: 0.88rem; font-weight: 600;">{{ r.metodo_pagamento or t('Cartão') }}</span></td>
+                        <td><span class="valor-badge">{{ r.bruto | moeda }}</span></td>
+                        <td><span class="valor-subtracao">- {{ (r.taxa or 0.00) | moeda }}</span></td>
+                        <td style="color: var(--text-muted); font-size: 0.88rem;">
+                            {{ r.data_registro.strftime('%d/%m/%Y %H:%M') if r.data_registro else '—' }}
+                        </td>
+                        <td>
+                            <span class="status-badge pago"><i class="fa-solid fa-circle-check"></i> {{ t('Pago') }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="linhaSemDados" style="display: none;">
+                        <td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px;">{{ t('Nenhum registro financeiro corresponde à busca.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon-container">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <i class="fa-solid fa-ban"></i>
+                </div>
+                <p>{{ t('Nenhuma transação de compra ou assinatura registrada no aplicativo ainda.') }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="financeiroModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-receipt"></i> {{ t('Detalhes Analíticos da Transação') }}</h3>
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="info-card"><span><i class="fa-solid fa-hashtag info-ic info-ic-gray"></i> {{ t('ID da Transação') }}</span><h4 id="modal-id" style="margin:0; font-size:15px; color:var(--text-main);"></h4></div>
+            <div class="info-card"><span><i class="fa-solid fa-calendar-days info-ic info-ic-blue"></i> {{ t('Data do Processamento') }}</span><strong id="modal-data"></strong></div>
+            <div class="info-card full-width"><span><i class="fa-solid fa-box info-ic info-ic-purple"></i> {{ t('Item / Assinatura Adquirida') }}</span><strong id="modal-produto"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-user info-ic info-ic-purple"></i> {{ t('Cliente Comprador') }}</span><strong id="modal-cliente-nome"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-envelope info-ic info-ic-blue"></i> {{ t('E-mail de Cadastro') }}</span><strong id="modal-cliente-email"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-credit-card info-ic info-ic-orange"></i> {{ t('Gateway / Método') }}</span><strong id="modal-metodo"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-percent info-ic info-ic-orange"></i> {{ t('Taxas Descontadas') }}</span><strong id="modal-taxa" class="valor-subtracao"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-sack-dollar info-ic info-ic-blue"></i> {{ t('Valor Bruto Recebido') }}</span><strong id="modal-bruto" class="valor-badge"></strong></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const textoTotalFinanceiro = {{ t('Total') | tojson }};
+    const modal = document.getElementById('financeiroModal');
+
+    function abrirFichaContexto(event, id, clienteNome, clienteEmail, produto, metodo, bruto, taxa, data) {
+        if (event.target.closest('span') || event.target.closest('strong') || event.target.closest('small')) {
+            return;
+        }
+        processarModal(id, clienteNome, clienteEmail, produto, metodo, bruto, taxa, data);
+    }
+
+    function processarModal(id, clienteNome, clienteEmail, produto, metodo, bruto, taxa, data) {
+        modal.style.display = 'flex';
+        document.getElementById('modal-id').innerText = '#' + id;
+        document.getElementById('modal-cliente-nome').innerText = clienteNome;
+        document.getElementById('modal-cliente-email').innerText = clienteEmail;
+        document.getElementById('modal-produto').innerText = produto;
+        document.getElementById('modal-metodo').innerText = metodo;
+        document.getElementById('modal-taxa').innerText = '- ' + taxa;
+        document.getElementById('modal-bruto').innerText = bruto;
+        document.getElementById('modal-data').innerText = data;
+    }
+
+    function closeModal() { modal.style.display = 'none'; }
+
+    window.onclick = function(event) {
+        if (event.target === modal) closeModal();
+    }
+
+    // =========================================================
+    // MOTOR DE PROCESSAMENTO FILTRAGEM REAL-TIME (FRONT-END)
+    // =========================================================
+    const inputBusca = document.getElementById('inputBuscaRealtime');
+    const btnLimpar = document.getElementById('btnLimparFiltros');
+    const linhasFinancas = document.querySelectorAll('.reserva-row-item');
+    const linhaSemDados = document.getElementById('linhaSemDados');
+    const badgeContador = document.getElementById('contador-linhas');
+
+    function executarFiltragem() {
+        if (!inputBusca) return;
+        
+        const query = inputBusca.value.toLowerCase().trim();
+        let registrosVisiveis = 0;
+
+        linhasFinancas.forEach(row => {
+            const id = row.getAttribute('data-id');
+            const clienteNome = row.getAttribute('data-cliente-nome');
+            const clienteEmail = row.getAttribute('data-cliente-email');
+            const produto = row.getAttribute('data-produto');
+
+            const correspondeBusca = (id && id.includes(query)) ||
+                                     clienteNome.includes(query) ||
+                                     clienteEmail.includes(query) ||
+                                     produto.includes(query);
+
+            if (correspondeBusca) {
+                row.style.display = '';
+                registrosVisiveis++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (linhaSemDados) {
+            linhaSemDados.style.display = registrosVisiveis === 0 ? '' : 'none';
+        }
+
+        if (badgeContador) {
+            badgeContador.innerText = `${textoTotalFinanceiro}: ${registrosVisiveis}`;
+        }
+    }
+
+    if (inputBusca) inputBusca.addEventListener('input', executarFiltragem);
+    if (btnLimpar) {
+        btnLimpar.addEventListener('click', () => {
+            inputBusca.value = '';
+            executarFiltragem();
+        });
+    }
+</script>
+{% endblock %}

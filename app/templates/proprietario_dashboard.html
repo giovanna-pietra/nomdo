@@ -1,0 +1,709 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Dashboard do Proprietário') }}{% endblock %}
+
+{% block titulo %}{{ t('Dashboard do Proprietário') }}{% endblock %}
+
+{% block tour_page %}proprietario{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #0052D4;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+    }
+
+    .pd-wrapper { padding: 4px 0 20px; }
+
+    .pd-sub {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        margin: 0 0 22px;
+    }
+
+    /* ── Navegador de período (mês/trimestre/semestre/ano) ── */
+    .pd-topo-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin: -18px 0 10px;
+        flex-wrap: wrap;
+    }
+
+    .pd-mes-nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .pd-periodo-tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 4px;
+        flex-shrink: 0;
+    }
+
+    .pd-periodo-tab {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 7px 14px;
+        border-radius: 9px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+    }
+    .pd-periodo-tab:hover { color: var(--text-main); }
+    .pd-periodo-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .pd-periodo-label {
+        min-width: 150px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    body.theme-dark .pd-periodo-tabs {
+        background: rgba(255,255,255,0.08);
+    }
+    body.theme-dark .pd-periodo-tab { color: rgba(255,255,255,0.7); }
+    body.theme-dark .pd-periodo-tab:hover { color: rgba(255,255,255,0.95); }
+    body.theme-dark .pd-periodo-tab.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .pd-mes-seta {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: none;
+        background: #4A90E2;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    .pd-mes-seta:hover { background: #3a7bc8; }
+
+    .pd-mes-atual {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--text-main);
+    }
+
+    /* Label do mês: o <input type="month"> nativo fica invisível por cima
+       (só pra abrir o seletor nativo ao clicar), e quem aparece de fato é
+       o texto formatado pelo backend ("Julho de 2026", com maiúscula) —
+       assim a gente controla a capitalização em vez de depender do texto
+       que o navegador desenha sozinho dentro do input nativo. */
+    .pd-mes-atual-input {
+        position: relative;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 6px 10px;
+        background: white;
+        cursor: pointer;
+    }
+    .pd-mes-texto {
+        font-size: 0.86rem;
+        font-family: inherit;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+    .pd-mes-atual-input input[type="month"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+        border: none;
+        padding: 0;
+    }
+
+    .pd-mes-hoje {
+        border: none;
+        background: none;
+        color: var(--primary);
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 6px 4px;
+    }
+
+    body.theme-dark .pd-mes-atual-input {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.12);
+    }
+    body.theme-dark .pd-mes-texto {
+        color: rgba(255,255,255,0.92);
+    }
+
+    /* ── KPIs consolidados ── */
+    .pd-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+
+    .pd-kpi {
+        position: relative;
+        overflow: hidden;
+        background: white;
+        border-radius: 22px;
+        padding: 22px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.04);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .pd-kpi-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .pd-kpi small {
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 10.5px;
+        letter-spacing: 0.6px;
+        display: block;
+    }
+
+    .pd-kpi h2 {
+        margin-top: 6px;
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--text-main);
+        letter-spacing: -0.5px;
+    }
+
+
+    .bg-purple  { background: linear-gradient(135deg,#9333ea,#a855f7); }
+    .bg-red     { background: linear-gradient(135deg,#dc2626,#ef4444); }
+    .bg-orange  { background: linear-gradient(140deg,#f59e0b,#fb923c); }
+    .bg-green   { background: linear-gradient(120deg,#16a34a,#22c55e); }
+    .bg-blue    { background: linear-gradient(135deg,#0284c7,#0ea5e9); }
+    .bg-pink    { background: linear-gradient(150deg,#e11d48,#fb7185); }
+
+    /* Paleta arco-íris (mesma dos cards de imóveis), usada no ícone de casa quando não há foto */
+    .pd-imovel-foto.pattern-0 { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .pd-imovel-foto.pattern-1 { background: linear-gradient(145deg, #ea580c, #f97316); }
+    .pd-imovel-foto.pattern-2 { background: linear-gradient(140deg, #f59e0b, #fb923c); }
+    .pd-imovel-foto.pattern-3 { background: linear-gradient(125deg, #eab308, #facc15); }
+    .pd-imovel-foto.pattern-4 { background: linear-gradient(120deg, #16a34a, #22c55e); }
+    .pd-imovel-foto.pattern-5 { background: linear-gradient(135deg, #0284c7, #0ea5e9); }
+    .pd-imovel-foto.pattern-6 { background: linear-gradient(135deg, #9333ea, #a855f7); }
+    .pd-imovel-foto.pattern-7 { background: linear-gradient(150deg, #e11d48, #fb7185); }
+    .pd-imovel-foto[class*="pattern-"] { color: #fff; }
+
+    /* ── Bloco "Total acumulado" ── */
+    .pd-total-box {
+        background: linear-gradient(135deg,#0052D4,#0052D4);
+        border-radius: 22px;
+        padding: 22px 26px;
+        color: white;
+        margin-bottom: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .pd-total-box .titulo {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        opacity: 0.75;
+        font-weight: 700;
+    }
+
+    .pd-total-stats { display: flex; gap: 34px; flex-wrap: wrap; }
+    .pd-total-stats div span { display: block; font-size: 0.75rem; opacity: 0.75; margin-bottom: 4px; }
+    .pd-total-stats div strong { font-size: 1.3rem; font-weight: 800; }
+
+    /* ── Cards por imóvel ── */
+    .pd-section-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 6px 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pd-imoveis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 18px;
+        align-items: start;
+    }
+
+    .pd-imovel-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 8px 26px rgba(0,0,0,0.04);
+        padding: 20px;
+    }
+
+    .pd-imovel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .pd-imovel-foto {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: #f1f5f9;
+        flex-shrink: 0;
+    }
+
+    .pd-imovel-header h3 {
+        font-size: 0.98rem;
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .pd-linha {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        font-size: 0.86rem;
+    }
+
+    .pd-linha span.label { color: var(--text-muted); }
+    .pd-linha span.valor { font-weight: 700; color: var(--text-main); }
+    .pd-linha span.valor.negativo { color: var(--danger); }
+    .pd-linha span.valor.positivo { color: var(--success); }
+
+    .pd-divisor {
+        border: none;
+        border-top: 1px dashed var(--border-color);
+        margin: 8px 0;
+    }
+
+    .pd-lucro-box {
+        margin-top: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .pd-lucro-box .label { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .pd-lucro-box .valor { font-size: 1.15rem; font-weight: 900; }
+
+    .pd-imovel-header-toggle {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .pd-header-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .pd-lucro-resumo {
+        display: none;
+        font-size: 0.85rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #f8fafc;
+        white-space: nowrap;
+        color: var(--text-main);
+    }
+
+    .pd-card-chevron {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        transition: transform 0.25s ease;
+    }
+
+    .pd-card-body {
+        display: block;
+        overflow: hidden;
+    }
+
+    .pd-imovel-card.collapsed .pd-card-chevron { transform: rotate(-90deg); }
+    .pd-imovel-card.collapsed .pd-lucro-resumo { display: inline-block; }
+    .pd-imovel-card.collapsed .pd-card-body { display: none; }
+
+    .pd-editar-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: 0.78rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .pd-editar-link:hover { text-decoration: underline; }
+
+    
+    @media (max-width: 560px) and (orientation: portrait) {
+        .pd-kpis { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .pd-kpi { padding: 14px; gap: 10px; }
+        .pd-kpi-icon { width: 42px; height: 42px; font-size: 16px; border-radius: 12px; }
+        .pd-kpi small { font-size: 9px; }
+        .pd-kpi h2 { font-size: 16px; margin-top: 4px; }
+        .pd-total-box { flex-direction: column; align-items: flex-start; }
+        /* minmax(320px,...) pode não caber em telas bem estreitas (~320-340px) */
+        .pd-imoveis-grid { grid-template-columns: 1fr; }
+        .pd-imovel-card { padding: 16px; }
+        .pd-imovel-header { flex-wrap: wrap; }
+        .pd-imovel-header h3 {
+            flex: 1 1 120px;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .pd-header-right { margin-left: auto; }
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark {
+        --text-main: rgba(255,255,255,0.92);
+        --text-muted: rgba(255,255,255,0.70);
+        --border-color: rgba(255,255,255,0.10);
+    }
+
+    body.theme-dark .pd-kpi,
+    body.theme-dark .pd-imovel-card {
+        background: var(--dm-surface, #1e1f24) !important;
+        border-color: rgba(255,255,255,0.08);
+        box-shadow: none;
+    }
+
+    /* Ícones dos KPIs e das casinhas de imóvel: tons mais fechados das
+       mesmas cores, pra combinar melhor com o fundo em cinza/preto (mesma
+       lógica aplicada no dashboard, imóveis e finanças). */
+    body.theme-dark .bg-purple  { background: linear-gradient(135deg,#6b21a8,#7e22ce) !important; }
+    body.theme-dark .bg-red     { background: linear-gradient(135deg,#991b1b,#b91c1c) !important; }
+    body.theme-dark .bg-orange  { background: linear-gradient(140deg,#b45309,#d97706) !important; }
+    body.theme-dark .bg-green   { background: linear-gradient(120deg,#15803d,#16a34a) !important; }
+    body.theme-dark .bg-blue    { background: linear-gradient(135deg,#075985,#0369a1) !important; }
+    body.theme-dark .bg-pink    { background: linear-gradient(150deg,#9f1239,#be123c) !important; }
+
+    body.theme-dark .pd-imovel-foto.pattern-0 { background: linear-gradient(135deg, #991b1b, #b91c1c) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-1 { background: linear-gradient(145deg, #9a3412, #c2410c) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-2 { background: linear-gradient(140deg, #b45309, #d97706) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-3 { background: linear-gradient(125deg, #a16207, #ca8a04) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-4 { background: linear-gradient(120deg, #15803d, #16a34a) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-5 { background: linear-gradient(135deg, #075985, #0369a1) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-6 { background: linear-gradient(135deg, #6b21a8, #7e22ce) !important; }
+    body.theme-dark .pd-imovel-foto.pattern-7 { background: linear-gradient(150deg, #9f1239, #be123c) !important; }
+
+    /* Bloco "Consolidado — todos os imóveis": mesmo gradiente azul-escuro
+       fechado usado no herói do dashboard, em vez do azul chapado. */
+    body.theme-dark .pd-total-box {
+        background: linear-gradient(135deg, #0a2a63, #1d3a8f) !important;
+        border: 1px solid rgba(255,255,255,0.14);
+        box-shadow: 0 16px 40px rgba(0,0,0,.4);
+    }
+
+    body.theme-dark .pd-imovel-header {
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
+
+    body.theme-dark .pd-lucro-box,
+    body.theme-dark .pd-lucro-resumo {
+        background: rgba(255,255,255,0.08);
+    }
+
+    body.theme-dark .pd-divisor {
+        border-top-color: rgba(255,255,255,0.12);
+    }
+
+    body.theme-dark .pd-editar-link {
+        color: #9fc2ff;
+    }
+
+    body.theme-dark .pd-mes-hoje {
+        color: #9dc1ff !important;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="pd-wrapper">
+
+    <div class="pd-topo-row">
+        <div class="pd-mes-nav">
+            <button type="button" class="pd-mes-seta" onclick="pdIrParaMes('{{ mes_anterior }}')" title="{{ t('Anterior') }}">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            {% if periodo == 'mes' %}
+            <label class="pd-mes-atual pd-mes-atual-input">
+                <i class="fa-regular fa-calendar"></i>
+                <span class="pd-mes-texto">{{ mes_referencia }}</span>
+                <input type="month" id="pd-mes-input" value="{{ mes_valor }}" onchange="pdIrParaMes(this.value)">
+            </label>
+            {% else %}
+            <span class="pd-mes-atual pd-periodo-label">
+                <i class="fa-regular fa-calendar"></i>
+                {{ mes_referencia }}
+            </span>
+            {% endif %}
+            <button type="button" class="pd-mes-seta" onclick="pdIrParaMes('{{ mes_seguinte }}')" title="{{ t('Próximo') }}">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            {% if not eh_mes_atual %}
+            <button type="button" class="pd-mes-hoje" onclick="pdIrParaMes('')">{{ t('Voltar para o mês atual') if periodo == 'mes' else t('Voltar para o período atual') }}</button>
+            {% endif %}
+        </div>
+        <div class="pd-periodo-tabs">
+            <button type="button" class="pd-periodo-tab {{ 'active' if periodo == 'mes' }}" onclick="pdMudarPeriodo('mes')">{{ t('Mês') }}</button>
+            <button type="button" class="pd-periodo-tab {{ 'active' if periodo == 'trimestre' }}" onclick="pdMudarPeriodo('trimestre')">{{ t('Trimestre') }}</button>
+            <button type="button" class="pd-periodo-tab {{ 'active' if periodo == 'semestre' }}" onclick="pdMudarPeriodo('semestre')">{{ t('Semestre') }}</button>
+            <button type="button" class="pd-periodo-tab {{ 'active' if periodo == 'ano' }}" onclick="pdMudarPeriodo('ano')">{{ t('Ano') }}</button>
+        </div>
+    </div>
+    <p class="pd-sub">
+        {{ t('Dados de %(mes)s — inclui todos os imóveis vinculados à sua conta.', mes=mes_referencia) }}
+    </p>
+
+    {% if not tem_imoveis %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-chart-pie"></i></div>
+            <h2>{{ t('Ainda não há imóveis cadastrados') }}</h2>
+            <p>{{ t('Cadastre um imóvel para começar a acompanhar lucro, custos e faturamento por aqui.') }}</p>
+        </div>
+    {% elif not tem_estadias %}
+        <div class="empty-state">
+            <div class="empty-icon" style="background:rgba(252,207,111,0.25);color:#b8860b;"><i class="fa-solid fa-lock"></i></div>
+            <h2>{{ t('Falta pouco pra desbloquear este dashboard!') }}</h2>
+            <p>{{ t('Seus imóveis já estão cadastrados — registre a primeira estadia para ver lucro, custos e faturamento aqui.') }}</p>
+        </div>
+    {% else %}
+
+        <div class="pd-kpis">
+            <div class="pd-kpi">
+                <div class="pd-kpi-icon bg-purple"><i class="fa-solid fa-wallet"></i></div>
+                <div>
+                    <small>{{ t('Faturamento do %(periodo)s', periodo=t(rotulo_periodo)) }}</small>
+                    <h2>{{ consolidado.faturamento_mes|moeda }}</h2>
+                </div>
+            </div>
+            <div class="pd-kpi">
+                <div class="pd-kpi-icon bg-orange"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div>
+                    <small>{{ t('Despesas do %(periodo)s', periodo=t(rotulo_periodo)) }}</small>
+                    <h2>{{ consolidado.despesas_mes|moeda }}</h2>
+                </div>
+            </div>
+            <div class="pd-kpi">
+                <div class="pd-kpi-icon {{ 'bg-green' if consolidado.lucro_mes >= 0 else 'bg-red' }}"><i class="fa-solid fa-chart-line"></i></div>
+                <div>
+                    <small>{{ t('Lucro do %(periodo)s', periodo=t(rotulo_periodo)) }}</small>
+                    <h2 class="{{ 'positivo' if consolidado.lucro_mes >= 0 else 'negativo' }}">{{ consolidado.lucro_mes|moeda }}</h2>
+                </div>
+            </div>
+            <div class="pd-kpi">
+                <div class="pd-kpi-icon {{ 'bg-blue' if consolidado.lucro_total >= 0 else 'bg-pink' }}"><i class="fa-solid fa-building-columns"></i></div>
+                <div>
+                    <small>{{ t('Lucro total acumulado') }}</small>
+                    <h2 class="{{ 'positivo' if consolidado.lucro_total >= 0 else 'negativo' }}">{{ consolidado.lucro_total|moeda }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="pd-total-box">
+            <div>
+                <div class="titulo">{{ t('Consolidado — todos os imóveis') }}</div>
+            </div>
+            <div class="pd-total-stats">
+                <div>
+                    <span>{{ t('Faturamento total') }}</span>
+                    <strong>{{ consolidado.faturamento_total|moeda }}</strong>
+                </div>
+                <div>
+                    <span>{{ t('Despesas totais') }}</span>
+                    <strong>{{ consolidado.despesas_total|moeda }}</strong>
+                </div>
+                <div>
+                    <span>{{ t('Imóveis') }}</span>
+                    <strong>{{ imoveis|length }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="pd-section-title"><i class="fa-solid fa-building"></i> {{ t('Lucro por imóvel') }}</div>
+
+        <div class="pd-imoveis-grid">
+            {% for im in imoveis %}
+            <div class="pd-imovel-card collapsed">
+                <div class="pd-imovel-header pd-imovel-header-toggle" onclick="pdToggleCard(this)">
+                    {% if im.foto_principal %}
+                        <img src="/static/uploads/{{ im.foto_principal }}" class="pd-imovel-foto" alt="">
+                    {% else %}
+                        <div class="pd-imovel-foto pattern-{{ (im.id * 3 + 1) % 8 }}" style="display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-house"></i></div>
+                    {% endif %}
+                    <h3>{{ im.titulo }}</h3>
+                    <div class="pd-header-right">
+                        <span class="pd-lucro-resumo {{ 'positivo' if im.lucro_mes >= 0 else 'negativo' }}">{{ im.lucro_mes|moeda }}</span>
+                        <i class="fa-solid fa-chevron-down pd-card-chevron"></i>
+                    </div>
+                </div>
+
+                <div class="pd-card-body">
+                    <div class="pd-linha"><span class="label">{{ t('Faturamento do %(periodo)s', periodo=t(rotulo_periodo)) }}</span><span class="valor">{{ im.faturamento_mes|moeda }}</span></div>
+                    <div class="pd-linha"><span class="label">{{ t('Despesas lançadas no %(periodo)s', periodo=t(rotulo_periodo)) }}</span><span class="valor negativo">{{ im.despesas_mes|moeda }}</span></div>
+
+                    <div class="pd-lucro-box">
+                        <span class="label">{{ t('Lucro do %(periodo)s', periodo=t(rotulo_periodo)) }}</span>
+                        <span class="valor">{{ im.lucro_mes|moeda }}</span>
+                    </div>
+
+                    <hr class="pd-divisor">
+
+                    <div class="pd-linha"><span class="label">{{ t('Faturamento total (histórico)') }}</span><span class="valor">{{ im.faturamento_total|moeda }}</span></div>
+                    <div class="pd-linha"><span class="label">{{ t('Despesas totais (histórico)') }}</span><span class="valor negativo">{{ im.despesas_total|moeda }}</span></div>
+                    <div class="pd-linha"><span class="label">{{ t('Lucro total acumulado') }}</span><span class="valor">{{ im.lucro_total|moeda }}</span></div>
+
+                    <a href="{{ url_for('imoveis.imoveis') }}" class="pd-editar-link"><i class="fa-solid fa-pen"></i> {{ t('Editar imóvel') }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% endif %}
+
+</div>
+
+<script>
+    // Navega pro dashboard de outro período (mês/trimestre/semestre/ano) —
+    // vazio ("") volta pro período atual (sem o parâmetro ?valor= na URL).
+    function pdIrParaMes(valor) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mes'); // formato antigo, não usar mais
+        if (valor) {
+            url.searchParams.set('valor', valor);
+        } else {
+            url.searchParams.delete('valor');
+        }
+        window.location.href = url.toString();
+    }
+
+    // Troca a granularidade do período (aba Mês/Trimestre/Semestre/Ano) —
+    // sempre reseta pro período atual daquela granularidade, já que um
+    // valor específico de um tipo (ex: mês) não se traduz diretamente pro
+    // valor equivalente de outro tipo (ex: trimestre).
+    function pdMudarPeriodo(novoPeriodo) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('periodo', novoPeriodo);
+        url.searchParams.delete('valor');
+        url.searchParams.delete('mes');
+        window.location.href = url.toString();
+    }
+
+    // Cada card abre/fecha totalmente independente dos outros — pode ter
+    // vários abertos ao mesmo tempo, e fechar um não mexe em nenhum outro.
+    // Fechado, o card fica compacto (só o cabeçalho, sem o corpo/"quadrado
+    // grande" — isso é feito via CSS com .collapsed .pd-card-body{display:none}).
+    function pdToggleCard(headerEl) {
+        const card = headerEl.closest('.pd-imovel-card');
+        card.classList.toggle('collapsed');
+    }
+</script>
+
+<script>
+    NomdoTour.register('proprietario', [
+        {
+            selector: '.pd-periodo-tabs',
+            title: '{{ t("Escolha o período") }}',
+            text: '{{ t("Aqui você troca a visão entre Mês, Trimestre, Semestre ou Ano — os números da tela se ajustam automaticamente pro período escolhido.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.pd-mes-nav',
+            title: '{{ t("Navegue entre os períodos") }}',
+            text: '{{ t("Use as setas pra ver o período anterior ou o próximo, ou clique direto na data pra pular pra um mês específico.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.pd-kpis',
+            title: '{{ t("KPIs consolidados") }}',
+            text: '{{ t("Faturamento, despesas e lucro do período, além do lucro total acumulado — somando todos os seus imóveis de uma vez.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.pd-total-box',
+            title: '{{ t("Consolidado geral") }}',
+            text: '{{ t("Um resumo do faturamento e das despesas totais (histórico completo) e quantos imóveis estão vinculados à sua conta.") }}',
+            position: 'top'
+        },
+        {
+            selector: '.pd-imoveis-grid',
+            title: '{{ t("Lucro por imóvel") }}',
+            text: '{{ t("Cada card mostra o desempenho de um imóvel específico — faturamento, despesas e lucro do período, além do histórico acumulado.") }}',
+            position: 'top'
+        },
+        {
+            selector: '.pd-lucro-box',
+            title: '{{ t("Detalhes de cada imóvel") }}',
+            text: '{{ t("Clique no cabeçalho do card pra abrir ou fechar os detalhes. Aqui dentro você vê o lucro do período em destaque e pode acessar o link pra editar o imóvel.") }}',
+            position: 'top',
+            before: function () {
+                var header = document.querySelector('.pd-imovel-card.collapsed .pd-imovel-header-toggle');
+                if (header) { pdToggleCard(header); }
+            },
+            beforeDelay: 300,
+            after: function () {
+                var card = document.querySelector('.pd-imovel-card:not(.collapsed)');
+                if (card) { pdToggleCard(card.querySelector('.pd-imovel-header-toggle')); }
+            }
+        }
+    ]);
+</script>
+{% endblock %}

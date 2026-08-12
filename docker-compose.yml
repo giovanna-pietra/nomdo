@@ -1,0 +1,61 @@
+version: "3.9"
+
+# ============================================================
+# docker-compose.yml — StayKey (dev/staging)
+# Uso: docker compose up --build
+# ============================================================
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       staykey_db
+      POSTGRES_USER:     staykey_user
+      POSTGRES_PASSWORD: staykey_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U staykey_user -d staykey_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"           # Remova em produção
+
+  # ── Aplicação Flask ──────────────────────────────────────
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://staykey_user:staykey_pass@db:5432/staykey_db
+      FLASK_ENV:    production
+    volumes:
+      - uploads_data:/app/static/uploads
+      - logs_data:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Nginx (proxy reverso) ────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - uploads_data:/app/static/uploads:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  uploads_data:
+  logs_data:

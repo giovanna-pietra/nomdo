@@ -1,0 +1,811 @@
+{% extends "base_dash.html" %}
+
+{% block title %}
+    {{ t('Usuário') }}
+{% endblock %}
+
+{% block titulo %}
+    {{ t('Usuário') }}
+{% endblock %}
+
+{% block extra_css %}
+
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/css/intlTelInput.css"
+>
+
+<style>
+    .categoria-card small {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: #64748b;
+        line-height: 1.4;
+    }
+    .categoria-card:has(input:checked) small {
+        color: rgba(255,255,255,.85);
+    }
+    /* O card (não selecionado) nunca tinha fundo/cores próprias pro modo
+       escuro — a base (#fafafa, quase branco) e o hover (rgba(0,82,212,.08),
+       também bem claro) só faziam sentido pensados pro card branco do modo
+       claro; no escuro, passar o mouse fazia o card "piscar" branco. */
+    body.theme-dark .categoria-card {
+        background: var(--dm-surface, #1e1f24);
+        border-color: rgba(255,255,255,0.14);
+    }
+    body.theme-dark .categoria-card:hover {
+        background: rgba(255,255,255,0.08);
+        border-color: #9dc1ff;
+    }
+    body.theme-dark .categoria-card i,
+    body.theme-dark .categoria-card span {
+        color: rgba(255,255,255,0.85);
+    }
+    /* Selecionado: mesmo gradiente azul-escuro fechado usado nos outros
+       destaques do app, em vez do azul chapado (que também "sumia" um
+       pouco contra o resto da página escura). */
+    body.theme-dark .categoria-card:has(input:checked) {
+        background: linear-gradient(135deg, #0a2a63, #1d3a8f);
+        border-color: transparent;
+    }
+    .categoria-card-disabled {
+        opacity: .55;
+        cursor: not-allowed !important;
+    }
+    .categoria-card-disabled input {
+        cursor: not-allowed;
+    }
+    .input-hint-categoria {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        background: rgba(0,82,212,0.08);
+        border: 1px solid rgba(0,82,212,0.12);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-top: 10px;
+        font-size: 0.78rem;
+        color: #0052D4;
+        line-height: 1.5;
+    }
+    .input-hint-categoria i { margin-top: 2px; flex-shrink: 0; }
+
+    /* ===== Responsividade =====
+       Importante: a sidebar de 260px só vira menu off-canvas quando a
+       tela é estreita E em retrato (max-width:600px and orientation:
+       portrait — regra global de app/static/css/style_dashboard.css).
+       Fora dessa combinação exata (ex: tablet, janela redimensionada,
+       celular em paisagem), a sidebar continua ocupando 260px fixos e
+       'roubando' espaço do conteúdo — por isso as regras abaixo usam só
+       max-width (sem depender de orientation) e cobrem também a faixa
+       "média" (768-992px), que é onde esse aperto mais aparece. */
+
+    @media (max-width: 992px) {
+        .config-container { padding: 0 4px; }
+        .config-box { padding: 28px 22px; }
+    }
+
+    @media (max-width: 768px) {
+        .config-container { padding: 0; }
+        .config-box { padding: 22px 18px; border-radius: 14px; }
+        .config-box h2 { font-size: 1.25rem; }
+
+        /* "Editar Perfil" + botão de engrenagem: garante que quebra linha
+           em vez de espremer, se o texto/título ficar largo demais. */
+        .config-box > div:first-child {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .config-box { padding: 20px 16px; border-radius: 12px; }
+        .profile-pic-container { width: 96px; height: 96px; }
+        .categoria-card { padding: 12px 10px; }
+        .categoria-card i { font-size: 1.3rem; }
+        .admin-panel-box {
+            flex-direction: column;
+            align-items: stretch !important;
+            text-align: center;
+        }
+        .admin-panel-box > div:first-child {
+            justify-content: center;
+        }
+        .btn-delete-account {
+            width: 100%;
+            padding: 12px 20px;
+        }
+    }
+
+    /* Celulares estreitos: as duas categorias (Anfitrião/Proprietário)
+       lado a lado ficavam espremidas demais — empilha em vez de manter
+       2 colunas fixas. */
+    @media (max-width: 420px) {
+        .categoria-box { flex-direction: column; }
+    }
+
+    /* As regras abaixo (overlay sempre visível, largura do telefone,
+       trava de scroll horizontal) só fazem sentido em celular — tudo
+       escopado com max-width pra nunca vazar pro desktop/PC, onde essas
+       "redes de segurança" só atrapalhavam (ex: forçavam o dropdown de
+       país do telefone a quebrar linha mesmo com tela larga sobrando). */
+    @media (max-width: 600px) {
+        /* Foto de perfil em telas touch: o overlay com os botões de
+           editar/remover só aparecia no :hover — em celular não existe
+           hover de verdade, então esses botões ficavam praticamente
+           invisíveis e inacessíveis. */
+        .profile-pic-container .overlay {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.32);
+        }
+
+        /* Rede de segurança: o dropdown de bandeiras do campo de telefone
+           (intl-tel-input) tem largura própria que, em telas bem
+           estreitas, pode passar do que cabe na tela e gerar rolagem
+           horizontal na página inteira. */
+        .iti__country-list {
+            max-width: min(320px, 94vw);
+            white-space: normal;
+        }
+
+        /* O plugin de telefone às vezes define a largura do próprio campo
+           via JS (não só via CSS) — forçando de novo aqui com !important
+           garante que ele nunca fique mais largo que o card. */
+        .iti, .iti input, #telefone {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Última garantia: nada de scroll horizontal na tela do Usuário
+           em celular. */
+        html, body { overflow-x: hidden; }
+    }
+
+    /* ===== DARK MODE ===== */
+    /* .config-box vem branco de uma regra global e antiga em
+       style_dashboard.css (.config-box{background:#fff...}), nunca tinha
+       sido coberta no escuro — sobrava um cartão branco por trás dos
+       campos (que já ficavam escuros, cobertos pela regra genérica de
+       input do theme_dark.css), um contraste estranho entre os dois. */
+    body.theme-dark .config-box {
+        background: var(--dm-surface, #1e1f24) !important;
+        border-color: rgba(255,255,255,0.1) !important;
+        box-shadow: none !important;
+    }
+
+    body.theme-dark .config-box .input-group label {
+        color: rgba(255,255,255,0.72) !important;
+    }
+
+    /* Botão de engrenagem (config): cor de fundo/ícone vem de inline
+       style (onmouseover/onmouseout também), pensada só pro card branco. */
+    body.theme-dark #linkConfiguracoesUsuario {
+        background: rgba(255,255,255,0.08) !important;
+        color: rgba(255,255,255,0.75) !important;
+    }
+
+    body.theme-dark .categoria-card small {
+        color: rgba(255,255,255,0.70);
+    }
+
+    body.theme-dark .input-hint-categoria {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.85);
+    }
+</style>
+
+{% endblock %}
+
+{% block conteudo %}
+
+<section class="config-container">
+
+    <div class="config-box">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <h2 style="margin:0;">{{ t('Editar Perfil') }}</h2>
+
+            <a
+                id="linkConfiguracoesUsuario"
+                href="{{ url_for('main.configuracoes') }}"
+                title="{{ t('Configurações') }}"
+                style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:#f1f5f9; color:#64748b; text-decoration:none; flex-shrink:0; transition:.2s;"
+                onmouseover="this.style.background='var(--primary-soft, rgba(0,82,212,0.08))'; this.style.color='var(--primary, #0052D4)';"
+                onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b';"
+            >
+                <i class="fa-solid fa-gear"></i>
+            </a>
+        </div>
+
+        <form 
+            id="formPerfil" 
+            method="POST" 
+            enctype="multipart/form-data" 
+            onsubmit="return validarForm(event)"
+        >
+
+            <!-- FOTO -->
+            <div class="input-group">
+
+                <label>{{ t('Foto de perfil') }}:</label>
+
+                <div 
+                    class="profile-pic-container" 
+                    onclick="abrirUpload(event)"
+                >
+
+                    {% if user and user.foto %}
+
+                        <img 
+                            id="preview"
+                            class="profile-pic dynamic-color"
+                            data-name="{{ nome_usuario }}"
+                            src="{{ url_for('static', filename=user.foto) }}"
+                        >
+
+                    {% else %}
+
+                        <div 
+                            id="preview"
+                            class="profile-placeholder dynamic-color"
+                            data-name="{{ nome_usuario }}"
+                        >
+                            {{ nome_usuario[0] if nome_usuario else '?' }}
+                        </div>
+
+                    {% endif %}
+
+                    <div class="overlay">
+
+                        <div class="icon-btn">
+                            <i class="fa-solid fa-pen"></i>
+                        </div>
+
+                        <button 
+                            type="button"
+                            class="icon-btn delete"
+                            id="btnDelete"
+                            style="display: {% if user and user.foto %}flex{% else %}none{% endif %};"
+                            onclick="removerFoto(event)"
+                        >
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <input 
+                    type="file"
+                    name="foto"
+                    id="fotoInput"
+                    accept="image/*"
+                    style="display: none;"
+                >
+
+                <input 
+                    type="hidden"
+                    name="remover_foto"
+                    id="removerFotoInput"
+                    value="0"
+                >
+
+            </div>
+
+            <!-- NOME -->
+            <div class="input-group">
+
+                <label>{{ t('Nome') }}:</label>
+
+                <input 
+                    type="text"
+                    name="nome"
+                    id="nomeInput"
+                    value="{{ user.nome or '' }}"
+                    required
+                    oninput="atualizarIniciais()"
+                >
+
+            </div>
+
+            <!-- EMAIL -->
+            <div class="input-group">
+
+                <label>{{ t('Email') }}:</label>
+
+                <input 
+                    type="email"
+                    name="email"
+                    value="{{ user.email or '' }}"
+                    required
+                >
+
+            </div>
+
+            <!-- TELEFONE -->
+            <div class="input-group">
+
+                <label>{{ t('Telefone') }}:</label>
+
+                <input
+                    type="tel"
+                    name="telefone"
+                    id="telefone"
+                    value="{{ user.telefone or '' }}"
+                    required
+                >
+
+                <span id="telError" class="tel-error-msg">
+                    {{ t('Número de telefone inválido.') }}
+                </span>
+
+                <input 
+                    type="hidden"
+                    name="telefone_completo"
+                    id="telefone_completo"
+                >
+
+            </div>
+
+            <!-- NASCIMENTO -->
+            <div class="input-group">
+
+                <label>{{ t('Data de Nascimento') }}:</label>
+
+                <input 
+                    type="date"
+                    name="data_nascimento"
+                    id="dataNascimentoInput"
+                    value="{% if user.data_nascimento %}{{ user.data_nascimento.strftime('%Y-%m-%d') if user.data_nascimento.strftime is defined else user.data_nascimento }}{% endif %}"
+                    required
+                >
+
+            </div>
+
+            <!-- GÊNERO -->
+            <div class="input-group">
+
+                <label>{{ t('Gênero') }}:</label>
+
+                <select
+                    name="genero"
+                    id="generoSelect"
+                    required
+                >
+
+                    <option
+                        value=""
+                        disabled
+                        {% if not user.genero %}selected{% endif %}
+                    >
+                        {{ t('Selecione seu gênero') }}
+                    </option>
+
+                    <option
+                        value="Feminino"
+                        {% if user.genero == 'Feminino' %}selected{% endif %}
+                    >
+                        {{ t('Feminino') }}
+                    </option>
+
+                    <option
+                        value="Masculino"
+                        {% if user.genero == 'Masculino' %}selected{% endif %}
+                    >
+                        {{ t('Masculino') }}
+                    </option>
+
+                    <option
+                        value="Prefiro não responder"
+                        {% if user.genero == 'Prefiro não responder' %}selected{% endif %}
+                    >
+                        {{ t('Prefiro não responder') }}
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- CATEGORIA -->
+            <div class="input-group">
+
+                <label>
+                    {{ t('Categoria (escolha uma):') }}
+                </label>
+
+                <div class="categoria-box">
+
+                    <label class="categoria-card {% if user and user.e_ajudante %}categoria-card-disabled{% endif %}">
+
+                        <input
+                            type="radio"
+                            name="categoria"
+                            value="Anfitrião"
+                            class="cat-check"
+                            {% if not user.categoria or 'Proprietário' not in user.categoria %}checked{% endif %}
+                        >
+
+                        <i class="fa-solid fa-house"></i>
+
+                        <span>{{ t('Anfitrião') }}</span>
+                        <small>{{ t('Ajuda a operar imóveis') }}</small>
+
+                    </label>
+
+                    <label class="categoria-card {% if user and user.e_ajudante %}categoria-card-disabled{% endif %}">
+
+                        <input
+                            type="radio"
+                            name="categoria"
+                            value="Proprietário"
+                            class="cat-check"
+                            {% if user.categoria and 'Proprietário' in user.categoria %}checked{% endif %}
+                            {% if user and user.e_ajudante %}disabled{% endif %}
+                        >
+
+                        <i class="fa-solid fa-chart-line"></i>
+
+                        <span>{{ t('Proprietário') }}</span>
+                        <small>{{ t('Libera o Dashboard Proprietário') }}</small>
+
+                    </label>
+
+                </div>
+
+                {% if user and user.e_ajudante %}
+                <p class="input-hint-categoria">
+                    <i class="fa-solid fa-circle-info"></i>
+                    {{ t('Sua conta está vinculada à equipe de outro Proprietário — por isso fica como Anfitrião. Para sair dessa equipe, peça pra quem te convidou te remover em "Equipe".') }}
+                </p>
+                {% endif %}
+
+                <p
+                    id="catError"
+                    class="error-msg"
+                    style="display:none; color: #c0392b; font-size:12px; margin-top:5px;"
+                >
+                    {{ t('Por favor, selecione uma categoria.') }}
+                </p>
+
+            </div>
+
+            <!-- BOTÃO -->
+            <button type="submit" class="btn-login">
+                {{ t('Salvar Alterações') }}
+            </button>
+
+        </form>
+
+        {% if session.get("is_admin") or session.get("user_email") == "giovanna.perovano@clona.com.br" %}
+        <!-- ACESSO ADMIN -->
+        <div class="admin-panel-box" style="margin-top:24px;padding:18px 20px;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.05);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:42px;height:42px;border-radius:12px;background:rgba(220,38,38,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-unlock-keyhole" style="color:#dc2626;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <strong style="display:block;color:#7f1d1d;font-size:0.92rem;">{{ t('Painel Master') }}</strong>
+                    <small style="color:#f6cdcd;font-size:0.78rem;">{{ t('Área administrativa — visível só pra contas admin.') }}</small>
+                </div>
+            </div>
+            <a href="{{ url_for('admin.dashboard') }}" class="admin-panel-link" style="text-decoration:none;background:#dc2626;color:#fff;font-weight:700;font-size:0.82rem;padding:10px 18px;border-radius:10px;white-space:nowrap;">
+                {{ t('Entrar no Painel') }} <i class="fa-solid fa-arrow-right" style="margin-left:4px;"></i>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ZONA DE PERIGO -->
+        <div class="danger-zone">
+
+            <form 
+                id="formExcluir"
+                action="{{ url_for('usuario.excluir_conta') }}"
+                method="POST"
+            >
+
+                <button 
+                    type="button"
+                    class="btn-delete-account"
+                    onclick="confirmarExclusao()"
+                >
+
+                    <i class="fa-solid fa-circle-xmark"></i>
+
+                    {{ t('Excluir minha conta') }}
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/js/intlTelInput.min.js"></script>
+
+<script>
+
+    const telInput = document.querySelector("#telefone");
+
+    const telError = document.querySelector("#telError");
+
+    const fullTelInput = document.querySelector("#telefone_completo");
+
+    const iti = window.intlTelInput(telInput, {
+
+        initialCountry: "br",
+
+        preferredCountries: ["br", "us", "pt", "ar"],
+
+        separateDialCode: true,
+
+        autoPlaceholder: "aggressive",
+
+        nationalMode: true,
+
+        strictMode: true,
+
+        utilsScript:
+            "https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/js/utils.js"
+
+    });
+
+    function confirmarExclusao() {
+
+        Swal.fire({
+
+            title: '{{ t("Excluir conta permanentemente?") }}',
+
+            html: `
+
+                <div style="text-align:center; font-size:14px; line-height:1.6;">
+
+                    <p style="margin-bottom:10px">
+                        <strong>{{ t("Esta ação é irreversível.") }}</strong>
+                    </p>
+
+                    <p style="color:#c0392b; margin:0;">
+                        {{ t("Todos os dados relacionados ao seu usuário serão removidos permanentemente.") }}
+                    </p>
+
+                </div>
+
+            `,
+
+            icon: 'warning',
+
+            showCancelButton: true,
+
+            confirmButtonColor: 'rgba(0,82,212,0.18)',
+
+            cancelButtonColor: '#6c757d',
+
+            confirmButtonText: '{{ t("Sim, excluir tudo") }}',
+
+            cancelButtonText: '{{ t("Cancelar") }}',
+
+            reverseButtons: true,
+
+            focusCancel: true
+
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+
+                Swal.fire({
+
+                    title: '{{ t("Excluindo conta...") }}',
+
+                    text: '{{ t("Aguarde enquanto removemos seus dados.") }}',
+
+                    allowOutsideClick: false,
+
+                    allowEscapeKey: false,
+
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+
+                });
+
+                document.getElementById("formExcluir").submit();
+
+            }
+
+        });
+
+    }
+
+    function atualizarIniciais() {
+
+        const nomeDigitado = document.getElementById('nomeInput').value;
+
+        const inicial = nomeDigitado
+            ? nomeDigitado.charAt(0).toUpperCase()
+            : '?';
+
+        const sidebarAvatar = document.querySelector('.user-avatar:not(:has(img))');
+
+        if (sidebarAvatar) {
+            sidebarAvatar.textContent = inicial;
+        }
+    }
+
+    function abrirUpload(event) {
+
+        if (event.target.closest('.delete')) return;
+
+        document.getElementById("fotoInput").click();
+    }
+
+    function removerFoto(event) {
+
+        event.stopPropagation();
+
+        Swal.fire({
+            title: '{{ t("Remover foto?") }}',
+            text: "{{ t('Sua foto de perfil atual será apagada.') }}",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'rgba(0,82,212,0.18)',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '{{ t("Sim, remover") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true
+
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+
+                const nomeOficial = "{{ nome_usuario }}";
+
+                const inicialOficial = nomeOficial
+                    ? nomeOficial.charAt(0).toUpperCase()
+                    : '?';
+
+                const container = document.querySelector(".profile-pic-container");
+
+                const preview = document.getElementById("preview");
+
+                if(preview) {
+                    preview.remove();
+                }
+
+                const placeholder = document.createElement("div");
+
+                placeholder.id = "preview";
+
+                placeholder.className = "profile-placeholder dynamic-color";
+
+                placeholder.setAttribute("data-name", nomeOficial);
+
+                placeholder.textContent = inicialOficial;
+
+                container.insertBefore(placeholder, container.firstChild);
+
+                document.getElementById("removerFotoInput").value = "1";
+
+                document.getElementById("fotoInput").value = "";
+
+                document.getElementById("btnDelete").style.display = "none";
+
+                aplicarCores();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '{{ t("Foto removida!") }}',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+            }
+
+        });
+    }
+
+    document.getElementById("fotoInput").addEventListener("change", function(e){
+
+        const file = e.target.files[0];
+
+        if(file){
+
+            const reader = new FileReader();
+
+            reader.onload = function(event){
+
+                const container = document.querySelector(".profile-pic-container");
+
+                const preview = document.getElementById("preview");
+
+                if(preview) {
+                    preview.remove();
+                }
+
+                const novaImg = document.createElement("img");
+
+                novaImg.id = "preview";
+
+                novaImg.className = "profile-pic dynamic-color";
+
+                novaImg.src = event.target.result;
+
+                novaImg.style.backgroundColor = "transparent";
+
+                container.insertBefore(novaImg, container.firstChild);
+
+                document.getElementById("removerFotoInput").value = "0";
+
+                document.getElementById("btnDelete").style.display = "flex";
+
+                aplicarCores();
+
+            }
+
+            reader.readAsDataURL(file);
+
+        }
+
+    });
+
+    function validarForm(event) {
+
+        let isValid = true;
+
+        const radios = document.querySelectorAll('.cat-check');
+
+        const catErrorMsg = document.getElementById('catError');
+
+        let checked = false;
+
+        radios.forEach(cb => {
+
+            if (cb.checked) checked = true;
+
+        });
+
+        if (!checked) {
+
+            catErrorMsg.style.display = 'block';
+
+            isValid = false;
+
+        } else {
+
+            catErrorMsg.style.display = 'none';
+
+        }
+
+        telError.style.display = "none";
+
+        if (telInput.value.trim()) {
+
+            if (iti.isValidNumber()) {
+
+                fullTelInput.value = iti.getNumber();
+
+            } else {
+
+                telError.style.display = "block";
+
+                isValid = false;
+            }
+
+        } else {
+
+            isValid = false;
+        }
+
+        return isValid;
+    }
+</script>
+{% endblock %}

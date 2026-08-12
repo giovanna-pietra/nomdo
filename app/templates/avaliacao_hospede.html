@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'pt-br' }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ imovel.titulo }} — {{ t('Avaliar Estadia') }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+<link rel="shortcut icon" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+    --primary:        #0052D4;
+    --primary-mid:    #4364F7;
+    --primary-soft:   rgba(0,82,212,0.08);
+    --primary-border: rgba(0,82,212,0.12);
+    --text-soft:      #64748b;
+    --border-soft:    #e5e7eb;
+    --text:           #111827;
+    --star:           #4364F7;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0; font-family: 'Poppins', sans-serif; background: #f5f7fb;
+    color: var(--text); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+.hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-mid));
+    color: #fff; padding: 34px 20px 46px; text-align: center; position: relative;
+}
+.hero::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 24px;
+    background: #f5f7fb; border-radius: 24px 24px 0 0;
+}
+.hero i { font-size: 2rem; opacity: .9; margin-bottom: 10px; display: block; }
+.hero h1 { font-size: 1.15rem; font-weight: 800; margin: 0 0 4px; }
+.hero p  { font-size: 0.82rem; opacity: .9; margin: 0; }
+
+.wrap { max-width: 480px; margin: -20px auto 0; padding: 0 16px 40px; position: relative; z-index: 1; }
+
+.card {
+    background: #fff; border: 1px solid var(--border-soft); border-radius: 18px;
+    padding: 26px 22px; box-shadow: 0 6px 20px rgba(15,23,42,.04); text-align: center;
+}
+
+.card h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 6px; }
+.card .sub { font-size: 0.85rem; color: var(--text-soft); margin: 0 0 22px; }
+
+/* ── Estrelas (radio trick, sem JS obrigatório) ── */
+.stars { display: flex; flex-direction: row-reverse; justify-content: center; gap: 4px; margin-bottom: 22px; }
+.stars input { display: none; }
+.stars label {
+    font-size: 2.1rem; color: #e2e8f0; cursor: pointer; transition: color .15s; line-height: 1;
+}
+.stars label:hover,
+.stars label:hover ~ label,
+.stars input:checked ~ label { color: var(--star); }
+
+textarea {
+    width: 100%; border: 1px solid var(--border-soft); border-radius: 12px;
+    padding: 12px 14px; font-family: inherit; font-size: 0.9rem; resize: vertical;
+    min-height: 90px; margin-bottom: 18px; color: var(--text);
+}
+textarea:focus { outline: none; border-color: var(--primary-mid); }
+
+.btn-enviar {
+    width: 100%; border: none; background: var(--primary-mid); color: #fff;
+    font-weight: 700; font-size: 0.95rem; padding: 13px 0; border-radius: 12px;
+    cursor: pointer; transition: .15s;
+}
+.btn-enviar:hover { background: var(--primary); }
+
+.msg-erro {
+    background: rgba(0,82,212,0.08); border: 1px solid rgba(0,82,212,0.12); color: #0052D4;
+    border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; margin-bottom: 16px;
+}
+
+/* ── Estado: já avaliado / obrigado ── */
+.obrigado i { font-size: 2.6rem; color: #6FB1FC; margin-bottom: 12px; display: block; }
+.obrigado .nota-final { font-size: 1.6rem; color: var(--star); margin: 6px 0 4px; }
+
+.footer-note { text-align: center; font-size: 0.72rem; color: var(--text-soft); margin-top: 22px; }
+
+.lang-corner { position: absolute; top: 14px; right: 14px; z-index: 2; }
+
+/* ── RESPONSIVIDADE ── */
+
+
+
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .hero { padding: 26px 16px 38px; }
+    .hero i { font-size: 1.7rem; margin-bottom: 8px; }
+    .hero h1 { font-size: 1rem; }
+    .hero p { font-size: 0.76rem; }
+    .wrap { max-width: 100%; margin: -16px auto 0; padding: 0 14px 32px; }
+
+    .card { padding: 22px 16px; }
+    .card h2 { font-size: 0.95rem; }
+    .card .sub { font-size: 0.8rem; margin-bottom: 18px; }
+
+    .stars { gap: 2px; margin-bottom: 18px; }
+    .stars label { font-size: 1.8rem; }
+
+    textarea { font-size: 0.85rem; padding: 10px 12px; min-height: 80px; }
+
+    .btn-enviar { font-size: 0.9rem; padding: 12px 0; }
+
+    .obrigado i { font-size: 2.2rem; }
+    .obrigado .nota-final { font-size: 1.35rem; }
+}
+
+@media (max-width: 340px) and (orientation: portrait) {
+    .stars label { font-size: 1.55rem; }
+}
+
+/* ===== DARK MODE (segue o SO de quem visita, sem sessão) ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: rgba(255, 255, 255, 0.92);
+        --text-soft: rgba(255, 255, 255, 0.70);
+        --border-soft: rgba(255, 255, 255, 0.12);
+    }
+
+    body {
+        background: #0052D4 !important;
+    }
+
+    .hero::after {
+        background: #0052D4 !important;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.06) !important;
+        box-shadow: none !important;
+    }
+
+    textarea {
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="lang-corner">{% include "partials/seletor_idioma.html" %}</div>
+    <i class="fa-solid fa-star"></i>
+    <h1>{{ imovel.titulo if imovel else t('Sua Estadia') }}</h1>
+    <p>{{ t('Sua opinião ajuda o anfitrião a melhorar') }}</p>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    {% if avaliacao %}
+      <div class="obrigado">
+        <i class="fa-solid fa-circle-check"></i>
+        <h2>{{ t('Obrigado pela avaliação!') }}</h2>
+        <p class="sub">{{ t('Você já avaliou sua estadia em %(imovel)s.', imovel=(imovel.titulo if imovel else t('nosso imóvel'))) }}</p>
+        <div class="nota-final">{{ '⭐️' * avaliacao.nota }}</div>
+        {% if avaliacao.comentario %}
+        <p class="sub" style="margin-top:14px;">"{{ avaliacao.comentario }}"</p>
+        {% endif %}
+      </div>
+    {% else %}
+      <h2>{{ t('Como foi sua estadia?') }}</h2>
+      <p class="sub">
+        {% if estadia and estadia.nome_hospede %}{{ t('Olá, %(nome)s!', nome=estadia.nome_hospede.split(' ')[0]) }}{% else %}{{ t('Olá!') }}{% endif %}
+        {{ t('Conte pra gente como foi.') }}
+      </p>
+
+      {% if request.args.get('erro') %}
+      <div class="msg-erro">
+        <i class="fa-solid fa-triangle-exclamation"></i> {{ t('Selecione uma nota de 1 a 5 estrelas antes de enviar.') }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('imoveis.enviar_avaliacao_hospede', token=token) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="stars">
+          <input type="radio" name="nota" id="star5" value="5"><label for="star5"><i class="fa-solid fa-star"></i></label>
+          <input type="radio" name="nota" id="star4" value="4"><label for="star4"><i class="fa-solid fa-star"></i></label>
+          <input type="radio" name="nota" id="star3" value="3"><label for="star3"><i class="fa-solid fa-star"></i></label>
+          <input type="radio" name="nota" id="star2" value="2"><label for="star2"><i class="fa-solid fa-star"></i></label>
+          <input type="radio" name="nota" id="star1" value="1"><label for="star1"><i class="fa-solid fa-star"></i></label>
+        </div>
+
+        <textarea name="comentario" placeholder="{{ t('Quer contar mais alguma coisa? (opcional)') }}"></textarea>
+
+        <button type="submit" class="btn-enviar">{{ t('Enviar avaliação') }}</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <p class="footer-note">{{ t('Nomdo — gestão de temporadas') }}</p>
+</div>
+
+</body>
+</html>

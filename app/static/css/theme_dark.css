@@ -1,0 +1,307 @@
+/* ============================================================
+   Nomdo — Dark Theme (override)
+   Mantém o CSS original intacto e aplica apenas quando o tema
+   do usuário for "dark" (ou "auto" + sistema dark)
+   ============================================================ */
+
+/* Paleta do modo escuro: tons de cinza/preto (não mais o azul da marca
+   como fundo — era o que causava todo o problema de "elemento azul some
+   no fundo igualmente azul"). O azul da marca continua usado como cor de
+   destaque (ícones, header, botão de ajuda), só não é mais o fundo. */
+body.theme-dark {
+    --dm-bg: #121214;
+    --dm-sidebar: #17181c;
+    --dm-surface: #1e1f24;
+    --dm-surface-hover: #26272c;
+    --dm-border: rgba(255, 255, 255, 0.08);
+    --dm-border-strong: rgba(255, 255, 255, 0.16);
+
+    background: var(--dm-bg) !important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Logo: no tema escuro (inclusive "auto" com o SO no escuro, já que a
+   classe theme-dark é adicionada via JS nesse caso) mostra logo_escuro.png
+   no lugar de logo_header.png. */
+body.theme-dark .img-logo-light {
+    display: none !important;
+}
+
+body.theme-dark .img-logo-dark {
+    display: block !important;
+}
+
+body.theme-dark .sidebar {
+    background: var(--dm-sidebar) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.theme-dark .nav-links a {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+/* O item ativo usa var(--purple) como fundo no CSS original, que é
+   exatamente a mesma cor do fundo escuro — o "pill" de destaque some
+   por completo, sobrando só o texto branco sem nenhum realce por trás.
+   Troca por uma camada branca translúcida, que funciona sobre qualquer
+   fundo azul e mantém a hierarquia visual do item ativo. */
+body.theme-dark .nav-links li.active a {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+    color: #fff !important;
+}
+
+body.theme-dark .nav-links a:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+
+/* Mesmo problema no rodapé (linha do usuário ativo/avatar). */
+body.theme-dark .active-user,
+body.theme-dark .sidebar-footer .user-info.active-page {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.theme-dark .user-info:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+
+body.theme-dark .user-info:hover i {
+    color: #fff !important;
+}
+
+body.theme-dark h1,
+body.theme-dark h2,
+body.theme-dark h3,
+body.theme-dark h4,
+body.theme-dark strong {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.theme-dark .content {
+    background: transparent !important;
+}
+
+/* Cabeçalho de cada página (título tipo "Dashboard Inteligente"): o
+   cartão branco de fundo ficava estranho — agora é só o texto em
+   branco, sem nenhum fundo, seguindo o h1/h2/h3/h4 padrão do resto da
+   página escura. */
+body.theme-dark .content-header h1 i {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Cards / containers que ficam brancos no CSS original */
+body.theme-dark .settings-card,
+body.theme-dark .support-card,
+body.theme-dark .stat-card,
+body.theme-dark .chart-card,
+body.theme-dark .table-card,
+body.theme-dark .pbi-card,
+body.theme-dark .pbi-insights-box,
+body.theme-dark .modal-content,
+body.theme-dark .modal-box,
+body.theme-dark .modal {
+    background: var(--dm-surface) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+}
+
+body.theme-dark .settings-card p,
+body.theme-dark .setting-row,
+body.theme-dark .settings-card label,
+body.theme-dark .user-category,
+body.theme-dark .insight-text,
+body.theme-dark .pbi-card-title,
+body.theme-dark .pbi-filter-title,
+body.theme-dark .pbi-chart-title,
+body.theme-dark .pbi-card-value {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+/* Nome do usuário no rodapé da sidebar: nunca tinha override no escuro
+   e ficava preso no #333 do CSS original — quase invisível em cima do
+   fundo escuro da sidebar. */
+body.theme-dark .user-name {
+    color: rgba(255, 255, 255, 0.94) !important;
+}
+
+/* Inputs / selects */
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea {
+    background: var(--dm-surface) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.theme-dark input::placeholder,
+body.theme-dark textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Tabelas */
+body.theme-dark table {
+    color: rgba(255, 255, 255, 0.86) !important;
+}
+
+/* Evita fundo branco padrão do navegador nas células */
+body.theme-dark table,
+body.theme-dark thead,
+body.theme-dark tbody,
+body.theme-dark tr,
+body.theme-dark th,
+body.theme-dark td {
+    background: transparent !important;
+}
+
+body.theme-dark th {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+
+body.theme-dark td {
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* FullCalendar (usa #calendar com fundo branco no CSS original) */
+body.theme-dark #calendar {
+    background: var(--dm-surface) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.theme-dark .fc {
+    color: rgba(255, 255, 255, 0.86) !important;
+}
+
+body.theme-dark .fc-toolbar-title {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.theme-dark .fc-theme-standard td,
+body.theme-dark .fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.theme-dark .fc-scrollgrid,
+body.theme-dark .fc-scrollgrid-section table,
+body.theme-dark .fc-scrollgrid-section > td,
+body.theme-dark .fc-scrollgrid-section-header > td,
+body.theme-dark .fc-scrollgrid-section-body > td {
+    background: transparent !important;
+}
+
+body.theme-dark .fc-daygrid-day,
+body.theme-dark .fc-timegrid-slot {
+    background: transparent !important;
+}
+
+body.theme-dark .fc-daygrid-day:hover {
+    background: rgba(91, 26, 155, 0.18) !important;
+}
+
+body.theme-dark .fc-button-primary {
+    box-shadow: none !important;
+}
+
+body.theme-dark .fc-popover {
+    background: var(--dm-surface) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+body.theme-dark .fc-list,
+body.theme-dark .fc-list-table {
+    background: transparent !important;
+}
+
+/* Footer */
+body.theme-dark .footer {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* ============================================================
+   ACENTOS EM AZUL-MARCA (#0052D4/#4364F7) que colidem com o
+   próprio fundo escuro (também #0052D4) — sem isso, texto/ícone
+   azul em cima de um fundo igualmente azul fica invisível.
+   Só cobre elementos que NÃO são <input>/<select>/<textarea>
+   nativos (esses já são pegos pela regra genérica acima); botões
+   e divs/spans usados como "controles" customizados (badges,
+   caixas de dica, botões de recolher a sidebar) precisam de
+   override específico.
+   ============================================================ */
+body.theme-dark .sidebar-collapse-btn,
+body.theme-dark .sidebar-close-btn {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+body.theme-dark .sidebar-collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+
+body.theme-dark .badge-silencio,
+body.theme-dark .badge-multa,
+body.theme-dark .badge-personalizada {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #9dc1ff !important;
+}
+
+body.theme-dark .view-dicas-box {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-left-color: #9dc1ff !important;
+    color: #9dc1ff !important;
+}
+
+/* Botão flutuante de ajuda ("?"): fundo branco com o azul da marca no
+   ícone, em vez do círculo azul (que ficava com contraste fraco contra
+   a sombra escura ao redor). O "pulso" de destaque também precisa da
+   própria keyframe em branco — não dá pra sobrescrever um @keyframes
+   com um seletor mais específico, então troca o animation-name inteiro. */
+body.theme-dark .nomdo-help-fab {
+    background: #ffffff !important;
+    color: #0052D4 !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.theme-dark .nomdo-help-fab:hover {
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55) !important;
+}
+
+@keyframes nomdoHelpPulseDark {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+    70%  { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+body.theme-dark .nomdo-help-fab .nomdo-help-pulse {
+    animation-name: nomdoHelpPulseDark;
+}
+
+/* SweetAlert2 (usado em confirmações e no modal de Suporte, entre outros):
+   a lib sempre renderiza um popup branco por padrão, sem nenhuma adaptação
+   ao tema da página — sem isso, todo Swal.fire() destoava (uma caixa
+   branca sozinha no meio da tela escura). */
+body.theme-dark .swal2-popup {
+    background: var(--dm-surface, #1e1f24) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.theme-dark .swal2-title,
+body.theme-dark .swal2-html-container {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.theme-dark .swal2-close {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Opção "Abrir Chamado" do modal de Suporte: era um azul bem clarinho
+   pensado pra contrastar com o popup branco — vira uma superfície
+   translúcida branca, que funciona em cima de qualquer fundo escuro. */
+body.theme-dark .suporte-opcao-chamado {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #9dc1ff !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+

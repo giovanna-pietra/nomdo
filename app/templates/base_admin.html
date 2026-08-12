@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'pt-br' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}{{ t('Admin') }} — Nomdo{% endblock %}</title>
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icone_fundo.png') }}">
+
+    <!-- Tipografia da marca Nomdo: Poppins Bold (títulos) + Poppins Regular (texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_dashboard.css') }}">
+    {% if user and user.theme in ['dark', 'auto'] %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/theme_dark.css') }}">
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* Ajuste do Bloco de Logotipo + Badge com Alinhamento à Direita */
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Permite o uso de alinhamento próprio nos filhos */
+            gap: 6px;
+            width: 100%;
+        }
+        .img-logo {
+            align-self: flex-start;
+        }
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #0052D4, #0052D4);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            align-self: flex-end; /* Move o selo inteiramente para a direita abaixo da logo */
+            margin-top: 4px;
+            box-shadow: 0 2px 8px rgba(90, 26, 155, 0.15);
+        }
+        .admin-badge i {
+            font-size: 0.75rem;
+            color: white !important;
+        }
+        .sidebar { 
+            border-top: 4px solid #0052D4 !important; 
+            background-color: #ffffff !important; 
+        }
+        
+        /* Botão "Voltar para o App" destacado */
+        .btn-back-app {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white !important;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 14 rgba(220, 38, 38, 0.25);
+            transition: all 0.2s ease;
+        }
+        .btn-back-app:hover {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+        }
+        .btn-back-app i { color: white !important; font-size: 1rem; }
+        
+        /* Botão Sair / Logout — vermelho já no estado normal (não só no
+           hover), igual ao app principal (base_dash.html), pra dar
+           destaque visual de que "Sair" é uma ação diferente do resto do
+           menu. */
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: #dc2626;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            background: rgba(220,38,38,0.08);
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .btn-logout:hover {
+            background-color: #b91c1c !important;
+            color: #fff !important;
+            transform: translateY(-1px);
+        }
+        .btn-logout:hover i { color: #fff !important; }
+
+        /* ============================================================
+           RESPONSIVIDADE — PAINEL MASTER
+           A sidebar em si (off-canvas/hambúrguer) já usa o mesmo padrão
+           compartilhado do dashboard principal (.sidebar, .mobile-topbar,
+           .sidebar-overlay, toggleSidebar()) definido em style_dashboard.css.
+           Aqui só ajustamos os elementos específicos do admin (badge master,
+           botão "voltar para o app") para telas de tablet/celular.
+           ============================================================ */
+        
+
+        
+
+        @media (max-width: 480px) and (orientation: portrait) {
+            .admin-badge { font-size: 0.62rem; padding: 3px 9px; }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% if user and user.theme == 'dark' %}theme-dark{% elif user and user.theme == 'auto' %}theme-auto{% endif %}">
+    <script>
+        // Preferências do usuário (moeda/idioma) expostas globalmente pro
+        // JS de cada página formatar valores sem precisar hardcodar BRL/pt-br.
+        window.NOMDO_CURRENCY = {{ (current_currency or 'BRL')|tojson }};
+        window.NOMDO_LANG = {{ (current_lang or 'pt-br')|tojson }};
+
+        // Mantém o layout mobile (sidebar off-canvas) mesmo quando o
+        // navegador do celular está em "Ver site para computador" — nesse
+        // modo o viewport reportado engana (fica largo), mas o tamanho
+        // físico real da tela (screen.width/height) não muda, então usamos
+        // ele pra decidir se o dispositivo é um celular de verdade.
+        (function () {
+            try {
+                var ladoMenor = Math.min(window.screen.width, window.screen.height);
+                if (ladoMenor > 0 && ladoMenor <= 600) {
+                    document.body.classList.add('force-mobile-nav');
+                }
+            } catch (e) {}
+        })();
+
+        // Altura real da tela pro menu mobile (ver mesmo fix em base_dash.html).
+        (function () {
+            function atualizarAlturaReal() {
+                document.documentElement.style.setProperty('--vh-real', (window.innerHeight * 0.01) + 'px');
+            }
+            atualizarAlturaReal();
+            window.addEventListener('resize', atualizarAlturaReal);
+            window.addEventListener('orientationchange', atualizarAlturaReal);
+        })();
+    </script>
+    <div class="mobile-topbar">
+        <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="{{ t('Abrir menu') }}">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <a href="{{ url_for('admin.dashboard') }}">
+            <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
+            <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
+        </a>
+        <span style="width:32px;"></span>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <a href="{{ url_for('admin.dashboard') }}">
+                        <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
+                        <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
+                    </a>
+                    <div class="admin-badge">
+                        <i class="fa-solid fa-crown"></i>
+                        <span>{{ t('Master') }}</span>
+                    </div>
+
+                    <button type="button" class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="{{ t('Fechar menu') }}" title="{{ t('Fechar menu') }}">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </button>
+                </div>
+
+                <ul class="nav-links">
+                    <li>
+                        <a href="{{ url_for('reservas.dashboard') }}" class="btn-back-app">
+                            <i class="fa-solid fa-circle-arrow-left"></i>
+                            <span>{{ t('Voltar para o App') }}</span>
+                        </a>
+                    </li>
+
+                    <li class="{% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('admin.dashboard') }}">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>{{ t('Dashboard') }}</span>
+                        </a>
+                    </li>
+                    <li class="{% if request.endpoint == 'admin.usuarios' %}active{% endif %}">
+                        <a href="{{ url_for('admin.usuarios') }}">
+                            <i class="fa-solid fa-users-gear"></i>
+                            <span>{{ t('Usuários') }}</span>
+                        </a>
+                    </li>
+                    <li class="{% if request.endpoint == 'admin.imoveis' %}active{% endif %}">
+                        <a href="{{ url_for('admin.imoveis') }}">
+                            <i class="fa-solid fa-building"></i>
+                            <span>{{ t('Imóveis') }}</span>
+                        </a>
+                    </li>
+                    <li class="{% if request.endpoint == 'admin.financeiro' %}active{% endif %}">
+                        <a href="{{ url_for('admin.financeiro') }}">
+                            <i class="fa-solid fa-wallet"></i>
+                            <span>{{ t('Financeiro') }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('usuario.usuario') }}" class="user-info {% if request.endpoint == 'usuario.usuario' %}active-page{% endif %}">
+                    <div class="user-avatar-container">
+                        <div class="user-avatar dynamic-color" data-name="{{ nome_usuario }}">
+                            {% if user and user.foto %}
+                                <img src="{{ url_for('static', filename=user.foto) }}" alt="Foto do usuário">
+                            {% else %}
+                                {{ nome_usuario[0] if nome_usuario else '?' }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="user-details">
+                        <span class="user-name">{{ nome_usuario }}</span>
+                        <span class="user-category">{{ t('Admin Master') }}</span>
+                    </div>
+                </a>
+
+                <button type="button" class="btn-support" onclick="abrirSuporte()">
+                    <span>{{ t('Suporte') }}</span>
+                    <i class="fa-solid fa-headset"></i>
+                </button>
+
+                <button type="button" class="btn-logout" onclick="confirmarSaidaAdmin()">
+                    <span>{{ t('Sair') }}</span>
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </nav>
+
+        <main class="content">
+            <header class="content-header">
+                <h1>{% block titulo %}{{ t('Admin') }}{% endblock %}</h1>
+            </header>
+            {% block conteudo %}{% endblock %}
+        </main>
+    </div>
+
+    <footer class="footer">
+        <br>
+        <p><span class="footer-line1">© 2026 Pietra Enterprise Ltda.</span> <span class="footer-line2">{{ t('Todos os direitos reservados.') }}</span></p>
+        <br>
+    </footer>
+
+    <script>
+        function stringToColor(str) {
+            if (!str) return "#ccc";
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return `hsl(${Math.abs(hash) % 360}, 65%, 60%)`;
+        }
+
+        function aplicarCores() {
+            document.querySelectorAll('.dynamic-color').forEach(el => {
+                const name = el.getAttribute('data-name');
+                const temImagem = el.querySelector('img');
+
+                if (!temImagem) {
+                    el.style.backgroundColor = stringToColor(name);
+                } else {
+                    el.style.backgroundColor = 'transparent';
+                }
+            });
+        }
+
+        window.addEventListener('load', aplicarCores);
+
+        // Menu mobile (sidebar off-canvas) — position:fixed no scroll atual
+        // enquanto o menu está aberto, senão o scroll de baixo "vaza" no
+        // iOS Safari em páginas mais altas que a tela (ver mesmo fix em
+        // base_dash.html).
+        let _scrollYAntesDoMenu = 0;
+
+        function abrirMenuMobile() {
+            _scrollYAntesDoMenu = window.scrollY || window.pageYOffset || 0;
+            document.body.style.top = `-${_scrollYAntesDoMenu}px`;
+            document.body.classList.add('sidebar-open');
+        }
+
+        function fecharMenuMobile() {
+            document.body.classList.remove('sidebar-open');
+            document.body.style.top = '';
+            window.scrollTo(0, _scrollYAntesDoMenu);
+        }
+
+        function toggleSidebar() {
+            if (document.body.classList.contains('sidebar-open')) {
+                fecharMenuMobile();
+            } else {
+                abrirMenuMobile();
+            }
+        }
+
+        document.querySelectorAll('.sidebar .nav-links a, .sidebar-footer a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                fecharMenuMobile();
+            });
+        });
+
+        (function applyAutoTheme() {
+            const body = document.body;
+            if (!body.classList.contains("theme-auto")) return;
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            if (prefersDark) body.classList.add("theme-dark");
+        })();
+
+        function abrirSuporte() {
+            if (typeof Swal === 'undefined') {
+                console.error("SweetAlert2 não foi carregado corretamente.");
+                alert("{{ t('Erro ao abrir suporte. Verifique sua conexão.') }}");
+                return;
+            }
+
+            Swal.fire({
+                title: '{{ t("Central de Suporte") }}',
+                html: `
+                <p>{{ t("Escolha uma das opções abaixo:") }}</p>
+                    <div style="display:flex; flex-direction:column; gap:14px; margin-top:20px;">
+                        <a href="https://wa.me/551152428905" target="_blank"
+                           style="text-decoration:none; background:#25d366; color:white; padding:16px; border-radius:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </a>
+
+                        <a href="mailto:suporte@staykey.com"
+                           style="text-decoration:none; background:#0052D4; color:white; padding:16px; border-radius:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px;">
+                            <i class="fa-solid fa-envelope"></i> {{ t('Enviar E-mail') }}
+                        </a>
+
+                        <a href="{{ url_for('suporte.chamado') }}"
+                           style="text-decoration:none; background:rgba(0,82,212,0.08); color:#0052D4; padding:16px; border-radius:14px; font-weight:600; border:2px solid rgba(0,82,212,0.08); display:flex; align-items:center; justify-content:center; gap:10px;">
+                            <i class="fa-solid fa-ticket"></i> {{ t('Abrir Chamado') }}
+                        </a>
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true,
+            });
+        }
+
+        function confirmarSaidaAdmin() {
+            Swal.fire({
+                title: '{{ t("Deseja realmente sair?") }}',
+                text: '{{ t("Sua sessão atual no Painel Master será encerrada.") }}',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0052D4',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ t("Sim, sair") }}',
+                cancelButtonText: '{{ t("Cancelar") }}',
+                reverseButtons: true,
+                borderRadius: 20
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "{{ url_for('auth.logout') }}";
+                }
+            });
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

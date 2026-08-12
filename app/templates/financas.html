@@ -1,0 +1,2149 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Finanças Profissional') }}{% endblock %}
+
+{% block titulo %}{{ t('Gestão Financeira') }}{% endblock %}
+
+{% block tour_page %}financas{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #0052D4;
+        --primary-hover: #4364F7;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --warning: #f59e0b;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --bg-soft: #f8fafc;
+    }
+
+    .finance-container {
+        padding: 20px;
+    }
+
+    /* Header */
+    .finance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        background: white;
+        padding: 24px;
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.04);
+    }
+
+    /* DASHBOARD */
+    .dash-card::before{
+        content:'';
+        position:absolute;
+        right:-30px;
+        top:-30px;
+        width:120px;
+        height:120px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.06);
+    }
+
+    .dash-card{
+        position:relative;
+        overflow:hidden;
+        background:white;
+        border-radius:24px;
+        padding:24px;
+        border:1px solid var(--border-color);
+        box-shadow:0 10px 35px rgba(0,0,0,0.04);
+        display:flex;
+        align-items:center;
+        gap:18px;
+        transition:.25s;
+    }
+
+    .dash-card:hover{
+        transform:translateY(-4px);
+        box-shadow:0 20px 40px rgba(0,0,0,0.08);
+    }
+
+    .dash-card small{
+        color:var(--text-muted);
+        font-weight:700;
+        text-transform:uppercase;
+        font-size:11px;
+        letter-spacing:1px;
+    }
+
+    .dash-card h2{
+        margin-top:8px;
+        font-size:30px;
+        font-weight:900;
+        color:var(--text-main);
+        letter-spacing:-1px;
+    }
+
+    .dash-icon{
+        width:65px;
+        height:65px;
+        border-radius:20px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-size:24px;
+        flex-shrink:0;
+    }
+
+    .bg-green{ background:linear-gradient(120deg,#16a34a,#22c55e); }
+    .bg-blue{ background:linear-gradient(135deg,#0284c7,#0ea5e9); }
+    .bg-red{ background:linear-gradient(135deg,#dc2626,#ef4444); }
+    .bg-purple{ background:linear-gradient(135deg,#9333ea,#a855f7); }
+    .bg-orange{ background:linear-gradient(140deg,#f59e0b,#fb923c); }
+    .bg-dark{ background:linear-gradient(135deg,#0f172a,#1e293b); }
+
+    /* Filtros */
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 20px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .filter-group label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    /* O ícone é posicionado relativo a este wrapper (só o input/select),
+       não ao .filter-group inteiro — assim ele fica sempre centralizado
+       verticalmente no campo, independente da altura do label acima. */
+    .filter-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        padding: 12px 15px 12px 40px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        font-size: 13px;
+        min-width: 400px;
+        outline: none;
+        width: 100%;
+    }
+
+    .filter-group select {
+        min-width: 220px;
+    }
+
+    .filter-input-wrapper i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    /* Tabela */
+    .table-responsive {
+        background: white;
+        border-radius: 24px;
+        padding: 15px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.04);
+        overflow-x: auto;
+    }
+
+    .finance-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .finance-table th {
+        background: #f8fafc;
+        padding: 18px 15px;
+        text-align: left;
+        color: #475569;
+        font-weight: 700;
+        border-bottom: 2px solid rgba(0,82,212,0.08);
+    }
+
+    .finance-table td {
+        padding: 18px 15px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--text-main);
+    }
+
+    .finance-table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .finance-table tbody tr:hover {
+        background: rgba(0,82,212,0.08);
+    }
+
+    .finance-table td button {
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .finance-table td button:hover {
+        transform: scale(1.25);
+        opacity: 0.8;
+        cursor:pointer;
+    }
+
+    .cell-lucro-pos {
+        background-color: rgba(111,177,252,0.08) !important;
+        color: #6FB1FC !important;
+        font-weight: 900;
+        border-radius: 12px;
+    }
+
+    .cell-lucro-neg {
+        background-color: rgba(0,82,212,0.08) !important;
+        color: #0052D4 !important;
+        font-weight: 900;
+        border-radius: 12px;
+    }
+
+    .text-taxa-app {
+        color: var(--warning) !important;
+        font-weight: 700;
+    }
+
+    .text-despesa {
+        color: var(--danger) !important;
+        font-weight: 700;
+    }
+
+    /* Badge */
+    .status-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:8px 14px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:700;
+        background:rgba(0,82,212,0.08);
+        color:#0052D4;
+    }
+
+    /* Origem do lançamento (estadia x manual) */
+    .origem-tag{
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        font-size:10px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+        padding:2px 8px;
+        border-radius:999px;
+        margin-bottom:4px;
+    }
+
+    .origem-estadia{
+        background:rgba(0,82,212,0.08);
+        color:#0052D4;
+    }
+
+    .origem-manual{
+        background:#f1f5f9;
+        color:#475569;
+    }
+
+    .origem-despesa{
+        background:rgba(0,82,212,0.08);
+        color:#0052D4;
+    }
+
+    .badge-readonly-link{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:8px 12px;
+        border-radius:10px;
+        background:rgba(0,82,212,0.08);
+        color:#0052D4;
+        font-size:12px;
+        font-weight:700;
+        text-decoration:none;
+        transition:.2s;
+    }
+
+    .badge-readonly-link:hover{
+        background:rgba(0,82,212,0.08);
+        transform:translateY(-1px);
+    }
+
+    /* Modal */
+    .modal-finance {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-content {
+        background: white;
+        width: 100%;
+        max-width: 720px;
+        border-radius: 32px;
+        padding: 40px;
+        position: relative;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        animation: modalShow .25s ease;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 22px;
+        color: #64748b;
+        transition: 0.3s;
+    }
+
+    .modal-close:hover {
+        background: var(--danger);
+        color: white;
+        transform: rotate(90deg)
+    }
+
+    /* Modal "Detalhes da Estadia" (somente leitura) */
+    .ve-linha {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .ve-linha small {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--text-muted);
+    }
+    .ve-linha strong {
+        font-size: 14.5px;
+        color: var(--text-main);
+    }
+    .ve-linha strong.status-badge {
+        font-size: 12px;
+        width: fit-content;
+    }
+    .ve-ic { font-size: 11px; margin-right: 2px; }
+    .ve-ic-blue   { color: #0284c7; }
+    .ve-ic-purple { color: #9333ea; }
+    .ve-ic-orange { color: #f59e0b; }
+    .ve-ic-green  { color: #16a34a; }
+    .ve-ic-pink   { color: #e11d48; }
+    .ve-ic-gray   { color: #94a3b8; }
+    body.theme-dark .ve-ic-blue   { color: #38bdf8; }
+    body.theme-dark .ve-ic-purple { color: #c084fc; }
+    body.theme-dark .ve-ic-orange { color: #fb923c; }
+    body.theme-dark .ve-ic-green  { color: #4ade80; }
+    body.theme-dark .ve-ic-pink   { color: #fb7185; }
+    body.theme-dark .ve-ic-gray   { color: #94a3b8; }
+    .ve-divisor {
+        border-top: 1px dashed var(--border-color);
+        margin: 2px 0;
+    }
+    #ve_despesas_lista li {
+        font-size: 13px;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+    .is-hidden {
+        display: none !important;
+    }
+
+    /* Inputs */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .form-group.full {
+        grid-column: span 2;
+    }
+
+    .form-group label {
+        font-weight: 700;
+        font-size: 12px;
+        color: #475569;
+        text-transform: uppercase;
+    }
+
+    input, select {
+        padding: 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        font-size: 14px;
+        background: var(--bg-soft);
+        transition: 0.2s;
+        outline: none;
+    }
+
+    input:focus, select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(90, 26, 155, 0.1);
+        background: white;
+    }
+
+    /* Sinal do valor (Receita/Despesa) fora do campo, como um select
+       colorido — verde quando positivo, vermelho quando negativo. */
+    .valor-sinal-wrapper {
+        display: flex;
+        gap: 8px;
+    }
+
+    .valor-sinal-wrapper .sinal-select {
+        flex: 0 0 62px;
+        padding: 14px 4px;
+        font-weight: 800;
+        font-size: 22px;
+        line-height: 1;
+        text-align: center;
+        text-align-last: center;
+        text-indent: 6px;
+        cursor: pointer;
+    }
+
+    .valor-sinal-wrapper input {
+        flex: 1;
+        min-width: 0;
+        font-weight: 700;
+    }
+
+    .sinal-select.sinal-positivo {
+        border-color: var(--success);
+        color: var(--success);
+        background: rgba(22,163,74,0.08);
+    }
+
+    .sinal-select.sinal-negativo {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: rgba(220,38,38,0.08);
+    }
+
+    .valor-sinal-wrapper input.sinal-positivo {
+        border-color: var(--success);
+        color: var(--success);
+    }
+
+    .valor-sinal-wrapper input.sinal-negativo {
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    .btn-add-expense-row {
+        width: 100%;
+        padding: 16px;
+        border-radius: 18px;
+        border: 2px dashed #d1d5db;
+        background: #f9fafb;
+        color: #4b5563;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-add-expense-row:hover {
+        background: #f3f4f6;
+        color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .expense-row {
+        display: grid;
+        grid-template-columns: 1fr 140px 45px;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .summary-box {
+        padding: 25px;
+        border-radius: 24px;
+        margin-top: 25px;
+        border: 2px solid var(--border-color);
+        background: #fff;
+        transition: 0.3s;
+    }
+
+    .summary-positive {
+        background-color: rgba(111,177,252,0.08) !important;
+        border-color: rgba(111,177,252,0.12) !important;
+    }
+
+    .summary-negative {
+        background-color: rgba(0,82,212,0.08) !important;
+        border-color: rgba(0,82,212,0.12) !important;
+    }
+
+    /* Botões */
+    .btn-custom {
+        padding: 14px 24px;
+        border-radius: 16px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-add-main {
+        background: var(--primary);
+        color: white;
+        justify-content: center;
+    }
+
+    .btn-add-main:hover {
+        transform: translateY(-2px);
+        background: var(--primary-hover);
+        color: white;
+    }
+
+    .btn-excel {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: white;
+    }
+    .btn-excel:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #15803d, #16a34a);
+        color: white;
+    }
+
+    .btn-remove-row {
+        background: rgba(252,111,111,0.18);
+        color: #c0392b;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-remove-row:hover { background: #fc6f6f; color: #ffffff; }
+
+    @keyframes modalShow {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    .dashboard-grid{
+        display:grid;
+        grid-template-columns:repeat(3, 1fr);
+        gap:18px;
+        margin-bottom:25px;
+    }
+
+    
+
+    
+    .swal-top-zindex {
+    z-index: 999999 !important;
+}
+.swal-top-zindex {
+    z-index: 999999 !important;
+}
+.swal2-backdrop-show {
+    z-index: 99999999 !important;
+}
+
+.swal2-popup {
+    z-index: 999999999 !important;
+}
+
+/* ============================================================
+   RESPONSIVIDADE — CELULAR EM RETRATO
+   ============================================================ */
+@media (max-width: 600px) and (orientation: portrait) {
+
+    .finance-container {
+        padding: 12px;
+    }
+
+    .finance-header {
+        flex-wrap: wrap;
+        padding: 18px;
+        gap: 14px;
+    }
+
+    .finance-header > div[style*="flex"] {
+        width: 100%;
+    }
+
+    /* Botões de ação do cabeçalho: viram quadradinhos só com ícone,
+       sem o texto, pra caber lado a lado sem estourar a tela. */
+    .finance-header .btn-custom {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 12px;
+    }
+
+    .finance-header .btn-custom .btn-label {
+        display: none;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .dash-card {
+        padding: 14px;
+        gap: 10px;
+        border-radius: 16px;
+    }
+
+    .dash-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        font-size: 18px;
+    }
+
+    .dash-card small {
+        font-size: 9.5px;
+    }
+
+    .dash-card h2 {
+        margin-top: 4px;
+        font-size: 19px;
+    }
+
+    .filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .filter-group select {
+        min-width: 0;
+    }
+
+    .modal-content {
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .expense-row {
+        grid-template-columns: 1fr 90px 36px;
+        gap: 8px;
+    }
+
+    /* Tabela responsiva "em cartões": cada linha vira um cartãozinho,
+       com o rótulo da coluna aparecendo antes do valor (via data-label
+       nos <td>, gerados em renderizarTabela()). */
+    .table-responsive {
+        padding: 8px;
+        overflow-x: visible;
+    }
+
+    .finance-table thead {
+        display: none;
+    }
+
+    .finance-table,
+    .finance-table tbody,
+    .finance-table tr,
+    .finance-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .finance-table tr {
+        margin-bottom: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 6px 12px;
+    }
+
+    .finance-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .finance-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #eef1f5;
+        text-align: right;
+    }
+
+    .finance-table td:last-child {
+        border-bottom: none;
+    }
+
+    .finance-table td::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        color: var(--text-muted);
+        text-align: left;
+        flex-shrink: 0;
+    }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --text-main: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.72);
+    --border-color: rgba(255,255,255,0.12);
+    --bg-soft: rgba(255,255,255,0.06);
+}
+
+/* .finance-container tem um fundo branco herdado de uma regra global e
+   antiga em style_dashboard.css (.finance-container{background:#fff...}),
+   de antes dessa página ter o próprio CSS aqui — isso nunca tinha sido
+   coberto no escuro, sobrava um retângulo branco por trás de tudo. */
+body.theme-dark .finance-container {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Cards e superfícies próprias da página (não cobertas pelo theme_dark.css genérico).
+   Antes usava o azul chapado (#0052D4) — muito saturado/destoante contra
+   o fundo cinza/preto do tema. Agora usa a mesma superfície neutra
+   (--dm-surface) do resto do app. */
+body.theme-dark .dash-card,
+body.theme-dark .filter-section,
+body.theme-dark .table-responsive,
+body.theme-dark .summary-box {
+    background: var(--dm-surface, #1e1f24) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    box-shadow: none !important;
+}
+
+/* Hero "Fluxo de Caixa": mesmo gradiente azul-escuro fechado usado no
+   herói do dashboard, em vez da superfície cinza neutra dos outros cards. */
+body.theme-dark .finance-header {
+    background: linear-gradient(135deg, #0a2a63, #1d3a8f) !important;
+    border-color: rgba(255,255,255,0.14) !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,.4) !important;
+}
+
+body.theme-dark .finance-header small {
+    color: rgba(255,255,255,0.75) !important;
+}
+
+/* Bolinhas decorativas no canto dos cards de KPI — ficavam esquisitas
+   sobre a nova superfície escura, tira no modo escuro. */
+body.theme-dark .dash-card::before {
+    display: none !important;
+}
+
+/* Ícones dos cards de resumo: tons mais fechados das mesmas cores, pra
+   combinar melhor com o fundo em cinza/preto (mesma lógica aplicada no
+   dashboard e nos imóveis). */
+body.theme-dark .bg-blue{ background:linear-gradient(135deg,#075985,#0369a1) !important; }
+body.theme-dark .bg-red{ background:linear-gradient(135deg,#991b1b,#b91c1c) !important; }
+body.theme-dark .bg-green{ background:linear-gradient(120deg,#15803d,#16a34a) !important; }
+body.theme-dark .bg-purple{ background:linear-gradient(135deg,#6b21a8,#7e22ce) !important; }
+body.theme-dark .bg-orange{ background:linear-gradient(140deg,#b45309,#d97706) !important; }
+
+/* Botões do cabeçalho: mesma ideia dos botões da página de Imóveis —
+   gradiente mais fechado no lugar do azul/verde vivos do modo claro. */
+body.theme-dark .btn-add-main {
+    background: linear-gradient(135deg, #2456ad, #4972df) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35) !important;
+}
+body.theme-dark .btn-add-main:hover {
+    background: linear-gradient(135deg, #2b62c4, #5c84ec) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.45) !important;
+}
+body.theme-dark .btn-excel {
+    background: linear-gradient(135deg, #15803d, #16a34a) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35) !important;
+}
+body.theme-dark .btn-excel:hover {
+    background: linear-gradient(135deg, #166534, #15803d) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.45) !important;
+}
+
+body.theme-dark .modal-close {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.72) !important;
+}
+
+/* O select/input do sinal (+/-) no modal de Novo Lançamento perdiam o
+   verde/vermelho porque a regra genérica de input/select do tema escuro
+   (theme_dark.css) força tudo pra branco com !important — precisa de
+   mais especificidade + !important aqui pra recuperar a cor de receita
+   (verde) e despesa (vermelho). */
+body.theme-dark .sinal-select.sinal-positivo,
+body.theme-dark .valor-sinal-wrapper input.sinal-positivo {
+    color: var(--success) !important;
+    border-color: var(--success) !important;
+    background: rgba(22,163,74,0.14) !important;
+}
+
+body.theme-dark .sinal-select.sinal-negativo,
+body.theme-dark .valor-sinal-wrapper input.sinal-negativo {
+    color: var(--danger) !important;
+    border-color: var(--danger) !important;
+    background: rgba(220,38,38,0.14) !important;
+}
+
+body.theme-dark .finance-table th {
+    color: rgba(255,255,255,0.75) !important;
+}
+
+body.theme-dark .finance-table tbody tr:hover {
+    background: rgba(255,255,255,0.06) !important;
+}
+
+body.theme-dark .form-group label {
+    color: rgba(255,255,255,0.75) !important;
+}
+
+/* Fundos quase-brancos que precisam de leve escurecimento */
+body.theme-dark .origem-manual,
+body.theme-dark .btn-add-expense-row {
+    background: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,0.75) !important;
+    border-color: rgba(255,255,255,0.18) !important;
+}
+
+body.theme-dark .btn-add-expense-row:hover {
+    background: rgba(255,255,255,0.16) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+
+/* Tags/textos em azul-marca (#0052D4) que colidem com o próprio fundo escuro */
+body.theme-dark .cell-lucro-neg,
+body.theme-dark .status-badge,
+body.theme-dark .origem-estadia,
+body.theme-dark .origem-despesa {
+    background: rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+
+/* Botão "Imóveis" (linha de estadia): pedido pra ficar com mais destaque
+   no escuro — em vez do "pill" discreto e translúcido, vira um botão
+   sólido com o mesmo gradiente azul usado nos outros CTAs do app. */
+body.theme-dark .badge-readonly-link {
+    background: linear-gradient(135deg, #2456ad, #4972df) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35) !important;
+}
+body.theme-dark .badge-readonly-link:hover {
+    background: linear-gradient(135deg, #2b62c4, #5c84ec) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,.45) !important;
+}
+
+/* Títulos inline em var(--primary) que colidem com o fundo azul do dark mode */
+body.theme-dark .finance-header h2,
+body.theme-dark #modalTitle {
+    color: #fff !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<section class="finance-container">
+
+    <div class="finance-header">
+        <div>
+            <h2 style="margin:0; color: var(--primary); font-weight: 800;">
+                {{ t('Fluxo de Caixa') }}
+            </h2>
+            <br>
+            <small style="color: var(--text-muted);">
+                {{ t('Rentabilidade detalhada de lançamentos') }}
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn-custom btn-excel" onclick="exportarExcel()" title="{{ t('Exportar') }}">
+                <i class="fa-solid fa-file-excel"></i>
+                <span class="btn-label">{{ t('Exportar') }}</span>
+            </button>
+
+            <button class="btn-custom btn-add-main" onclick="abrirNovo()" title="{{ t('Novo Lançamento') }}">
+                <i class="fa-solid fa-plus"></i>
+                <span class="btn-label">{{ t('Novo Lançamento') }}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="dash-card">
+            <div class="dash-icon bg-blue">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Lucro Líquido') }}</small>
+                <h2 id="cardLiquido">{{ currency_symbol }} 0,00</h2>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-icon bg-red">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Total Taxas + Despesas') }}</small>
+                <h2 id="cardDespesas">{{ currency_symbol }} 0,00</h2>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-icon bg-green">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Faturamento Bruto') }}</small>
+                <h2 id="cardBruto">{{ currency_symbol }} 0,00</h2>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-icon bg-purple">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Margem de Lucro') }}</small>
+                <h2 id="cardMargem">0%</h2>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-icon bg-orange">
+                <i class="fa-solid fa-house"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Registros') }}</small>
+                <h2 id="cardReservas">0</h2>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-icon bg-dark">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+
+            <div>
+                <small>{{ t('Melhor Site') }}</small>
+                <h2 id="cardMelhorSite">-</h2>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="filter-section">
+
+        <div class="filter-group">
+            <label>{{ t('Pesquisar Imóvel') }}</label>
+            <div class="filter-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="text"
+                    id="filtroBusca"
+                    placeholder="{{ t('Buscar por nome...') }}"
+                    onkeyup="renderizarTabela()"
+                >
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>{{ t('Filtrar Imóvel') }}</label>
+            <div class="filter-input-wrapper">
+                <i class="fa-solid fa-house"></i>
+
+                <select id="filtroImovel" onchange="renderizarTabela()">
+                    <option value="">{{ t('Todos os imóveis') }}</option>
+
+                    {% for imovel in imoveis %}
+                        {% if imovel.titulo %}
+                            <option value="{{ imovel.titulo }}">{{ imovel.titulo }}</option>
+                        {% elif imovel.nome %}
+                            <option value="{{ imovel.nome }}">{{ imovel.nome }}</option>
+                        {% else %}
+                            <option value="{{ imovel.id }}">{{ t('Imóvel ID %(id)s', id=imovel.id) }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>{{ t('Site/Provedor') }}</label>
+            <div class="filter-input-wrapper">
+                <i class="fa-solid fa-globe"></i>
+
+                <select id="filtroProvedor" onchange="renderizarTabela()">
+                    <option value="">{{ t('Todos os sites') }}</option>
+                    <option value="Airbnb">Airbnb</option>
+                    <option value="Booking">Booking.com</option>
+                    <option value="Vrbo">Vrbo</option>
+                    <option value="Direto">{{ t('Direto (WhatsApp / Indicação)') }}</option>
+                    <option value="Direct">{{ t('Direto com Proprietário (legado)') }}</option>
+                    <option value="Outro">{{ t('Outro') }}</option>
+                </select>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="table-responsive">
+        <table class="finance-table">
+
+            <thead>
+                <tr>
+                    <th>{{ t('Imóvel') }}</th>
+                    <th>{{ t('Descrição / Canal') }}</th>
+                    <th>{{ t('Valor Bruto') }}</th>
+                    <th>{{ t('Taxas App') }}</th>
+                    <th>{{ t('Despesas') }}</th>
+                    <th>{{ t('Lucro Líquido') }}</th>
+                    <th style="text-align:center;">{{ t('Ações') }}</th>
+                </tr>
+            </thead>
+
+            <tbody id="financeTableBody"></tbody>
+
+        </table>
+    </div>
+
+    <div class="modal-finance" id="modalFinance">
+
+        <div class="modal-content" style="max-width:520px;">
+
+            <button class="modal-close" onclick="toggleModal(false)">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h2 id="modalTitle" style="margin:0; color:var(--primary); font-size:28px; font-weight:900;">
+                {{ t('Novo Lançamento') }}
+            </h2>
+
+            <form id="formFinanceiro" style="margin-top:30px;" onsubmit="salvarRegistro(event)">
+
+                <input type="hidden" id="f_id">
+                <input type="hidden" id="f_tipo_original" value="manual">
+
+                <div class="form-grid">
+
+                    <div class="form-group full">
+                        <label>{{ t('Imóvel *') }}</label>
+
+                        <select id="f_imovel" required>
+                            <option value="">{{ t('Selecione o imóvel...') }}</option>
+
+                            {% for imovel in imoveis %}
+                                {% if imovel.titulo %}
+                                    <option value="{{ imovel.titulo }}">{{ imovel.titulo }}</option>
+                                {% elif imovel.nome %}
+                                    <option value="{{ imovel.nome }}">{{ imovel.nome }}</option>
+                                {% else %}
+                                    <option value="{{ imovel.id }}">{{ t('Imóvel ID %(id)s', id=imovel.id) }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('Valor (%(simbolo)s) *', simbolo=currency_symbol) }}</label>
+
+                        <div class="valor-sinal-wrapper">
+                            <select
+                                id="f_sinal"
+                                class="sinal-select sinal-positivo"
+                                onchange="atualizarPreviaValor();"
+                            >
+                                <option value="1">+</option>
+                                <option value="-1">−</option>
+                            </select>
+
+                            <input
+                                type="text"
+                                id="f_valor"
+                                placeholder="R$ 0,00"
+                                oninput="_aplicarMascaraMoedaSemSinal(this); atualizarPreviaValor();"
+                            >
+                        </div>
+
+                        <small id="previaValor" style="display:block; width:100%; max-width:100%; margin-top:6px; font-weight:700; white-space:nowrap; overflow-x:auto;"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('Data') }}</label>
+
+                        <input type="date" id="f_data">
+                    </div>
+
+                    <div class="form-group full">
+                        <label>{{ t('Descrição') }}</label>
+
+                        <input
+                            type="text"
+                            id="f_descricao"
+                            placeholder="{{ t('Ex: Conta de água, Gorjeta do hóspede...') }}"
+                        >
+                    </div>
+
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:30px;">
+
+                    <button
+                        type="button"
+                        class="btn-custom"
+                        onclick="toggleModal(false)"
+                        style="background:#e2e8f0; color:#334155;"
+                    >
+                        {{ t('Cancelar') }}
+                    </button>
+
+                    <button
+                        type="submit"
+                        id="btnSalvarFinanceiro"
+                        class="btn-custom btn-add-main"
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        {{ t('SALVAR LANÇAMENTO') }}
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- ===== MODAL VISUALIZAR ESTADIA (somente leitura) =====
+         Lançamentos de estadia vêm da tela Imóveis e não podem ser
+         editados/excluídos aqui (ver comentário em renderizarTabela) —
+         este modal só existe pra consulta rápida; qualquer alteração
+         precisa ser feita na tela Imóveis, pro botão "Ver em Imóveis"
+         no rodapé. -->
+    <div class="modal-finance" id="modalVisualizarEstadia">
+
+        <div class="modal-content" style="max-width:480px;">
+
+            <button class="modal-close" onclick="fecharModalVisualizarEstadia()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h2 style="margin:0; color: var(--primary); font-weight: 800; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-bed"></i> {{ t('Detalhes da Estadia') }}
+            </h2>
+            <p style="margin:6px 0 0; font-size:13px; color: var(--text-muted);">
+                {{ t('Somente visualização — pra alterar, abra em Imóveis.') }}
+            </p>
+
+            <div class="ve-grid" style="margin-top:24px; display:flex; flex-direction:column; gap:14px;">
+
+                <div class="ve-linha">
+                    <small><i class="fa-solid fa-house ve-ic ve-ic-blue"></i> {{ t('Imóvel') }}</small>
+                    <strong id="ve_imovel"></strong>
+                </div>
+
+                <div class="ve-linha" id="ve_hospede_wrap">
+                    <small><i class="fa-solid fa-user ve-ic ve-ic-purple"></i> {{ t('Hóspede') }}</small>
+                    <strong id="ve_hospede"></strong>
+                </div>
+
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-globe ve-ic ve-ic-orange"></i> {{ t('Canal') }}</small>
+                        <strong id="ve_canal"></strong>
+                    </div>
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-circle-info ve-ic ve-ic-gray"></i> {{ t('Status') }}</small>
+                        <strong id="ve_status" class="status-badge"></strong>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-calendar-check ve-ic ve-ic-green"></i> {{ t('Check-in') }}</small>
+                        <strong id="ve_checkin"></strong>
+                    </div>
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-calendar-xmark ve-ic ve-ic-pink"></i> {{ t('Check-out') }}</small>
+                        <strong id="ve_checkout"></strong>
+                    </div>
+                </div>
+
+                <div class="ve-divisor"></div>
+
+                <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-sack-dollar ve-ic ve-ic-blue"></i> {{ t('Valor Bruto') }}</small>
+                        <strong id="ve_bruto" style="color: var(--primary);"></strong>
+                    </div>
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-percent ve-ic ve-ic-orange"></i> {{ t('Taxas App') }}</small>
+                        <strong id="ve_taxas" style="color: var(--warning);"></strong>
+                    </div>
+                    <div class="ve-linha" style="flex:1; min-width:120px;">
+                        <small><i class="fa-solid fa-sack-dollar ve-ic ve-ic-green"></i> {{ t('Valor Líquido') }}</small>
+                        <strong id="ve_liquido" style="color: var(--success);"></strong>
+                    </div>
+                </div>
+
+                <div id="ve_despesas_wrap" class="is-hidden">
+                    <small><i class="fa-solid fa-list-check ve-ic ve-ic-gray"></i> {{ t('Despesas lançadas na estadia') }}</small>
+                    <ul id="ve_despesas_lista" style="margin:8px 0 0; padding-left:18px;"></ul>
+                </div>
+
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:15px; margin-top:30px;">
+
+                <button
+                    type="button"
+                    class="btn-custom"
+                    onclick="fecharModalVisualizarEstadia()"
+                    style="background:#e2e8f0; color:#334155;"
+                >
+                    {{ t('Fechar') }}
+                </button>
+
+                <a
+                    id="ve_link_imoveis"
+                    href="/imoveis"
+                    class="btn-custom btn-add-main"
+                    style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;"
+                >
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    {{ t('Abrir em Imóveis') }}
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    // Lançamentos manuais, estadias e despesas gerais já vêm todos juntos
+    // do back-end, cada um com um "tipo" pra diferenciar a renderização.
+    let dadosFinanceiros = {{ dados_financeiros|tojson|safe if dados_financeiros is defined else '[]'|safe }};
+    let editandoId = null;
+    let editandoDespesaGeralId = null;
+
+    function _localeParaMoeda(m) {
+        if (m === 'USD') return 'en-US';
+        if (m === 'EUR') return 'de-DE';
+        return 'pt-BR';
+    }
+
+    function _simboloMoedaAtual() {
+        const m = window.NOMDO_CURRENCY || 'BRL';
+        if (m === 'USD') return '$';
+        if (m === 'EUR') return '€';
+        return 'R$';
+    }
+
+    function formatarMoeda(v) {
+        const moeda = window.NOMDO_CURRENCY || 'BRL';
+        return new Intl.NumberFormat(
+            _localeParaMoeda(moeda),
+            {
+                style: 'currency',
+                currency: moeda
+            }
+        ).format(v || 0);
+    }
+
+    function atualizarDashboard() {
+
+        let bruto = 0;
+        let taxas = 0;
+        let despesas = 0;
+        let liquido = 0;
+        let sites = {};
+
+        dadosFinanceiros.forEach(item => {
+
+            // Despesas Gerais (IPTU, condomínio...) já chegam com bruto/liqPlat
+            // zerados e o valor dentro de "despesas" — então o próprio loop
+            // abaixo já desconta elas do balanço, sem precisar de um cálculo
+            // separado nem de uma lista própria.
+            const totalExp = item.despesas
+                ? item.despesas.reduce((a,b) => a + b.valor, 0)
+                : 0;
+
+            const vBruto = item.bruto || 0;
+            const vLiqPlat = item.liqPlat || 0;
+
+            const taxa = vBruto - vLiqPlat;
+            const lucro = vLiqPlat - totalExp;
+
+            bruto += vBruto;
+            taxas += taxa;
+            despesas += totalExp;
+            liquido += lucro;
+
+            if(item.site){
+
+                if(!sites[item.site]){
+                    sites[item.site] = 0;
+                }
+
+                sites[item.site] += lucro;
+            }
+
+        });
+
+        const margem = bruto > 0
+            ? ((liquido / bruto) * 100)
+            : 0;
+
+        let melhorSite = "-";
+        let maior = -Infinity;
+
+        Object.entries(sites).forEach(([site, valor]) => {
+
+            if(valor > maior){
+                maior = valor;
+                melhorSite = site;
+            }
+
+        });
+
+        // "Registros" conta só os lançamentos de receita (manual + estadia) —
+        // despesas gerais não são uma reserva, então não entram nessa contagem.
+        const totalRegistrosReceita = dadosFinanceiros.filter(
+            item => item.tipo !== 'despesa_geral'
+        ).length;
+
+        document.getElementById('cardBruto').innerText = formatarMoeda(bruto);
+        document.getElementById('cardLiquido').innerText = formatarMoeda(liquido);
+        document.getElementById('cardDespesas').innerText = formatarMoeda(taxas + despesas);
+        document.getElementById('cardMargem').innerText = margem.toFixed(1) + "%";
+        document.getElementById('cardReservas').innerText = totalRegistrosReceita;
+        document.getElementById('cardMelhorSite').innerText = melhorSite;
+    }
+
+    function renderizarTabela() {
+
+        const tbody = document.getElementById("financeTableBody");
+
+        const fProvedor = document.getElementById('filtroProvedor').value;
+        const fBusca = document.getElementById('filtroBusca').value.toLowerCase();
+        const fImovel = document.getElementById('filtroImovel').value;
+
+        tbody.innerHTML = "";
+
+        dadosFinanceiros.forEach(item => {
+
+            const totalExp = item.despesas
+                ? item.despesas.reduce((a, b) => a + b.valor, 0)
+                : 0;
+
+            const vBruto = item.bruto || 0;
+            const vLiqPlat = item.liqPlat || 0;
+            const liqFinal = vLiqPlat - totalExp;
+
+            if (
+                (fProvedor && item.site !== fProvedor) ||
+                (fImovel && item.imovel !== fImovel) ||
+                (fBusca && !item.imovel.toLowerCase().includes(fBusca))
+            ) return;
+
+            const tr = document.createElement("tr");
+
+            const tipo = item.tipo || 'manual';
+
+            // Lançamentos manuais e despesas gerais (legadas) abrem o mesmo
+            // modal unificado de edição. Estadia abre um modal separado,
+            // só de visualização — editar continua só na tela Imóveis.
+            if (tipo === 'manual' || tipo === 'despesa_geral') {
+                tr.onclick = () => editarRegistro(item.id, tipo);
+                tr.style.cursor = 'pointer';
+            } else if (tipo === 'estadia') {
+                tr.onclick = () => visualizarEstadia(item.id);
+                tr.style.cursor = 'pointer';
+            } else {
+                tr.style.cursor = 'default';
+            }
+
+            let lucroClass = '';
+
+            if (liqFinal > 0) {
+                lucroClass = 'cell-lucro-pos';
+            } else if (liqFinal < 0) {
+                lucroClass = 'cell-lucro-neg';
+            }
+
+            // Estadias mostram o canal (Airbnb, Booking...). Lançamentos
+            // manuais/despesas mostram a descrição digitada no lugar.
+            const provedorHTML = item.site
+                ? `<span class="status-badge">${item.site}</span>`
+                : item.descricao
+                    ? `<span>${item.descricao}</span>`
+                    : `<span style="color:var(--text-muted);">—</span>`;
+
+            // Lançamentos vindos de uma Estadia (tela Imóveis) são somente
+            // leitura aqui: editar/excluir sempre no lugar de origem, pra não
+            // ter duas fontes de verdade divergindo pro mesmo hóspede/estadia.
+            // Despesas Gerais entram na mesma tabela pra não precisar de uma
+            // seção separada só pra isso.
+            let origemHTML;
+
+            if (tipo === 'estadia') {
+                origemHTML = `<span class="origem-tag origem-estadia"><i class="fa-solid fa-bed"></i> {{ t('Estadia') }}</span><br>`;
+            } else if (tipo === 'despesa_geral') {
+                origemHTML = `<span class="origem-tag origem-despesa"><i class="fa-solid fa-file-invoice-dollar"></i> {{ t('Despesa Geral') }}</span><br>`;
+            } else {
+                origemHTML = `<span class="origem-tag origem-manual"><i class="fa-solid fa-pen-ruler"></i> {{ t('Manual') }}</span><br>`;
+            }
+
+            let acoesHTML;
+
+            if (tipo === 'manual' || tipo === 'despesa_geral') {
+                const onExcluir = tipo === 'despesa_geral'
+                    ? `excluirDespesaGeral(${item.id})`
+                    : `excluir(${item.id}, '${tipo}')`;
+
+                acoesHTML = `
+                    <button
+                        onclick="editarRegistro(${item.id}, '${tipo}')"
+                        style="border:none; background:none; color:#b8860b; font-size:18px; margin-right:10px;"
+                    >
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+
+                    <button
+                        onclick="${onExcluir}"
+                        style="border:none; background:none; color:#c0392b; font-size:18px;"
+                    >
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+            } else {
+                acoesHTML = `
+                    <a href="/imoveis?estadia_id=${item.id}" class="badge-readonly-link" title="{{ t('Abrir esta estadia na tela Imóveis') }}" onclick="event.stopPropagation()">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> {{ t('Imóveis') }}
+                    </a>
+                `;
+            }
+
+            tr.innerHTML = `
+                <td data-label="{{ t('Imóvel') }}">
+                    ${origemHTML}
+                    <strong>${item.imovel}</strong>
+                </td>
+
+                <td data-label="{{ t('Descrição / Canal') }}">
+                    ${provedorHTML}
+                </td>
+
+                <td data-label="{{ t('Valor Bruto') }}" style="font-weight:700">
+                    ${formatarMoeda(vBruto)}
+                </td>
+
+                <td data-label="{{ t('Taxas App') }}" class="text-taxa-app">
+                    -${formatarMoeda(vBruto - vLiqPlat)}
+                </td>
+
+                <td data-label="{{ t('Despesas') }}" class="text-despesa">
+                    -${formatarMoeda(totalExp)}
+                </td>
+
+                <td data-label="{{ t('Lucro Líquido') }}" class="${lucroClass}">
+                    ${formatarMoeda(liqFinal)}
+                </td>
+
+                <td data-label="{{ t('Ações') }}" style="text-align:center;" onclick="event.stopPropagation()">
+                    ${acoesHTML}
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+
+        });
+
+        atualizarDashboard();
+    }
+
+    window.onload = () => {
+        renderizarTabela();
+    };
+
+    function toggleModal(show = true) {
+
+        const modal = document.getElementById('modalFinance');
+
+        if (!modal) return;
+
+        modal.style.display = show ? 'flex' : 'none';
+
+        if (!show) {
+            limparFormulario();
+        }
+
+    }
+
+    // Modal "Detalhes da Estadia" — somente leitura. Estadias vêm da tela
+    // Imóveis e não têm edição/exclusão aqui (ver comentário em
+    // renderizarTabela), então este modal só mostra os dados; o botão
+    // "Abrir em Imóveis" no rodapé é o único caminho pra alterar algo.
+    function visualizarEstadia(id) {
+
+        const item = dadosFinanceiros.find(d => d.tipo === 'estadia' && d.id === id);
+        if (!item) return;
+
+        const totalExp = item.despesas
+            ? item.despesas.reduce((a, b) => a + b.valor, 0)
+            : 0;
+        const vBruto = item.bruto || 0;
+        const vLiqPlat = item.liqPlat || 0;
+        const vTaxas = vBruto - vLiqPlat;
+        const vLiquido = vLiqPlat - totalExp;
+
+        const formatarData = (iso) => {
+            if (!iso) return '—';
+            const [ano, mes, dia] = iso.split('-');
+            return (dia && mes && ano) ? `${dia}/${mes}/${ano}` : iso;
+        };
+
+        document.getElementById('ve_imovel').innerText = item.imovel || '—';
+
+        const hospedeWrap = document.getElementById('ve_hospede_wrap');
+        if (item.hospede) {
+            hospedeWrap.classList.remove('is-hidden');
+            document.getElementById('ve_hospede').innerText = item.hospede;
+        } else {
+            hospedeWrap.classList.add('is-hidden');
+        }
+
+        document.getElementById('ve_canal').innerText = item.site || '—';
+
+        // Cor do status: verde pra confirmada/concluída, âmbar pra
+        // pendente/em andamento, cinza pra qualquer outra coisa (cancelada/
+        // bloqueio nem chegam aqui — a listagem de Finanças já exclui elas).
+        const statusEl = document.getElementById('ve_status');
+        const veStatusLabels = {
+            confirmada:   '{{ t("Confirmada") }}',
+            concluida:    '{{ t("Concluída") }}',
+            pendente:     '{{ t("Pendente") }}',
+            em_andamento: '{{ t("Em Andamento") }}',
+        };
+        statusEl.innerText = veStatusLabels[item.status] || item.status || '—';
+        const statusCores = {
+            confirmada:    { bg: 'rgba(22,163,74,0.14)',  cor: '#16a34a' },
+            concluida:     { bg: 'rgba(22,163,74,0.14)',  cor: '#16a34a' },
+            pendente:      { bg: 'rgba(245,158,11,0.16)', cor: '#f59e0b' },
+            em_andamento:  { bg: 'rgba(245,158,11,0.16)', cor: '#f59e0b' },
+        };
+        const corStatus = statusCores[item.status] || { bg: 'rgba(148,163,184,0.16)', cor: '#94a3b8' };
+        statusEl.style.background = corStatus.bg;
+        statusEl.style.color = corStatus.cor;
+
+        document.getElementById('ve_checkin').innerText = formatarData(item.entrada);
+        document.getElementById('ve_checkout').innerText = formatarData(item.saida);
+        document.getElementById('ve_bruto').innerText = formatarMoeda(vBruto);
+        document.getElementById('ve_taxas').innerText = '-' + formatarMoeda(vTaxas);
+        document.getElementById('ve_liquido').innerText = formatarMoeda(vLiquido);
+
+        // Leva direto pra estadia específica na tela Imóveis (ver
+        // ?estadia_id= tratado em imoveis.html), em vez de abrir a lista
+        // genérica de imóveis e a pessoa ter que procurar de novo.
+        document.getElementById('ve_link_imoveis').href = `/imoveis?estadia_id=${item.id}`;
+
+        const despesasWrap = document.getElementById('ve_despesas_wrap');
+        const despesasLista = document.getElementById('ve_despesas_lista');
+        if (item.despesas && item.despesas.length) {
+            despesasWrap.classList.remove('is-hidden');
+            despesasLista.innerHTML = item.despesas.map(d =>
+                `<li>${d.nome || '{{ t("Despesa") }}'} — ${formatarMoeda(d.valor || 0)}</li>`
+            ).join('');
+        } else {
+            despesasWrap.classList.add('is-hidden');
+        }
+
+        document.getElementById('modalVisualizarEstadia').style.display = 'flex';
+    }
+
+    function fecharModalVisualizarEstadia() {
+        document.getElementById('modalVisualizarEstadia').style.display = 'none';
+    }
+
+    function abrirNovo() {
+
+        editandoId = null;
+
+        document.getElementById('f_tipo_original').value = 'manual';
+        document.getElementById('modalTitle').innerText = '{{ t("Novo Lançamento") }}';
+
+        toggleModal(true);
+
+    }
+
+    function limparFormulario() {
+
+        document.getElementById('formFinanceiro').reset();
+
+        document.getElementById('f_sinal').value = '1';
+        atualizarClasseSinal();
+
+        document.getElementById('previaValor').innerText = '';
+        document.getElementById('previaValor').style.color = '';
+    }
+
+    // O sinal (+/-) agora é escolhido no select ao lado, não mais digitado
+    // dentro do campo — esse campo só guarda o valor absoluto, sempre positivo.
+    function _aplicarMascaraMoedaSemSinal(input) {
+
+        let digitos = input.value.replace(/\D/g, '');
+
+        if (!digitos) {
+            input.value = '';
+            return;
+        }
+
+        let valor = (Number(digitos) / 100).toFixed(2) + '';
+
+        valor = valor.replace('.', ',');
+
+        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+
+        input.value = valor === '0,00' ? '' : (_simboloMoedaAtual() + ' ' + valor);
+    }
+
+    // Pinta o select de sinal e o campo de valor ao lado de verde (receita)
+    // ou vermelho (despesa), de acordo com a opção escolhida.
+    function atualizarClasseSinal() {
+
+        const sinal = document.getElementById('f_sinal');
+        const valorInput = document.getElementById('f_valor');
+        const classeAtiva = sinal.value === '-1' ? 'sinal-negativo' : 'sinal-positivo';
+
+        sinal.classList.remove('sinal-positivo', 'sinal-negativo');
+        sinal.classList.add(classeAtiva);
+
+        valorInput.classList.remove('sinal-positivo', 'sinal-negativo');
+        valorInput.classList.add(classeAtiva);
+    }
+
+    function moedaParaNumero(valor) {
+
+        if (!valor) return 0;
+
+        const negativo = valor.trim().startsWith('-');
+
+        const numero = Number(
+            valor
+                .replace(/[R$€\s.-]/g, '')
+                .replace(',', '.')
+        ) || 0;
+
+        return negativo ? -numero : numero;
+    }
+
+    function valorComSinal() {
+
+        const sinal = Number(document.getElementById('f_sinal').value) || 1;
+        const magnitude = moedaParaNumero(document.getElementById('f_valor').value);
+
+        return sinal * Math.abs(magnitude);
+    }
+
+    function atualizarPreviaValor() {
+
+        atualizarClasseSinal();
+
+        const previa = document.getElementById('previaValor');
+        const valor = valorComSinal();
+
+        if (valor > 0) {
+            previa.innerText = `{{ t("Vai entrar como receita:") }} +${formatarMoeda(valor)}`;
+            previa.style.color = 'var(--success)';
+        } else if (valor < 0) {
+            previa.innerText = `{{ t("Vai entrar como despesa:") }} -${formatarMoeda(Math.abs(valor))}`;
+            previa.style.color = 'var(--danger)';
+        } else {
+            previa.innerText = '';
+            previa.style.color = '';
+        }
+    }
+
+    async function salvarRegistro(event) {
+
+        event.preventDefault();
+
+        const valor = valorComSinal();
+
+        /* TRAVA DE SEGURANÇA CONTRA MOVIMENTAÇÃO NULA */
+        if (valor === 0) {
+
+            Swal.fire({
+                icon: 'warning',
+                title: '{{ t("Movimentação inválida") }}',
+                text: '{{ t("Informe um valor diferente de zero (negativo = despesa, positivo = receita).") }}',
+                borderRadius: 24,
+                customClass: {
+                    popup: 'swal-top-zindex'
+                }
+            });
+
+            return;
+        }
+
+        const payload = {
+            id: editandoId,
+            tipo: document.getElementById('f_tipo_original').value || 'manual',
+            imovel: document.getElementById('f_imovel').value,
+            valor,
+            data: document.getElementById('f_data').value,
+            descricao: document.getElementById('f_descricao').value
+        };
+
+        try {
+
+            const response = await fetch('/api/financas/lancamento/salvar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await response.text();
+
+            let data;
+
+            try {
+
+                data = JSON.parse(text);
+
+            } catch {
+
+                throw new Error(
+                    '{{ t("O servidor retornou HTML ao invés de JSON.") }}'
+                );
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message || '{{ t("Erro ao salvar.") }}'
+                );
+            }
+
+            if (data.substituiu) {
+
+                // Era uma Despesa Geral legada — remove o registro antigo
+                // e entra com o lançamento unificado novo no lugar.
+                dadosFinanceiros = dadosFinanceiros.filter(item =>
+                    !(item.id === data.substituiu.id && item.tipo === data.substituiu.tipo)
+                );
+                dadosFinanceiros.unshift(data.registro);
+
+            } else if (editandoId) {
+
+                // Compara também o "tipo" — ids de lançamentos manuais e de
+                // estadias vêm de tabelas diferentes e podem coincidir.
+                dadosFinanceiros = dadosFinanceiros.map(item =>
+                    (item.id === editandoId && item.tipo === 'manual')
+                        ? data.registro
+                        : item
+                );
+
+            } else {
+
+                dadosFinanceiros.unshift(data.registro);
+
+            }
+
+            renderizarTabela();
+
+            toggleModal(false);
+
+            Swal.fire({
+                icon: 'success',
+                title: '{{ t("Sucesso!") }}',
+                text: '{{ t("Lançamento salvo com sucesso.") }}',
+                timer: 1800,
+                showConfirmButton: false,
+                borderRadius: 24
+            });
+
+        } catch (err) {
+
+            Swal.fire({
+                icon: 'error',
+                title: '{{ t("Erro") }}',
+                text: err.message,
+                borderRadius: 24
+            });
+
+        }
+    }
+
+    function editarRegistro(id, tipo = 'manual') {
+
+        const item = dadosFinanceiros.find(i => i.id === id && (i.tipo || 'manual') === tipo);
+
+        if (!item) return;
+
+        // Lançamentos gerados por uma Estadia só podem ser editados na tela
+        // Imóveis — aqui é somente leitura, pra não ter duas fontes de verdade.
+        if (item.editavel === false || item.tipo === 'estadia') {
+            Swal.fire({
+                icon: 'info',
+                title: '{{ t("Editável em Imóveis") }}',
+                text: '{{ t("Este lançamento vem de uma estadia. Edite os valores na tela Imóveis > Estadias.") }}',
+                confirmButtonColor: '#0052D4'
+            });
+            return;
+        }
+
+        editandoId = id;
+
+        toggleModal(true);
+
+        document.getElementById('modalTitle').innerText = '{{ t("Editar Lançamento") }}';
+        document.getElementById('f_tipo_original').value = tipo;
+
+        document.getElementById('f_imovel').value = item.imovel;
+        document.getElementById('f_data').value = item.entrada || item.data || '';
+
+        // Reconstrói um valor com sinal a partir do formato antigo
+        // (bruto/liqPlat/despesas), independente de ter vindo de um
+        // lançamento manual antigo ou de uma Despesa Geral legada.
+        const totalExp = item.despesas
+            ? item.despesas.reduce((a, b) => a + b.valor, 0)
+            : 0;
+
+        let valor;
+        let descricao = item.descricao || '';
+
+        if (totalExp > 0 && !item.bruto && !item.liqPlat) {
+            valor = -totalExp;
+            if (!descricao) descricao = (item.despesas && item.despesas[0] && item.despesas[0].nome) || '';
+        } else {
+            valor = item.liqPlat || item.bruto || 0;
+        }
+
+        document.getElementById('f_sinal').value = valor < 0 ? '-1' : '1';
+        document.getElementById('f_valor').value = valor
+            ? formatarMoeda(Math.abs(valor))
+            : '';
+
+        document.getElementById('f_descricao').value = descricao;
+
+        atualizarPreviaValor();
+    }
+
+    async function excluir(id, tipo = 'manual') {
+
+        if (tipo === 'estadia') {
+            Swal.fire({
+                icon: 'info',
+                title: '{{ t("Editável em Imóveis") }}',
+                text: '{{ t("Este lançamento vem de uma estadia. Exclua-o na tela Imóveis > Estadias.") }}',
+                confirmButtonColor: '#0052D4'
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: '{{ t("Excluir registro?") }}',
+            text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0052D4',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '{{ t("Sim, excluir") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true,
+            borderRadius: 24
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+
+            const response = await fetch(
+                `/api/financas/excluir/${id}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            const text = await response.text();
+
+            let data;
+
+            try {
+
+                data = JSON.parse(text);
+
+            } catch {
+
+                throw new Error(
+                    '{{ t("O servidor retornou HTML ao invés de JSON.") }}'
+                );
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message || '{{ t("Erro ao excluir registro.") }}'
+                );
+            }
+
+            dadosFinanceiros = dadosFinanceiros.filter(
+                item => !(item.id === id && (item.tipo || 'manual') === 'manual')
+            );
+
+            renderizarTabela();
+
+            Swal.fire({
+                icon: 'success',
+                title: '{{ t("Excluído!") }}',
+                text: '{{ t("Registro removido com sucesso.") }}',
+                timer: 1800,
+                showConfirmButton: false,
+                borderRadius: 24
+            });
+
+        } catch (err) {
+
+            Swal.fire({
+                icon: 'error',
+                title: '{{ t("Erro") }}',
+                text: err.message,
+                borderRadius: 24
+            });
+
+        }
+    }
+
+    window.addEventListener('click', (e) => {
+
+        const modal = document.getElementById('modalFinance');
+
+        if (e.target === modal) {
+
+            toggleModal(false);
+
+        }
+    });
+
+    /* ================================================================
+       DESPESAS GERAIS (legado) — custos do imóvel sem estadia associada,
+       criados antes da unificação. Não é mais possível criar novas por
+       aqui (o botão "Novo Lançamento" cobre os dois casos via valor com
+       sinal), mas editar uma ainda funciona: editarRegistro() abre o
+       mesmo modal unificado e, ao salvar, ela é migrada pra um lançamento
+       Financeiro normal. Só a exclusão continua com endpoint próprio.
+       ================================================================ */
+
+    async function excluirDespesaGeral(id) {
+
+        const result = await Swal.fire({
+            title: '{{ t("Excluir despesa?") }}',
+            text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0052D4',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '{{ t("Sim, excluir") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true,
+            borderRadius: 24
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+
+            const response = await fetch(`/api/despesas-gerais/excluir/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const text = await response.text();
+
+            let data;
+
+            try {
+
+                data = JSON.parse(text);
+
+            } catch {
+
+                throw new Error('{{ t("O servidor retornou HTML ao invés de JSON.") }}');
+            }
+
+            if (!response.ok) {
+
+                throw new Error(data.message || '{{ t("Erro ao excluir despesa.") }}');
+            }
+
+            dadosFinanceiros = dadosFinanceiros.filter(item => !(item.tipo === 'despesa_geral' && item.id === id));
+
+            renderizarTabela();
+
+            Swal.fire({
+                icon: 'success',
+                title: '{{ t("Excluída!") }}',
+                text: '{{ t("Despesa removida com sucesso.") }}',
+                timer: 1800,
+                showConfirmButton: false,
+                borderRadius: 24
+            });
+
+        } catch (err) {
+
+            Swal.fire({
+                icon: 'error',
+                title: '{{ t("Erro") }}',
+                text: err.message,
+                borderRadius: 24
+            });
+        }
+    }
+</script>
+
+<script>
+    NomdoTour.register('financas', [
+        {
+            selector: '.dashboard-grid',
+            title: '{{ t("Seu resumo financeiro") }}',
+            text: '{{ t("Aqui você vê de cara o lucro líquido, o total de taxas e despesas, o faturamento bruto, a margem de lucro e qual site trouxe mais retorno.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.filter-section',
+            title: '{{ t("Filtre os lançamentos") }}',
+            text: '{{ t("Use esses filtros pra encontrar rápido o que precisa: busque por nome do imóvel, filtre por um imóvel específico ou por site/provedor (Airbnb, Booking, etc.).") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.finance-table',
+            title: '{{ t("Tabela de lançamentos") }}',
+            text: '{{ t("Toda receita e despesa aparece aqui, com valor bruto, taxas do app, despesas e o lucro líquido de cada um. Os botões de ação em cada linha permitem editar ou excluir o registro.") }}',
+            position: 'top'
+        },
+        {
+            selector: '.btn-add-main',
+            title: '{{ t("Novo lançamento") }}',
+            text: '{{ t("Clique aqui pra registrar manualmente uma receita ou despesa que não veio automaticamente do sistema, como uma gorjeta ou uma conta paga.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '#f_imovel',
+            title: '{{ t("Escolha o imóvel") }}',
+            text: '{{ t("Selecione a qual imóvel esse lançamento pertence — isso garante que ele entre certinho nos relatórios daquele imóvel.") }}',
+            position: 'bottom',
+            before: function () { abrirNovo(); },
+            beforeDelay: 300,
+            after: function () { toggleModal(false); }
+        },
+        {
+            selector: '.valor-sinal-wrapper',
+            title: '{{ t("Valor e sinal") }}',
+            text: '{{ t('Digite o valor e escolha o sinal: use "+" para uma receita e "−" para uma despesa. A prévia abaixo mostra como isso vai impactar seu saldo.') }}',
+            position: 'bottom',
+            before: function () { abrirNovo(); },
+            beforeDelay: 300,
+            after: function () { toggleModal(false); }
+        },
+        {
+            selector: '.btn-excel',
+            title: '{{ t("Exportar para Excel") }}',
+            text: '{{ t("Quando quiser analisar os números fora do sistema ou enviar pra alguém, exporte toda a tabela de lançamentos em uma planilha Excel.") }}',
+            position: 'bottom'
+        }
+    ]);
+</script>
+{% endblock %}

@@ -1,0 +1,797 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Rotinas e Lembretes') }}{% endblock %}
+{% block titulo %}{{ t('Rotinas e Lembretes') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 920px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+.btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ── FILTROS ─────────────────────────────────────────────── */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.filtros label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-right: 4px;
+}
+.filtros select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    cursor: pointer;
+}
+.filtros select:focus { outline: none; border-color: var(--p-mid); }
+.filtro-contagem { margin-left: auto; font-size: 12.5px; color: var(--ink-4); font-weight: 600; }
+
+/* ── LISTA DE ROTINAS ────────────────────────────────────── */
+.lista-rotinas { display: flex; flex-direction: column; gap: 10px; }
+
+.rotina-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.rotina-card.removendo { opacity: 0 !important; transform: scale(.97); pointer-events: none; }
+.rotina-card.inativa { opacity: .55; }
+
+.rotina-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.rotina-info { flex: 1; min-width: 0; }
+.rotina-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+.rotina-info .rotina-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.rotina-info .rotina-desc { margin-top: 4px; font-size: 12.5px; color: var(--ink-3); }
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge.vencido { background: var(--red-bg); color: var(--red); }
+
+/* ── SWITCH (ativo/inativo) ──────────────────────────────── */
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: var(--t); border-radius: 999px;
+}
+.switch .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: #fff; transition: var(--t); border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.switch input:checked + .slider { background: linear-gradient(135deg, var(--p), var(--p-mid)); }
+.switch input:checked + .slider:before { transform: translateX(18px); }
+
+.rotina-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rotina-actions button {
+    width: 34px; height: 34px; border: none; background: var(--bg);
+    color: var(--ink-3); cursor: pointer; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background var(--t), color var(--t);
+}
+.rotina-actions button.acao-editar:hover { background: var(--p-soft); color: var(--p); }
+.rotina-actions button.acao-excluir:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.modal-box {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    border: none;
+    margin: auto;
+    animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+dialog.modal-box::backdrop { background: rgba(15,15,26,.55); backdrop-filter: blur(5px); }
+@keyframes modalIn { from{transform:scale(.88);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+}
+.modal-close:hover { background: var(--red-bg); color: var(--red); transform: rotate(90deg); }
+.modal-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-box p  { margin: 0 0 22px; font-size: 13px; color: var(--ink-3); }
+.form-group   { margin-bottom: 16px; }
+/* ">" é proposital: os <label class="checkbox-item"> da lista de imóveis
+   também são <label>, mas são netos (não filhos diretos) de .form-group —
+   sem o ">" essa regra vazava pra eles. */
+.form-group > label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+.form-group select:disabled, .form-group input:disabled { opacity: .6; cursor: not-allowed; }
+.form-group textarea { resize: vertical; min-height: 70px; }
+
+.form-row-inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.form-row-inline label { margin-bottom: 0; }
+
+.checkbox-list {
+    display: flex; flex-direction: column; gap: 8px;
+    max-height: 180px; overflow-y: auto;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; background: var(--bg);
+}
+.checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; text-transform: none; font-weight: 500; }
+.checkbox-item input { width: 16px; height: 16px; accent-color: var(--p); cursor: pointer; flex-shrink: 0; }
+.checkbox-item.todos { font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 2px; }
+
+.btn-salvar {
+    width: 100%; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: white; font-weight: 800; font-size: 14px; cursor: pointer;
+    margin-top: 6px; box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-salvar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+/* popover="manual" no HTML promove o toast pro "top layer" do navegador —
+   sem isso, o <dialog> do modal (showModal) sempre renderiza por cima de
+   qualquer elemento normal, não importa o z-index, e o toast de erro
+   aparecia escondido atrás do modal. */
+.toast {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: none;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#6FB1FC,#6FB1FC); }
+.toast.error { background: linear-gradient(135deg,#0052D4,#0052D4); }
+
+/* ── UTILITÁRIOS ─────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .page-header { flex-direction: column; }
+    .btn-primario { width: 100%; justify-content: center; }
+    .rotina-card { flex-wrap: wrap; }
+    .rotina-info { flex-basis: 100%; order: 1; }
+    .modal-box { padding: 24px 20px 20px; }
+    .toast { width: 90%; text-align: center; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  #0052D4;
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .filtros,
+body.theme-dark .rotina-card,
+body.theme-dark .empty-state,
+body.theme-dark .checkbox-list {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .switch .slider {
+    background-color: rgba(255,255,255,0.18);
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="toast" id="toast" popover="manual"></div>
+
+<!-- ── MODAL DE ROTINA (criar/editar) ──────────────────────── -->
+<dialog class="modal-box" id="modalRotina">
+    <button class="modal-close" type="button" onclick="fecharModal()">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h3 id="modalTitulo"><i class="fa-solid fa-bell" style="color:var(--p-mid);margin-right:8px;"></i>{{ t('Nova Rotina') }}</h3>
+    <p id="modalSubtitulo">{{ t('Defina uma regra recorrente para ser lembrado automaticamente.') }}</p>
+
+    <input type="hidden" id="rotina-id" value="">
+
+    <div class="form-group">
+        <label>{{ t('Tipo') }}</label>
+        <select id="rotina-tipo" onchange="aoMudarTipoRotina()">
+            {% for chave, meta in tipos_lembrete.items() %}
+            <option value="{{ chave }}">{{ meta.icone }} {{ t(meta.label) }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group is-hidden" id="grupoTitulo">
+        <label>{{ t('Título') }}</label>
+        <input type="text" id="rotina-titulo" placeholder="{{ t('Ex: Trocar filtro do ar-condicionado') }}">
+    </div>
+
+    <div class="form-group" id="grupoIntervalo">
+        <label>{{ t('Frequência (dias)') }}</label>
+        <input type="number" id="rotina-intervalo" min="1" placeholder="{{ t('Ex: 90') }}">
+    </div>
+
+    <div class="form-group">
+        <label>{{ t('Descrição') }} <span style="font-weight:400;text-transform:none;">{{ t('(opcional)') }}</span></label>
+        <textarea id="rotina-descricao" placeholder="{{ t('Detalhes adicionais…') }}"></textarea>
+    </div>
+
+    <!-- CRIAÇÃO: multi-seleção de imóveis (fan-out em N regras) -->
+    <div class="form-group" id="grupoImoveisMulti">
+        <label>{{ t('Imóveis') }}</label>
+        <div class="checkbox-list" id="listaImoveisCheckbox">
+            <label class="checkbox-item todos">
+                <input type="checkbox" id="rotina-imovel-todos"> {{ t('Todos os imóveis') }}
+            </label>
+            {% for im in imoveis %}
+            <label class="checkbox-item">
+                <input type="checkbox" class="rotina-imovel-check" value="{{ im.id }}"> {{ im.titulo }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- EDIÇÃO: um único imóvel — a API nunca faz fan-out ao editar -->
+    <div class="form-group is-hidden" id="grupoImovelUnico">
+        <label>{{ t('Imóvel') }}</label>
+        <select id="rotina-imovel-select">
+            {% for im in imoveis %}
+            <option value="{{ im.id }}">{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group form-row-inline">
+        <label>{{ t('Rotina ativa') }}</label>
+        <label class="switch">
+            <input type="checkbox" id="rotina-ativo" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <button class="btn-salvar" type="button" onclick="salvarRotina()">
+        <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+    </button>
+</dialog>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Rotinas e Lembretes') }}</h1>
+            <p>{{ t('Configure regras recorrentes por imóvel — troca de pilha, reposição de itens, checkups e outras rotinas personalizadas.') }}</p>
+        </div>
+        <button type="button" class="btn-primario" onclick="abrirModalNova()">
+            <i class="fa-solid fa-plus"></i> {{ t('Nova Rotina') }}
+        </button>
+    </div>
+
+    <div class="filtros">
+        <label for="filtro-imovel">{{ t('Imóvel') }}</label>
+        <select id="filtro-imovel">
+            <option value="">{{ t('Todos') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}" {% if filtro_imovel_id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="filtro-tipo">{{ t('Tipo') }}</label>
+        <select id="filtro-tipo">
+            <option value="">{{ t('Todos') }}</option>
+            {% for chave, meta in tipos_lembrete.items() %}
+            <option value="{{ chave }}" {% if filtro_tipo == chave %}selected{% endif %}>{{ meta.icone }} {{ t(meta.label) }}</option>
+            {% endfor %}
+        </select>
+
+        <span class="filtro-contagem">{{ rotinas|length }} {{ t('rotina(s)') }}</span>
+    </div>
+
+    <div class="lista-rotinas" id="listaRotinas">
+        {% for r in rotinas %}
+        <div class="rotina-card {% if not r.ativo %}inativa{% endif %}"
+             data-id="{{ r.id }}"
+             data-tipo="{{ r.tipo }}"
+             data-titulo="{{ r.titulo|e }}"
+             data-descricao="{{ r.descricao|e }}"
+             data-imovel-id="{{ r.imovel_id }}"
+             data-intervalo-dias="{{ r.intervalo_dias or '' }}"
+             data-ativo="{{ '1' if r.ativo else '0' }}">
+            <div class="rotina-icon" style="background:{{ r.cor }}22;color:{{ r.cor }};">{{ r.icone }}</div>
+            <div class="rotina-info">
+                <strong>{{ t(r.label) }}</strong>
+                <div class="rotina-meta">
+                    <span><i class="fa-solid fa-building"></i> {{ r.imovel }}</span>
+                    {% if r.por_evento %}
+                    <span><i class="fa-solid fa-bolt"></i> {{ t('Disparado por evento (checkout)') }}</span>
+                    {% elif r.proxima_data %}
+                    <span><i class="fa-solid fa-calendar"></i> {{ t('Próxima:') }} {{ r.proxima_data }} {{ t('(a cada %(dias)s dias)', dias=r.intervalo_dias) }}</span>
+                    {% endif %}
+                </div>
+                {% if r.descricao %}
+                <div class="rotina-desc">{{ r.descricao }}</div>
+                {% endif %}
+            </div>
+            {% if r.vencido %}
+            <span class="badge vencido"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Vencido') }}</span>
+            {% endif %}
+            <label class="switch">
+                <input type="checkbox" data-action="toggle-ativo" data-id="{{ r.id }}" {% if r.ativo %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+            <div class="rotina-actions">
+                <button type="button" class="acao-editar" data-action="editar" data-id="{{ r.id }}" title="{{ t('Editar') }}">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button type="button" class="acao-excluir" data-action="excluir" data-id="{{ r.id }}" title="{{ t('Excluir') }}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state" id="estadoVazio">
+            <i class="fa-solid fa-bell"></i>
+            <p>{{ t('Nenhuma rotina cadastrada ainda. Use o botão acima para criar a primeira.') }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   TOAST + CLIENTE HTTP CENTRAL
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    clearTimeout(t._toastTimer);
+    t.innerText = msg;
+    t.className = `toast ${tipo}`;
+    // Promove o toast pro top layer (acima do <dialog> aberto).
+    if (typeof t.showPopover === 'function') {
+        try { t.showPopover(); } catch (e) { /* já estava aberto */ }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    t._toastTimer = setTimeout(() => {
+        t.classList.remove('show');
+        setTimeout(() => {
+            if (typeof t.hidePopover === 'function') {
+                try { t.hidePopover(); } catch (e) { /* já estava fechado */ }
+            }
+        }, 260);
+    }, 3200);
+}
+
+async function apiRequest(url, options = {}) {
+    try {
+        const resp = await fetch(url, options);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.success === false) throw new Error(data.message || `Erro ${resp.status}`);
+        return data;
+    } catch (e) {
+        console.error(`[rotinas] Erro em ${url}:`, e);
+        mostrarToast(e.message || '{{ t("Erro de conexão.") }}', 'error');
+        throw e;
+    }
+}
+
+/* Tipos que são disparados por evento (não usam intervalo_dias) — vem do
+   back-end (app/models/hub.py :: TIPOS_EVENTO) pra não duplicar a regra. */
+const TIPOS_EVENTO = {{ tipos_evento|tojson }};
+
+/* ─────────────────────────────────────────────
+   FILTROS — recarrega a página via query params
+───────────────────────────────────────────── */
+function aplicarFiltros() {
+    const imovel = document.getElementById('filtro-imovel').value;
+    const tipo = document.getElementById('filtro-tipo').value;
+    const params = new URLSearchParams();
+    if (imovel) params.set('imovel_id', imovel);
+    if (tipo) params.set('tipo', tipo);
+    const qs = params.toString();
+    window.location.href = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+}
+
+document.getElementById('filtro-imovel').addEventListener('change', aplicarFiltros);
+document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
+
+/* ─────────────────────────────────────────────
+   MODAL — criar / editar
+   Diferença chave entre os dois modos: CRIAR permite multi-seleção de
+   imóveis (o back-end faz fan-out — uma LembreteConfig por imóvel
+   escolhido); EDITAR só permite trocar UM imóvel (o back-end nunca faz
+   fan-out numa edição, só re-aponta o imovel_id da própria regra), então
+   escondemos o multi-select e mostramos um <select> simples nesse modo.
+───────────────────────────────────────────── */
+const modal = document.getElementById('modalRotina');
+
+function aoMudarTipoRotina() {
+    const tipo = document.getElementById('rotina-tipo').value;
+
+    const grupoTitulo = document.getElementById('grupoTitulo');
+    if (tipo === 'outro') grupoTitulo.classList.remove('is-hidden');
+    else grupoTitulo.classList.add('is-hidden');
+
+    const grupoIntervalo = document.getElementById('grupoIntervalo');
+    const campoIntervalo = document.getElementById('rotina-intervalo');
+    if (TIPOS_EVENTO.includes(tipo)) {
+        grupoIntervalo.classList.add('is-hidden');
+        campoIntervalo.disabled = true;
+    } else {
+        grupoIntervalo.classList.remove('is-hidden');
+        campoIntervalo.disabled = false;
+    }
+}
+
+function _resetCheckboxesImoveis() {
+    document.getElementById('rotina-imovel-todos').checked = false;
+    document.querySelectorAll('.rotina-imovel-check').forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
+}
+
+function abrirModalNova() {
+    document.getElementById('rotina-id').value = '';
+    document.getElementById('rotina-tipo').value = 'outro';
+    document.getElementById('rotina-tipo').disabled = false;
+    document.getElementById('rotina-titulo').value = '';
+    document.getElementById('rotina-descricao').value = '';
+    document.getElementById('rotina-intervalo').value = '';
+    document.getElementById('rotina-ativo').checked = true;
+
+    _resetCheckboxesImoveis();
+    document.getElementById('grupoImoveisMulti').classList.remove('is-hidden');
+    document.getElementById('grupoImovelUnico').classList.add('is-hidden');
+
+    document.getElementById('modalTitulo').innerHTML =
+        '<i class="fa-solid fa-bell" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Nova Rotina") }}';
+    document.getElementById('modalSubtitulo').innerText = '{{ t("Defina uma regra recorrente para ser lembrado automaticamente.") }}';
+
+    aoMudarTipoRotina();
+    modal.showModal();
+}
+
+function abrirModalEdicao(card) {
+    document.getElementById('rotina-id').value = card.dataset.id;
+    document.getElementById('rotina-tipo').value = card.dataset.tipo;
+    document.getElementById('rotina-titulo').value = card.dataset.titulo || '';
+    document.getElementById('rotina-descricao').value = card.dataset.descricao || '';
+    document.getElementById('rotina-intervalo').value = card.dataset.intervaloDias || '';
+    document.getElementById('rotina-ativo').checked = card.dataset.ativo === '1';
+
+    document.getElementById('grupoImoveisMulti').classList.add('is-hidden');
+    document.getElementById('grupoImovelUnico').classList.remove('is-hidden');
+    document.getElementById('rotina-imovel-select').value = card.dataset.imovelId || '';
+
+    document.getElementById('modalTitulo').innerHTML =
+        '<i class="fa-solid fa-pen" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Editar Rotina") }}';
+    document.getElementById('modalSubtitulo').innerText = '{{ t("Uma edição atualiza somente esta regra (um único imóvel).") }}';
+
+    aoMudarTipoRotina();
+    modal.showModal();
+}
+
+function fecharModal() {
+    modal.close();
+}
+
+modal.addEventListener('click', e => {
+    if (e.target === modal) modal.close();
+});
+
+/* "Todos" desmarca/desabilita os individuais; marcar qualquer individual
+   desmarca "Todos" — evita enviar uma seleção ambígua pro back-end. */
+document.getElementById('rotina-imovel-todos').addEventListener('change', e => {
+    const marcado = e.target.checked;
+    document.querySelectorAll('.rotina-imovel-check').forEach(cb => {
+        cb.checked = false;
+        cb.disabled = marcado;
+    });
+});
+document.querySelectorAll('.rotina-imovel-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+        if (cb.checked) document.getElementById('rotina-imovel-todos').checked = false;
+    });
+});
+
+function _imovelIdsSelecionados() {
+    if (document.getElementById('rotina-imovel-todos').checked) return ['todos'];
+    return Array.from(document.querySelectorAll('.rotina-imovel-check:checked')).map(cb => parseInt(cb.value));
+}
+
+async function salvarRotina() {
+    const id = document.getElementById('rotina-id').value;
+    const tipo = document.getElementById('rotina-tipo').value;
+    const titulo = document.getElementById('rotina-titulo').value.trim();
+    const descricao = document.getElementById('rotina-descricao').value.trim();
+    const ativo = document.getElementById('rotina-ativo').checked;
+    const porEvento = TIPOS_EVENTO.includes(tipo);
+    const intervaloValor = document.getElementById('rotina-intervalo').value;
+
+    if (tipo === 'outro' && !titulo) {
+        mostrarToast('{{ t("Descreva o nome dessa rotina personalizada.") }}', 'error');
+        return;
+    }
+    if (!porEvento && (!intervaloValor || parseInt(intervaloValor) <= 0)) {
+        mostrarToast('{{ t("Informe a frequência em dias (maior que zero).") }}', 'error');
+        return;
+    }
+
+    const payload = {
+        tipo,
+        titulo: tipo === 'outro' ? titulo : '',
+        descricao,
+        ativo,
+        intervalo_dias: porEvento ? null : parseInt(intervaloValor),
+    };
+
+    if (id) {
+        payload.id = parseInt(id);
+        payload.imovel_ids = [parseInt(document.getElementById('rotina-imovel-select').value)];
+    } else {
+        const imovelIds = _imovelIdsSelecionados();
+        if (!imovelIds.length) {
+            mostrarToast('{{ t("Selecione ao menos um imóvel.") }}', 'error');
+            return;
+        }
+        payload.imovel_ids = imovelIds;
+    }
+
+    const btn = document.querySelector('#modalRotina .btn-salvar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t("Salvando…") }}';
+
+    try {
+        const data = await apiRequest('/api/hub/lembretes/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        mostrarToast(data.message || '{{ t("Rotina salva com sucesso.") }}', 'success');
+        fecharModal();
+        // Criar pode fazer fan-out (N linhas novas) e editar pode mudar o
+        // imóvel/ordenação por vencimento — reload é o jeito mais simples e
+        // confiável de refletir isso sem duplicar a lógica do servidor.
+        setTimeout(() => window.location.reload(), 400);
+    } catch (e) {
+        // apiRequest já mostrou o toast de erro.
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> {{ t("Salvar") }}';
+    }
+}
+
+/* ─────────────────────────────────────────────
+   TOGGLE ATIVO / EXCLUIR — UI otimista com um único listener delegado
+───────────────────────────────────────────── */
+function _mostrarEstadoVazioSeNecessario() {
+    const lista = document.getElementById('listaRotinas');
+    if (lista && !lista.querySelector('.rotina-card')) {
+        lista.innerHTML = `
+            <div class="empty-state" id="estadoVazio">
+                <i class="fa-solid fa-bell"></i>
+                <p>{{ t("Nenhuma rotina cadastrada ainda. Use o botão acima para criar a primeira.") }}</p>
+            </div>`;
+    }
+}
+
+async function toggleAtivo(id, checkbox, card) {
+    const novoValor = checkbox.checked;
+    card.classList.toggle('inativa', !novoValor);
+    card.dataset.ativo = novoValor ? '1' : '0';
+
+    try {
+        const data = await apiRequest(`/api/hub/lembretes/toggle/${id}`, { method: 'POST' });
+        mostrarToast(data.ativo ? '{{ t("Rotina ativada.") }}' : '{{ t("Rotina pausada.") }}', 'success');
+    } catch (e) {
+        checkbox.checked = !novoValor;
+        card.classList.toggle('inativa', novoValor);
+        card.dataset.ativo = novoValor ? '1' : '0';
+    }
+}
+
+async function excluirRotina(id, card) {
+    const result = await Swal.fire({
+        title: '{{ t("Excluir rotina?") }}',
+        text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '{{ t("Sim, excluir") }}',
+        cancelButtonText: '{{ t("Cancelar") }}',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    card.classList.add('removendo');
+    try {
+        await apiRequest(`/api/hub/lembretes/excluir/${id}`, { method: 'DELETE' });
+        mostrarToast('{{ t("Rotina excluída.") }}', 'success');
+        setTimeout(() => { card.remove(); _mostrarEstadoVazioSeNecessario(); }, 220);
+    } catch (e) {
+        card.classList.remove('removendo');
+    }
+}
+
+const listaRotinasEl = document.getElementById('listaRotinas');
+
+listaRotinasEl.addEventListener('click', e => {
+    const card = e.target.closest('.rotina-card');
+    if (!card) return;
+    const id = card.dataset.id;
+
+    const btnEditar = e.target.closest('[data-action="editar"]');
+    if (btnEditar) { abrirModalEdicao(card); return; }
+
+    const btnExcluir = e.target.closest('[data-action="excluir"]');
+    if (btnExcluir) { excluirRotina(id, card); return; }
+});
+
+listaRotinasEl.addEventListener('change', e => {
+    const toggle = e.target.closest('[data-action="toggle-ativo"]');
+    if (!toggle) return;
+    const card = toggle.closest('.rotina-card');
+    toggleAtivo(toggle.dataset.id, toggle, card);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,459 @@
+<style>
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 960px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 620px; }
+
+/* ── CARD ────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
+}
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.card-title-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.card-title-row h2 i { color: var(--p); font-size: 14px; }
+.card-desc { margin: 0 0 18px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+.filtro-contagem { font-size: 12.5px; color: var(--ink-4); font-weight: 600; white-space: nowrap; }
+
+/* ── FORM (select de imóvel em Eventos na Região) ────────── */
+.form-group   { margin-bottom: 16px; }
+.form-group label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+
+/* ── BADGES / NÍVEIS DE IMPACTO ──────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge-alta  { background: var(--red-bg);   color: var(--red); }
+.badge-media { background: var(--amber-bg); color: var(--amber); }
+.badge-baixa { background: var(--p-soft);   color: var(--p); }
+
+/* ── OPORTUNIDADES ───────────────────────────────────────── */
+.lista-oportunidades { display: flex; flex-direction: column; gap: 10px; }
+.oportunidade-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+.oportunidade-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-3);
+}
+.oportunidade-card.nivel-alta .oportunidade-icon  { background: var(--red-bg);   color: var(--red);   border-color: transparent; }
+.oportunidade-card.nivel-media .oportunidade-icon { background: var(--amber-bg); color: var(--amber); border-color: transparent; }
+.oportunidade-card.nivel-baixa .oportunidade-icon { background: var(--p-soft);   color: var(--p);     border-color: transparent; }
+.oportunidade-info { flex: 1; min-width: 0; }
+.oportunidade-info strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.oportunidade-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+
+/* ── UTILITÁRIOS ─────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+/* ── VER MAIS OPORTUNIDADES ──────────────────────────────── */
+/* Só as 5 mais próximas aparecem de cara; o resto (até 1 ano à frente,
+   já calculado no backend) fica num bloco escondido que esse botão revela —
+   evita uma lista longa logo de cara pra quem só quer ver o que está
+   próximo, mas deixa fácil se planejar mais à frente. */
+.ver-mais-wrap { margin-top: 14px; }
+.btn-ver-mais {
+    width: 100%;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--ink-3);
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: background var(--t), color var(--t), border-color var(--t);
+    box-sizing: border-box;
+}
+.btn-ver-mais:hover { background: var(--p-soft); color: var(--p); border-color: var(--p-border); }
+.btn-ver-mais i { transition: transform var(--t); }
+.btn-ver-mais.aberto i { transform: rotate(180deg); }
+
+/* ── EVENTOS NA REGIÃO ───────────────────────────────────── */
+.regiao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 6px;
+}
+.regiao-evento-card {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.regiao-evento-img { width: 100%; height: 110px; object-fit: cover; display: block; background: var(--border); }
+.regiao-evento-info { padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.regiao-evento-info strong { font-size: 13px; color: var(--ink); font-weight: 700; }
+.regiao-evento-info span { font-size: 12px; color: var(--ink-3); }
+.regiao-evento-info a { font-size: 12px; color: var(--p); font-weight: 700; text-decoration: none; margin-top: 6px; }
+.regiao-evento-info a:hover { text-decoration: underline; }
+.link-google { font-size: 12.5px; color: var(--p); font-weight: 700; text-decoration: none; }
+.link-google:hover { text-decoration: underline; }
+.regiao-secao-titulo { margin: 22px 0 10px; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.busca-manual-lista { display: flex; flex-wrap: wrap; gap: 10px; }
+.busca-manual-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 8px 14px; font-size: 12.5px; font-weight: 700;
+    color: var(--p); text-decoration: none; background: var(--bg);
+}
+.busca-manual-link:hover { background: rgba(0,82,212,0.08); }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--ink-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0 0 6px; font-size: 13.5px; }
+
+/* ── LOADING SKELETON ────────────────────────────────────── */
+.skeleton {
+    background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 12px;
+    height: 50px;
+    margin-bottom: 8px;
+}
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .card { padding: 18px; }
+    .page-header { flex-direction: column; }
+    .oportunidade-card { flex-wrap: wrap; }
+    .oportunidade-info { flex-basis: 100%; order: 1; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark .card-title-row h2 i {
+    color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .oportunidade-card,
+body.theme-dark .empty-state,
+body.theme-dark .regiao-evento-card {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 75%) !important;
+}
+body.theme-dark .btn-ver-mais:hover {
+    background: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .badge-baixa,
+body.theme-dark .oportunidade-card.nivel-baixa .oportunidade-icon {
+    color: rgba(255,255,255,0.85) !important;
+}
+body.theme-dark .regiao-evento-info a,
+body.theme-dark .link-google {
+    color: #9dc1ff !important;
+}
+body.theme-dark .busca-manual-link {
+    background: rgba(255,255,255,0.06) !important;
+    color: #9dc1ff !important;
+}
+</style>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Precificação') }}</h1>
+            <p>{{ t('Acompanhe automaticamente as melhores datas para aumentar o preço e veja eventos reais acontecendo perto dos seus imóveis.') }}</p>
+        </div>
+    </div>
+
+    <!-- ── OPORTUNIDADES DE PRECIFICAÇÃO ───────────────────── -->
+    {% macro oportunidade_card(o) %}
+    {% set lista_imoveis = o.imoveis or [o.imovel_titulo] %}
+    <div class="oportunidade-card nivel-{{ o.nivel_impacto }}">
+        <div class="oportunidade-icon">
+            <i class="fa-solid {{ o.icone or 'fa-calendar-days' }}"></i>
+        </div>
+        <div class="oportunidade-info">
+            <strong>{{ o.titulo }}</strong>
+            <div class="oportunidade-meta">
+                <span><i class="fa-solid fa-building"></i>
+                    {% if o.regiao %}{{ o.regiao }}{% if lista_imoveis|length > 1 %} · {{ lista_imoveis|length }} {{ t('imóveis') }}{% endif %}
+                    {% else %}{{ lista_imoveis|join(', ') }}{% endif %}
+                </span>
+                <span><i class="fa-solid fa-calendar"></i> {{ o.data_fmt }}</span>
+                <span>{{ t('Hoje') if o.dias_restantes == 0 else t('Em %(dias)s dia(s)', dias=o.dias_restantes) }}</span>
+            </div>
+        </div>
+        <span class="badge badge-{{ o.nivel_impacto }}">+{{ o.percentual_sugerido }}%</span>
+    </div>
+    {% endmacro %}
+
+    <div class="card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-chart-line"></i> {{ t('Oportunidades de Precificação') }}</h2>
+            <span class="filtro-contagem">{{ oportunidades|length }} {{ t('oportunidade(s)') }}</span>
+        </div>
+        <p class="card-desc">{{ t('Feriados nacionais e estaduais, datas comerciais fortes (Dia das Mães, Namorados, Pais, Black Friday) e os seus eventos cadastrados — tudo automático, sem precisar cadastrar nada. Imóveis na mesma cidade aparecem agrupados numa única linha.') }}</p>
+
+        <div class="lista-oportunidades">
+            {% for o in oportunidades[:5] %}
+            {{ oportunidade_card(o) }}
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-chart-line"></i>
+                <p>{{ t('Nenhuma oportunidade de precificação nos próximos dias.') }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if oportunidades|length > 5 %}
+        <div class="lista-oportunidades is-hidden" id="oportunidades-extra">
+            {% for o in oportunidades[5:] %}
+            {{ oportunidade_card(o) }}
+            {% endfor %}
+        </div>
+        <div class="ver-mais-wrap">
+            <button type="button" class="btn-ver-mais" id="btn-ver-mais-oportunidades">
+                <i class="fa-solid fa-chevron-down"></i>
+                <span id="btn-ver-mais-oportunidades-texto">{{ t('Ver mais %(n)s oportunidade(s) (até 1 ano à frente)', n=(oportunidades|length - 5)) }}</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ── EVENTOS NA REGIÃO ────────────────────────────────── -->
+    <div class="card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-map-location-dot"></i> {{ t('Eventos na Região') }}</h2>
+        </div>
+        <p class="card-desc">{{ t('Shows, feiras e festivais próximos ao imóvel selecionado — apenas informativo, não altera a precificação automaticamente.') }}</p>
+
+        <div class="form-group" style="max-width:360px;">
+            <label>{{ t('Imóvel') }}</label>
+            <select id="precificacao-regiao-imovel-select">
+                <option value="">{{ t('Selecione um imóvel') }}</option>
+                {% for im in imoveis %}
+                <option value="{{ im.id }}">{{ im.titulo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="precificacao-regiao-resultado"></div>
+    </div>
+
+</section>
+
+<script>
+window.__initTab_precificacao = function() {
+
+    /* ─────────────────────────────────────────────
+       VER MAIS OPORTUNIDADES — só as 5 mais próximas aparecem de cara;
+       esse botão revela o resto (já calculado no backend, até 1 ano à
+       frente) sem precisar de nenhuma chamada extra à API.
+    ───────────────────────────────────────────── */
+    const btnVerMais = document.getElementById('btn-ver-mais-oportunidades');
+    if (btnVerMais) {
+        const extra = document.getElementById('oportunidades-extra');
+        const textoBtn = document.getElementById('btn-ver-mais-oportunidades-texto');
+        const textoOriginal = textoBtn.textContent;
+        btnVerMais.addEventListener('click', () => {
+            const abrindo = extra.classList.contains('is-hidden');
+            extra.classList.toggle('is-hidden', !abrindo);
+            btnVerMais.classList.toggle('aberto', abrindo);
+            textoBtn.textContent = abrindo ? '{{ t("Ver menos") }}' : textoOriginal;
+        });
+    }
+
+    /* ─────────────────────────────────────────────
+       EVENTOS NA REGIÃO (Ticketmaster) — debounce + cache em memória
+       Cada troca de imóvel dispara no máximo uma requisição por imóvel; se o
+       anfitrião voltar pra um imóvel já consultado, usamos o resultado salvo
+       no Map em vez de refazer a chamada síncrona à API externa.
+    ───────────────────────────────────────────── */
+    const _cacheEventosRegiao = new Map();
+    let _debounceRegiaoTimer = null;
+
+    document.getElementById('precificacao-regiao-imovel-select').addEventListener('change', e => {
+        clearTimeout(_debounceRegiaoTimer);
+        const imovelId = e.target.value;
+        const cont = document.getElementById('precificacao-regiao-resultado');
+        if (!imovelId) { cont.innerHTML = ''; return; }
+
+        _debounceRegiaoTimer = setTimeout(() => carregarEventosRegiao(imovelId), 300);
+    });
+
+    async function carregarEventosRegiao(imovelId) {
+        const cont = document.getElementById('precificacao-regiao-resultado');
+
+        if (_cacheEventosRegiao.has(imovelId)) {
+            renderEventosRegiao(_cacheEventosRegiao.get(imovelId));
+            return;
+        }
+
+        cont.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+
+        try {
+            const data = await apiRequest(`/api/hub/eventos-regionais/${imovelId}`);
+            _cacheEventosRegiao.set(imovelId, data);
+            renderEventosRegiao(data);
+        } catch (e) {
+            cont.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>{{ t("Não foi possível carregar eventos agora.") }}</p>
+                </div>`;
+        }
+    }
+
+    function renderEventosRegiao(data) {
+        const cont = document.getElementById('precificacao-regiao-resultado');
+        let html = '';
+
+        if (!data.ticketmaster_configurado) {
+            html += `
+                <div class="empty-state">
+                    <i class="fa-solid fa-plug-circle-xmark"></i>
+                    <p>{{ t("Busca automática de eventos não está configurada para esta conta.") }}</p>
+                    <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Buscar eventos no Google") }}</a>
+                </div>`;
+        } else if (!data.eventos || !data.eventos.length) {
+            const msg = data.message || '{{ t("Nenhum evento encontrado para esse imóvel no momento.") }}';
+            html += `
+                <div class="empty-state">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                    <p>${msg}</p>
+                    <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Buscar eventos no Google") }}</a>
+                </div>`;
+        } else {
+            const cards = data.eventos.map(ev => `
+                <div class="regiao-evento-card">
+                    ${ev.imagem ? `<img class="regiao-evento-img" src="${ev.imagem}" alt="">` : ''}
+                    <div class="regiao-evento-info">
+                        <strong>${ev.nome || '{{ t("Evento") }}'}</strong>
+                        <span><i class="fa-solid fa-calendar"></i> ${ev.data || '—'}${ev.hora ? ' · ' + ev.hora : ''}</span>
+                        <span><i class="fa-solid fa-location-dot"></i> ${ev.local || '—'}</span>
+                        ${ev.url ? `<a href="${ev.url}" target="_blank" rel="noopener">{{ t("Ver detalhes") }}</a>` : ''}
+                    </div>
+                </div>`).join('');
+
+            html += `
+                <div class="regiao-grid">${cards}</div>
+                <p style="margin-top:14px;">
+                    <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Ver mais eventos no Google") }}</a>
+                </p>`;
+        }
+
+        // Lugares próximos (Google Places) — só aparece quando há resultado
+        // (chave configurada e o imóvel tem lat/lng). Ver
+        // app/services/eventos_service.py: Places não tem "evento com data
+        // marcada", só pontos de interesse — complementa o Ticketmaster.
+        if (data.lugares_proximos && data.lugares_proximos.length) {
+            const lugares = data.lugares_proximos.map(lu => `
+                <div class="regiao-evento-card">
+                    <div class="regiao-evento-info">
+                        <strong>${lu.nome || '—'}</strong>
+                        <span><i class="fa-solid fa-location-dot"></i> ${lu.endereco || '—'}</span>
+                        ${lu.nota ? `<span><i class="fa-solid fa-star"></i> ${lu.nota} (${lu.avaliacoes || 0})</span>` : ''}
+                        ${lu.google_maps_url ? `<a href="${lu.google_maps_url}" target="_blank" rel="noopener">{{ t("Ver no mapa") }}</a>` : ''}
+                    </div>
+                </div>`).join('');
+
+            html += `
+                <h4 class="regiao-secao-titulo">{{ t("Lugares Próximos") }}</h4>
+                <div class="regiao-grid">${lugares}</div>`;
+        }
+
+        // Eventbrite/Sympla/Even3 não têm API pública de busca de eventos
+        // por região (ver levantamento em app/services/eventos_service.py)
+        // — por ora só oferecemos o link de busca em cada uma.
+        if (data.busca_manual && data.busca_manual.length) {
+            const links = data.busca_manual.map(p => `
+                <a class="busca-manual-link" href="${p.url}" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> ${p.nome}
+                </a>`).join('');
+
+            html += `
+                <h4 class="regiao-secao-titulo">{{ t("Buscar em outras plataformas") }}</h4>
+                <div class="busca-manual-lista">${links}</div>`;
+        }
+
+        cont.innerHTML = html;
+    }
+
+};
+</script>

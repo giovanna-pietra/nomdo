@@ -1,0 +1,725 @@
+<style>
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.checklists-pagina { padding: 24px; max-width: 980px; margin: 0 auto; }
+
+.checklists-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.checklists-page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.checklists-page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+.checklists-btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.checklists-btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.checklists-btn-primario:disabled { opacity: .6; cursor: default; transform: none; }
+
+.checklists-btn-mini {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-3);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background var(--t), color var(--t);
+    white-space: nowrap;
+}
+.checklists-btn-mini:hover { background: var(--p-soft); color: var(--p); }
+
+/* ── SELETOR DE IMÓVEL ───────────────────────────────────── */
+/* Card com mais destaque — ícone + nome do imóvel em fonte grande, pra ficar
+   claro de cara qual imóvel está sendo configurado nessa aba. */
+.checklists-seletor-imovel {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--p-border);
+    border-radius: var(--r-lg);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.checklists-seletor-imovel-icone {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--p-soft); color: var(--p); font-size: 18px;
+}
+.checklists-seletor-imovel-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.checklists-seletor-imovel-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.checklists-seletor-imovel-select-wrap {
+    position: relative; display: inline-flex; align-items: center;
+    cursor: pointer;
+    /* Como o wrap é filho de um flex-column (.checklists-seletor-imovel-info),
+       ele estica pra ocupar toda a largura disponível — maior que o <select>
+       de conteúdo (que fica alinhado à esquerda). Sem esse cursor aqui, o
+       espaço entre o nome e a setinha (e a própria setinha, que tem
+       pointer-events: none) mostrava a seta padrão em vez da mãozinha. */
+}
+.checklists-seletor-imovel-select-wrap select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    border: none;
+    border-radius: 0;
+    padding: 2px 26px 2px 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink);
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+    max-width: 100%;
+    text-overflow: ellipsis;
+}
+.checklists-seletor-imovel-select-wrap select:focus { outline: none; }
+.checklists-seletor-imovel-chevron {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; color: var(--p); pointer-events: none;
+}
+
+/* ── CARD ────────────────────────────────────────────────── */
+.checklists-card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
+}
+.checklists-card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.checklists-card-title-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.checklists-card-title-row h2 i { color: var(--p); font-size: 14px; }
+.checklists-card-subtitulo { margin: 0 0 16px; font-size: 12.5px; color: var(--ink-3); }
+
+/* ── EDITOR DE MODELO (fechado por padrão) ────────────────── */
+/* <details>/<summary> nativo: fica fechado até a pessoa clicar pra editar —
+   mais limpo do que expor o editor completo o tempo todo. */
+.checklists-editor-details > summary {
+    cursor: pointer;
+    list-style: none;
+}
+.checklists-editor-details > summary::-webkit-details-marker { display: none; }
+.checklists-editor-details > summary::marker { content: ''; }
+.checklists-editor-details[open] .checklists-card-subtitulo { margin-top: 14px; }
+
+.checklists-editor-toggle {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 700; color: var(--p);
+    background: var(--p-soft); padding: 7px 14px; border-radius: 999px;
+    flex-shrink: 0;
+    transition: background var(--t);
+}
+.checklists-editor-toggle:hover { background: var(--p-border); }
+.checklists-editor-toggle i { transition: transform var(--t); }
+.checklists-editor-details[open] .checklists-editor-toggle i { transform: rotate(180deg); }
+.checklists-editor-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.checklists-editor-coluna-titulo {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.checklists-editor-coluna-titulo i { color: var(--p); }
+
+.checklists-modelo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--bg);
+    margin-bottom: 8px;
+}
+.checklists-modelo-item input.checklists-modelo-item-texto {
+    flex: 1;
+    min-width: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+}
+.checklists-modelo-item input.checklists-modelo-item-texto:focus { outline: none; border-color: var(--p-mid); }
+.checklists-modelo-item button {
+    width: 30px; height: 30px; border: none; background: transparent;
+    color: var(--ink-3); cursor: pointer; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px; flex-shrink: 0;
+    transition: background var(--t), color var(--t);
+}
+.checklists-modelo-item button[data-action="mover-item"]:hover { background: var(--p-soft); color: var(--p); }
+.checklists-modelo-item button[data-action="remover-item"]:hover { background: var(--red-bg); color: var(--red); }
+
+.checklists-btn-add-item {
+    width: 100%;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--ink-3);
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background var(--t), color var(--t), border-color var(--t);
+    box-sizing: border-box;
+}
+.checklists-btn-add-item:hover { background: var(--p-soft); color: var(--p); border-color: var(--p-border); }
+
+.checklists-editor-vazio { font-size: 12.5px; color: var(--ink-4); padding: 8px 2px 12px; }
+
+.checklists-editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* ── CHECKLIST DA ESTADIA ATUAL ──────────────────────────── */
+.checklists-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.checklists-badge.situacao-em_andamento { background: var(--green-bg); color: var(--green); }
+.checklists-badge.situacao-proxima      { background: var(--blue-bg);  color: var(--blue); }
+.checklists-badge.situacao-recente      { background: var(--amber-bg); color: var(--amber); }
+
+.checklists-estadia-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--ink-3);
+}
+.checklists-estadia-meta strong { color: var(--ink); }
+
+.checklists-check-progresso {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-4);
+}
+
+.checklists-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--bg);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: opacity var(--t);
+}
+.checklists-check-item input[type="checkbox"] {
+    width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--p); cursor: pointer;
+}
+.checklists-check-item span { font-size: 13px; color: var(--ink); }
+.checklists-check-item.concluido span { color: var(--ink-4); text-decoration: line-through; }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.checklists-empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.checklists-empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.checklists-empty-state p { margin: 0; font-size: 13.5px; }
+
+.checklists-empty-state-mini {
+    text-align: center;
+    padding: 20px 12px;
+    color: var(--ink-4);
+    font-size: 12.5px;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+    .checklists-pagina { padding: 14px; }
+    .checklists-page-header { flex-direction: column; }
+    .checklists-editor-colunas { grid-template-columns: 1fr; }
+
+    /* Botões de mover/remover item ficam pequenos demais pra dedo (30px) —
+       ampliados só no mobile. */
+    .checklists-modelo-item button { width: 38px; height: 38px; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark .checklists-seletor-imovel,
+body.theme-dark .checklists-modelo-item,
+body.theme-dark .checklists-check-item,
+body.theme-dark .checklists-empty-state {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .checklists-modelo-item input.checklists-modelo-item-texto {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .checklists-btn-mini:hover,
+body.theme-dark .checklists-seletor-imovel-icone,
+body.theme-dark .checklists-seletor-imovel-chevron,
+body.theme-dark .checklists-card-title-row h2 i,
+body.theme-dark .checklists-editor-coluna-titulo i,
+body.theme-dark .checklists-editor-toggle,
+body.theme-dark .checklists-btn-add-item:hover,
+body.theme-dark .checklists-modelo-item button[data-action="mover-item"]:hover {
+    color: rgba(255,255,255,0.85) !important;
+}
+
+/* Lixeira sempre visível (não só no hover): vermelho. */
+body.theme-dark .checklists-modelo-item button[data-action="remover-item"] {
+    color: #ef4444 !important;
+}
+</style>
+
+<section class="checklists-pagina">
+
+    <div class="checklists-page-header">
+        <div>
+            <h1>{{ t('Checklists de Hospedagem') }}</h1>
+            <p>{{ t('Defina o que precisa ser conferido antes de cada check-in e depois de cada check-out, e acompanhe o progresso da estadia atual de cada imóvel.') }}</p>
+        </div>
+    </div>
+
+    {% if not imoveis %}
+    <div class="checklists-empty-state">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <p>{{ t('Cadastre um imóvel primeiro para configurar o checklist de hospedagem dele.') }}</p>
+    </div>
+    {% else %}
+
+    <div class="checklists-seletor-imovel">
+        <div class="checklists-seletor-imovel-icone"><i class="fa-solid fa-house"></i></div>
+        <div class="checklists-seletor-imovel-info">
+            <span class="checklists-seletor-imovel-label">{{ t('Imóvel selecionado') }}</span>
+            <div class="checklists-seletor-imovel-select-wrap">
+                <select id="checklists-seletor-imovel-select">
+                    {% for im in imoveis %}
+                    <option value="{{ im.id }}" {% if imovel_selecionado and imovel_selecionado.id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+                    {% endfor %}
+                </select>
+                <i class="fa-solid fa-chevron-down checklists-seletor-imovel-chevron"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── EDITOR DE MODELO (fechado por padrão) ────────────── -->
+    <div class="checklists-card">
+        <details class="checklists-editor-details" id="checklists-editor-details">
+            <summary class="checklists-card-title-row">
+                <h2><i class="fa-solid fa-list-check"></i> {{ t('Editor de Modelo') }}</h2>
+                <span class="checklists-editor-toggle" id="checklists-editor-toggle-texto">
+                    <i class="fa-solid fa-chevron-down"></i> {{ t('Editar modelo') }}
+                </span>
+            </summary>
+
+            <p class="checklists-card-subtitulo">{{ t('Esta lista vale para todas as estadias futuras de') }} <strong>{{ imovel_selecionado.titulo }}</strong> {{ t('— o progresso marcado a cada estadia não é afetado ao editar aqui.') }}</p>
+
+            <div class="checklists-editor-colunas">
+                <div>
+                    <div class="checklists-editor-coluna-titulo"><i class="fa-solid fa-door-open"></i> {{ t('Antes do check-in') }}</div>
+                    <div id="checklists-lista-modelo-antes"></div>
+                    <button type="button" class="checklists-btn-add-item" data-action="add-item" data-momento="antes">
+                        <i class="fa-solid fa-plus"></i> {{ t('Adicionar item') }}
+                    </button>
+                </div>
+                <div>
+                    <div class="checklists-editor-coluna-titulo"><i class="fa-solid fa-door-closed"></i> {{ t('Depois do check-out') }}</div>
+                    <div id="checklists-lista-modelo-depois"></div>
+                    <button type="button" class="checklists-btn-add-item" data-action="add-item" data-momento="depois">
+                        <i class="fa-solid fa-plus"></i> {{ t('Adicionar item') }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="checklists-editor-footer">
+                <button type="button" class="checklists-btn-mini" id="checklists-btn-limpar-modelo">
+                    <i class="fa-solid fa-broom"></i> {{ t('Limpar tudo') }}
+                </button>
+                <button type="button" class="checklists-btn-primario" id="checklists-btn-salvar-modelo">
+                    <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+                </button>
+            </div>
+        </details>
+    </div>
+
+    <!-- ── CHECKLIST DA ESTADIA ATUAL ───────────────────────── -->
+    <div class="checklists-card">
+        <div class="checklists-card-title-row">
+            <h2><i class="fa-solid fa-square-check"></i> {{ t('Checklist da Estadia Atual') }}</h2>
+            {% if estadia_atual %}
+            <span class="checklists-badge situacao-{{ estadia_atual.situacao }}">
+                {% if estadia_atual.situacao == 'em_andamento' %}{{ t('Em andamento') }}
+                {% elif estadia_atual.situacao == 'proxima' %}{{ t('Próxima estadia') }}
+                {% else %}{{ t('Checkout recente') }}{% endif %}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if estadia_atual %}
+        <div class="checklists-estadia-meta">
+            <span><i class="fa-solid fa-user"></i> <strong>{{ estadia_atual.antes.hospede or estadia_atual.depois.hospede }}</strong></span>
+        </div>
+
+        <div class="checklists-editor-colunas">
+            <div>
+                <div class="checklists-editor-coluna-titulo">
+                    <i class="fa-solid fa-door-open"></i> {{ t('Antes do check-in') }}
+                    <span class="checklists-check-progresso" id="checklists-progresso-antes">{{ estadia_atual.antes.concluidos }}/{{ estadia_atual.antes.total }}</span>
+                </div>
+                <div id="checklists-lista-check-antes" data-estadia-id="{{ estadia_atual.antes.estadia_id }}">
+                    {% for item in estadia_atual.antes.itens %}
+                    <label class="checklists-check-item {% if item.concluido %}concluido{% endif %}" data-item-key="{{ item.key }}">
+                        <input type="checkbox" data-action="toggle-check" data-item-key="{{ item.key }}" {% if item.concluido %}checked{% endif %}>
+                        <span>{{ item.texto }}</span>
+                    </label>
+                    {% else %}
+                    <div class="checklists-empty-state-mini">{{ t('Nenhum item cadastrado para "antes".') }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <div class="checklists-editor-coluna-titulo">
+                    <i class="fa-solid fa-door-closed"></i> {{ t('Depois do check-out') }}
+                    <span class="checklists-check-progresso" id="checklists-progresso-depois">{{ estadia_atual.depois.concluidos }}/{{ estadia_atual.depois.total }}</span>
+                </div>
+                <div id="checklists-lista-check-depois" data-estadia-id="{{ estadia_atual.depois.estadia_id }}">
+                    {% for item in estadia_atual.depois.itens %}
+                    <label class="checklists-check-item {% if item.concluido %}concluido{% endif %}" data-item-key="{{ item.key }}">
+                        <input type="checkbox" data-action="toggle-check" data-item-key="{{ item.key }}" {% if item.concluido %}checked{% endif %}>
+                        <span>{{ item.texto }}</span>
+                    </label>
+                    {% else %}
+                    <div class="checklists-empty-state-mini">{{ t('Nenhum item cadastrado para "depois".') }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="checklists-empty-state-mini">{{ t('Nenhuma estadia em andamento, futura ou com checkout recente para este imóvel no momento.') }}</div>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+</section>
+
+<script>
+window.__initTab_checklists = function() {
+
+    /* ─────────────────────────────────────────────
+       SELETOR DE IMÓVEL — recarrega a página via query param, igual às
+       demais páginas de gestão (não precisa de SPA/AJAX pra isso).
+    ───────────────────────────────────────────── */
+    const seletorImovel = document.getElementById('checklists-seletor-imovel-select');
+    if (seletorImovel) {
+        seletorImovel.addEventListener('change', () => {
+            const params = new URLSearchParams();
+            params.set('imovel_id', seletorImovel.value);
+            params.set('tab', 'checklists');
+            window.location.href = `${window.location.pathname}?${params.toString()}`;
+        });
+    }
+
+    // A setinha é decorativa (pointer-events: none) e o <select> customizado
+    // (appearance: none) não abre em todo navegador ao clicar perto da borda
+    // — clicar em qualquer ponto do "cartão" (incluindo a setinha) foca e
+    // abre a lista de imóveis.
+    const seletorImovelWrap = document.querySelector('.checklists-seletor-imovel-select-wrap');
+    if (seletorImovelWrap && seletorImovel) {
+        seletorImovelWrap.addEventListener('click', () => {
+            seletorImovel.focus();
+            if (typeof seletorImovel.showPicker === 'function') {
+                try { seletorImovel.showPicker(); } catch (e) { /* ignora */ }
+            }
+        });
+    }
+
+    /* ─────────────────────────────────────────────
+       EDITOR DE MODELO — fechado por padrão (<details>); só troca o texto
+       do botão-resumo pra indicar que pode fechar de novo.
+    ───────────────────────────────────────────── */
+    const editorDetails = document.getElementById('checklists-editor-details');
+    const editorToggleTexto = document.getElementById('checklists-editor-toggle-texto');
+    if (editorDetails && editorToggleTexto) {
+        editorDetails.addEventListener('toggle', () => {
+            editorToggleTexto.innerHTML = editorDetails.open
+                ? '<i class="fa-solid fa-chevron-down"></i> {{ t("Fechar") }}'
+                : '<i class="fa-solid fa-chevron-down"></i> {{ t("Editar modelo") }}';
+        });
+    }
+
+    /* ─────────────────────────────────────────────
+       EDITOR DE MODELO — estado local + render, com add/remover/mover
+       item entre "antes" e "depois" e edição de texto inline.
+    ───────────────────────────────────────────── */
+    const IMOVEL_ID = seletorImovel ? parseInt(seletorImovel.value, 10) : null;
+
+    let itensModelo = [
+        {{ (modelo_antes + modelo_depois) | tojson }}
+    ][0].map(i => ({ texto: i.texto, momento: i.momento }));
+
+    function renderChecklistModelo() {
+        const listaAntes = document.getElementById('checklists-lista-modelo-antes');
+        const listaDepois = document.getElementById('checklists-lista-modelo-depois');
+        if (!listaAntes || !listaDepois) return;
+
+        listaAntes.innerHTML = '';
+        listaDepois.innerHTML = '';
+
+        itensModelo.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.className = 'checklists-modelo-item';
+            row.dataset.idx = idx;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'checklists-modelo-item-texto';
+            input.value = item.texto;
+            input.placeholder = '{{ t("Descreva o item…") }}';
+            input.dataset.idx = idx;
+            input.dataset.action = 'editar-texto';
+
+            const btnMover = document.createElement('button');
+            btnMover.type = 'button';
+            btnMover.dataset.action = 'mover-item';
+            btnMover.dataset.idx = idx;
+            btnMover.title = item.momento === 'antes' ? '{{ t('Mover para "depois"') }}' : '{{ t('Mover para "antes"') }}';
+            btnMover.innerHTML = '<i class="fa-solid fa-right-left"></i>';
+
+            const btnRemover = document.createElement('button');
+            btnRemover.type = 'button';
+            btnRemover.dataset.action = 'remover-item';
+            btnRemover.dataset.idx = idx;
+            btnRemover.title = '{{ t("Remover item") }}';
+            btnRemover.innerHTML = '<i class="fa-solid fa-trash"></i>';
+
+            row.appendChild(input);
+            row.appendChild(btnMover);
+            row.appendChild(btnRemover);
+
+            (item.momento === 'antes' ? listaAntes : listaDepois).appendChild(row);
+        });
+
+        if (!itensModelo.some(i => i.momento === 'antes')) {
+            listaAntes.innerHTML = '<div class="checklists-editor-vazio">{{ t("Nenhum item ainda.") }}</div>';
+        }
+        if (!itensModelo.some(i => i.momento === 'depois')) {
+            listaDepois.innerHTML = '<div class="checklists-editor-vazio">{{ t("Nenhum item ainda.") }}</div>';
+        }
+    }
+
+    document.querySelectorAll('[data-action="add-item"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            itensModelo.push({ texto: '', momento: btn.dataset.momento });
+            renderChecklistModelo();
+            const inputs = document.querySelectorAll('.checklists-modelo-item-texto');
+            if (inputs.length) inputs[inputs.length - 1].focus();
+        });
+    });
+
+    function _onEditorClick(e) {
+        const btnMover = e.target.closest('[data-action="mover-item"]');
+        if (btnMover) {
+            const idx = parseInt(btnMover.dataset.idx, 10);
+            itensModelo[idx].momento = itensModelo[idx].momento === 'antes' ? 'depois' : 'antes';
+            renderChecklistModelo();
+            return;
+        }
+        const btnRemover = e.target.closest('[data-action="remover-item"]');
+        if (btnRemover) {
+            const idx = parseInt(btnRemover.dataset.idx, 10);
+            itensModelo.splice(idx, 1);
+            renderChecklistModelo();
+        }
+    }
+
+    function _onEditorInput(e) {
+        const input = e.target.closest('[data-action="editar-texto"]');
+        if (!input) return;
+        const idx = parseInt(input.dataset.idx, 10);
+        itensModelo[idx].texto = input.value;
+    }
+
+    ['checklists-lista-modelo-antes', 'checklists-lista-modelo-depois'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('click', _onEditorClick);
+            el.addEventListener('input', _onEditorInput);
+        }
+    });
+
+    const btnLimparModelo = document.getElementById('checklists-btn-limpar-modelo');
+    if (btnLimparModelo) {
+        btnLimparModelo.addEventListener('click', async () => {
+            if (!itensModelo.length) {
+                mostrarToast('{{ t("O editor já está vazio.") }}', 'info');
+                return;
+            }
+            const result = await Swal.fire({
+                title: '{{ t("Limpar todos os itens?") }}',
+                text: '{{ t('Isso remove todos os itens do editor (antes e depois). A mudança só é salva de verdade quando você clicar em "Salvar".') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#0052D4',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ t("Sim, limpar") }}',
+                cancelButtonText: '{{ t("Cancelar") }}',
+                reverseButtons: true,
+            });
+            if (!result.isConfirmed) return;
+
+            itensModelo = [];
+            renderChecklistModelo();
+            mostrarToast('{{ t('Itens removidos — clique em "Salvar" para confirmar.') }}', 'success');
+        });
+    }
+
+    const btnSalvarModelo = document.getElementById('checklists-btn-salvar-modelo');
+    if (btnSalvarModelo) {
+        btnSalvarModelo.addEventListener('click', async () => {
+            if (!IMOVEL_ID) return;
+            const itens = itensModelo
+                .map(i => ({ texto: (i.texto || '').trim(), momento: i.momento === 'depois' ? 'depois' : 'antes' }))
+                .filter(i => i.texto);
+
+            btnSalvarModelo.disabled = true;
+            try {
+                await apiRequest(`/api/hub/checklist-modelo/${IMOVEL_ID}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itens }),
+                });
+                mostrarToast('{{ t("Checklist salvo com sucesso!") }}', 'success');
+            } catch (e) {
+                /* apiRequest já mostrou o toast de erro */
+            } finally {
+                btnSalvarModelo.disabled = false;
+            }
+        });
+    }
+
+    renderChecklistModelo();
+
+    /* ─────────────────────────────────────────────
+       CHECKLIST DA ESTADIA ATUAL — toggle com UI otimista, um listener
+       delegado por coluna (antes/depois).
+    ───────────────────────────────────────────── */
+    function _atualizarProgresso(containerId, progressoId) {
+        const container = document.getElementById(containerId);
+        const progresso = document.getElementById(progressoId);
+        if (!container || !progresso) return;
+        const total = container.querySelectorAll('.checklists-check-item').length;
+        const concluidos = container.querySelectorAll('.checklists-check-item.concluido').length;
+        progresso.innerText = `${concluidos}/${total}`;
+    }
+
+    async function _toggleChecklistItem(container, label, checkbox) {
+        const estadiaId = container.dataset.estadiaId;
+        const itemKey = checkbox.dataset.itemKey;
+        if (!estadiaId || !itemKey) return;
+
+        // UI otimista: já vira o estado antes da resposta do servidor.
+        const novoEstado = checkbox.checked;
+        label.classList.toggle('concluido', novoEstado);
+        _atualizarProgresso(container.id, container.id === 'checklists-lista-check-antes' ? 'checklists-progresso-antes' : 'checklists-progresso-depois');
+
+        try {
+            await apiRequest('/api/hub/checklist/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estadia_id: parseInt(estadiaId, 10), item_key: itemKey }),
+            });
+        } catch (e) {
+            // reverte em caso de falha
+            checkbox.checked = !novoEstado;
+            label.classList.toggle('concluido', !novoEstado);
+            _atualizarProgresso(container.id, container.id === 'checklists-lista-check-antes' ? 'checklists-progresso-antes' : 'checklists-progresso-depois');
+        }
+    }
+
+    ['checklists-lista-check-antes', 'checklists-lista-check-depois'].forEach(id => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        container.addEventListener('change', e => {
+            const checkbox = e.target.closest('[data-action="toggle-check"]');
+            if (!checkbox) return;
+            const label = checkbox.closest('.checklists-check-item');
+            _toggleChecklistItem(container, label, checkbox);
+        });
+    });
+
+};
+</script>

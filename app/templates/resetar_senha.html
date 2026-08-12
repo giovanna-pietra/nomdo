@@ -1,0 +1,79 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}{{ t('Nova Senha') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== DARK MODE ===== */
+    body.theme-dark .subtitle {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="text-align: center;">
+    {{ t('Nova Senha') }}
+</h1>
+
+<p class="subtitle" style="text-align: center;">
+
+    {{ t('Digite o código enviado para:') }}
+
+    <br>
+
+    <strong>{{ email }}</strong>
+
+</p>
+
+<form method="POST">
+
+    <!-- CÓDIGO -->
+    <div class="input-group">
+
+        <label for="codigo">
+            {{ t('Código de 6 dígitos') }}:
+        </label>
+
+        <input
+            type="text"
+            id="codigo"
+            name="codigo"
+            class="codigo-input"
+            placeholder="000000"
+            maxlength="6"
+            required
+            autocomplete="off"
+        >
+
+    </div>
+
+    <!-- NOVA SENHA -->
+    <div class="input-group">
+
+        <label for="senha">
+            {{ t('Nova Senha') }}:
+        </label>
+
+        <input
+            type="password"
+            id="senha"
+            name="senha"
+            placeholder="{{ t('Mínimo 8 caracteres') }}"
+            minlength="8"
+            required
+        >
+
+    </div>
+
+    <!-- BOTÃO -->
+    <button type="submit" class="btn-login">
+
+        {{ t('Redefinir Senha') }}
+
+    </button>
+
+</form>
+
+{% endblock %}

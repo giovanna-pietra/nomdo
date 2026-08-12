@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Nomdo",
+    "slug": "nomdo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0052D4"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pietra.nomdo"
+    },
+    "android": {
+      "package": "com.pietra.nomdo",
+      "adaptiveIcon": {
+        "backgroundColor": "#0052D4"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cb71ffb7-50a3-41c6-ba52-abceeebcc293"
+      }
+    },
+    "owner": "nomdo-app"
+  }
+}

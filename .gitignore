@@ -1,0 +1,60 @@
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Ambiente virtual ─────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── Variáveis de ambiente (NUNCA commitar!) ──────────────────
+.env
+
+# ── Banco de dados ───────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Flask-Migrate ─────────────────────────────────────────────
+# migrations/  ← NÃO ignore; deve ser versionado
+
+# ── Uploads / mídias ─────────────────────────────────────────
+static/uploads/*
+!static/uploads/.gitkeep
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── IDEs ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ── Docker ───────────────────────────────────────────────────
+# docker-compose.override.yml  ← Adicione se tiver dados sensíveis locais
+
+# ── App mobile (React Native) ─────────────────────────────────
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/.expo/
+mobile/nomdo/
+mobile/*.log
+
+# ── Sobra de scaffold rodado na pasta errada (pode apagar manualmente) ──
+/nomdo/
+
+# ── Backups locais de banco ────────────────────────────────────
+instance/*.db
+instance/*.backup*

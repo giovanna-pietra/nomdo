@@ -1,0 +1,408 @@
+{% extends "base_dash.html" %}
+
+{% block title %} {{ t('Suporte') }} {% endblock %}
+{% block titulo %} {{ t('Central de Suporte') }} {% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
+
+<style>
+
+    .support-wrapper { width: 100%; max-width: 850px; margin: 0 auto; }
+    .support-card { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+    
+    /* Grid de Botões Superiores */
+    .support-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 18px;
+        margin-bottom: 35px;
+    }
+
+    .support-box {
+        border-radius: 18px;
+        padding: 24px;
+        text-decoration: none;
+        transition: .2s;
+        text-align: center;
+    }
+
+    .support-box:hover { transform: translateY(-4px); }
+    .support-box i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .support-box h3 { margin-bottom: 8px; font-size: 18px; font-weight: 700; }
+    .support-box p { font-size: 13px; opacity: 0.9; }
+
+    /* Ajuste do Telefone */
+    .iti { width: 100%; display: block; }
+    .iti--separate-dial-code .iti__selected-dial-code { font-size: 15px; color: #333; margin-left: 8px; }
+
+    .contact-container {
+        display: none; 
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group { margin-bottom: 25px; }
+    .form-group label { display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 14px; }
+
+    .form-control {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #eee;
+        background: #fcfcfc;
+        font-size: 15px;
+        transition: 0.3s;
+        box-sizing: border-box;
+        outline: none;
+    }
+
+    .form-control:focus {
+        border-color: #0052D4;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(90, 26, 155, 0.05);
+    }
+
+    /* Estilo base de transição para todos os botões */
+    .support-box {
+        border-radius: 18px;
+        padding: 24px;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Transição suave */
+        text-align: center;
+        border: 2px solid transparent; /* Evita que o layout pule no hover */
+    }
+
+    /* Hover Específico: WhatsApp (Verde) */
+    .support-box[style*="background:#dcf8e6"]:hover {
+        background: #25d366 !important; /* Verde oficial WhatsApp */
+        color: white !important;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+    }
+    .support-box[style*="background:#dcf8e6"]:hover i,
+    .support-box[style*="background:#dcf8e6"]:hover h3,
+    .support-box[style*="background:#dcf8e6"]:hover p {
+        color: white !important;
+    }
+
+    /* Hover Específico: E-mail (Roxo Claro para Roxo Médio) */
+    .support-box[style*="background:rgba(0,82,212,0.08)"]:hover {
+        background: rgba(0,82,212,0.08) !important;
+        border-color: #0052D4;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(90, 26, 155, 0.1);
+    }
+
+    /* Hover Específico: Chamado (Roxo Escuro para Roxo mais Profundo) */
+    .support-box[style*="background:#0052D4"]:hover {
+        background: #0052D4 !important; /* Um roxo levemente mais escuro */
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(90, 26, 155, 0.3);
+    }
+    /* Área de Upload Moderna */
+    .upload-area {
+        border: 2px dashed rgba(0,82,212,0.12);
+        background: rgba(0,82,212,0.08);
+        border-radius: 18px;
+        padding: 30px;
+        text-align: center;
+        position: relative;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+
+    .upload-area:hover {
+        background: rgba(0,82,212,0.08);
+        border-color: #0052D4;
+    }
+
+    .upload-area i { font-size: 35px; color: #0052D4; margin-bottom: 12px; display: block; }
+    .upload-area p { font-size: 14px; color: #666; margin: 0; }
+    .upload-area input[type="file"] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    #file-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .file-badge {
+        background: #0052D4;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        border: none;
+        background: #0052D4;
+        color: white;
+        padding: 18px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: .2s;
+        margin-top: 10px;
+    }
+
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(90, 26, 155, 0.2); }
+
+    /* ===== Responsividade ===== */
+    
+
+    @media (max-width: 480px) and (orientation: portrait) {
+        .support-card { padding: 20px 16px; }
+        .support-grid { grid-template-columns: 1fr; gap: 12px; }
+        .form-control { padding: 12px 14px; font-size: 14px; }
+        .btn-submit { padding: 15px; font-size: 15px; }
+        .upload-area { padding: 18px 12px; }
+        .upload-area i { font-size: 28px; }
+        .file-badge { font-size: 11px; padding: 5px 10px; }
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark .support-card {
+        background: #0052D4 !important;
+        box-shadow: none;
+    }
+
+    body.theme-dark .form-group label {
+        color: rgba(255,255,255,0.85);
+    }
+
+    body.theme-dark .form-control {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.18);
+        color: rgba(255,255,255,0.92);
+    }
+
+    body.theme-dark .form-control::placeholder {
+        color: rgba(255,255,255,0.5);
+    }
+
+    body.theme-dark .form-control:focus {
+        background: rgba(255,255,255,0.12) !important;
+        border-color: #9fc2ff;
+    }
+
+    body.theme-dark select.form-control option {
+        color: #0f172a;
+    }
+
+    body.theme-dark .iti--separate-dial-code .iti__selected-dial-code {
+        color: rgba(255,255,255,0.85);
+    }
+
+    body.theme-dark .upload-area {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.18);
+    }
+
+    body.theme-dark .upload-area:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: #9fc2ff;
+    }
+
+    body.theme-dark .upload-area p {
+        color: rgba(255,255,255,0.72);
+    }
+
+    body.theme-dark .upload-area i {
+        color: #9fc2ff;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="support-wrapper">
+    <div class="support-card">
+        
+        <div class="support-grid">
+            <a href="https://wa.me/551152428905" target="_blank" class="support-box" style="background:#dcf8e6; color:#128c7e;">
+                <i class="fa-brands fa-whatsapp"></i>
+                <h3>WhatsApp</h3>
+                <p>{{ t('Suporte em tempo real') }}</p>
+            </a>
+
+            <a href="mailto:suporte@staykey.com" class="support-box" style="background:rgba(0,82,212,0.08); color:#0052D4;">
+                <i class="fa-solid fa-envelope"></i>
+                <h3>{{ t('E-mail') }}</h3>
+                <p>{{ t('Envie dúvidas gerais') }}</p>
+            </a>
+
+            <div class="support-box" style="background:#0052D4; color:white;">
+                <i class="fa-solid fa-ticket"></i>
+                <h3>{{ t('Novo Chamado') }}</h3>
+                <p>{{ t('Abra um ticket oficial') }}</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="form-suporte">
+
+            <div class="form-group">
+                <label>{{ t('Como prefere receber o nosso retorno?') }}</label>
+                <select name="tipo_contato" id="tipo_contato" class="form-control" required>
+                    <option value="" disabled selected>{{ t('Escolha uma opção') }}</option>
+                    <option value="email">{{ t('E-mail') }}</option>
+                    <option value="whatsapp">WhatsApp</option>
+                </select>
+            </div>
+
+            <div id="container-email" class="contact-container form-group">
+                <label>{{ t('Confirme seu e-mail de contato') }}</label>
+                <input type="email" name="contato_email" id="input-email" class="form-control" placeholder="nome@exemplo.com.br">
+            </div>
+
+            <div id="container-whatsapp" class="contact-container form-group">
+                <label>{{ t('Número do WhatsApp') }}</label>
+                <input type="tel" id="input-whatsapp" class="form-control">
+                <input type="hidden" name="contato" id="contato_final">
+            </div>
+
+            <div class="form-group">
+                <label>{{ t('Descrição do Problema') }}</label>
+                <textarea name="mensagem" class="form-control" rows="5" placeholder="{{ t('Descreva detalhadamente para que possamos te ajudar melhor...') }}" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>{{ t('Anexar Imagens ou Documentos') }}</label>
+                <div class="upload-area" id="upload-zone">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p><strong>{{ t('Clique para selecionar') }}</strong> {{ t('ou arraste arquivos aqui') }}</p>
+                    <p style="font-size: 12px; opacity: 0.7;">{{ t('Anexe prints ou documentos para agilizar o suporte') }}</p>
+                    <input type="file" name="anexos" id="file-input" multiple accept="image/*,.pdf">
+                </div>
+                <div id="file-preview-container"></div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-paper-plane" style="margin-right: 8px;"></i> {{ t('Enviar Solicitação') }}
+            </button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // 1. WhatsApp Config
+    const phoneInputField = document.querySelector("#input-whatsapp");
+    const phoneInput = window.intlTelInput(phoneInputField, {
+        initialCountry: "br",
+        preferredCountries: ["br", "us", "pt"],
+        separateDialCode: true,
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
+    });
+
+    // 2. Alternância de Campos
+    const selectTipo = document.getElementById('tipo_contato');
+    const containerEmail = document.getElementById('container-email');
+    const containerWhatsapp = document.getElementById('container-whatsapp');
+    const inputEmail = document.getElementById('input-email');
+
+    selectTipo.addEventListener('change', function() {
+        containerEmail.style.display = 'none';
+        containerWhatsapp.style.display = 'none';
+        inputEmail.required = false;
+        phoneInputField.required = false;
+
+        if (this.value === 'email') {
+            containerEmail.style.display = 'block';
+            inputEmail.required = true;
+        } else if (this.value === 'whatsapp') {
+            containerWhatsapp.style.display = 'block';
+            phoneInputField.required = true;
+        }
+    });
+
+    // 3. Preview de Arquivos
+    const fileInput = document.getElementById('file-input');
+    const previewContainer = document.getElementById('file-preview-container');
+
+    // Atualização do item 3 (Preview e Validação)
+fileInput.addEventListener('change', function() {
+    previewContainer.innerHTML = '';
+    const files = Array.from(this.files);
+    const MAX_FILES = 3;
+    const MAX_SIZE_MB = 3;
+
+    // 1. Validar quantidade
+    if (files.length > MAX_FILES) {
+        Swal.fire('{{ t("Limite Excedido") }}', `{{ t("Você pode enviar no máximo") }} ${MAX_FILES} {{ t("arquivos.") }}`, 'warning');
+        this.value = ""; // Limpa a seleção
+        return;
+    }
+
+    files.forEach(file => {
+        // 2. Validar tamanho individual
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > MAX_SIZE_MB) {
+            Swal.fire('{{ t("Arquivo muito grande") }}', `{{ t("O arquivo") }} "${file.name}" {{ t("excede o limite de") }} ${MAX_SIZE_MB}MB.`, 'error');
+            this.value = "";
+            previewContainer.innerHTML = "";
+            return;
+        }
+
+        const badge = document.createElement('div');
+        badge.className = 'file-badge';
+        badge.innerHTML = `<i class="fa-solid fa-file"></i> ${file.name.substring(0, 20)}${file.name.length > 20 ? '...' : ''}`;
+        previewContainer.appendChild(badge);
+    });
+});
+
+    // 4. Validação Rigorosa de E-mail
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email.toLowerCase());
+    }
+
+    // 5. Envio do Formulário
+    document.getElementById("form-suporte").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const hiddenInput = document.getElementById('contato_final');
+
+        if (selectTipo.value === 'email') {
+            if (!validateEmail(inputEmail.value)) {
+                Swal.fire('{{ t("E-mail Inválido") }}', '{{ t("Por favor, insira um e-mail válido.") }}', 'warning');
+                return;
+            }
+            hiddenInput.value = inputEmail.value;
+        } else if (selectTipo.value === 'whatsapp') {
+            if (!phoneInput.isValidNumber()) {
+                Swal.fire('{{ t("WhatsApp Inválido") }}', '{{ t("Por favor, insira um número de WhatsApp válido.") }}', 'warning');
+                return;
+            }
+            hiddenInput.value = phoneInput.getNumber();
+        } else {
+            Swal.fire('{{ t("Escolha uma opção") }}', '{{ t("Selecione como prefere receber nosso retorno.") }}', 'warning');
+            return;
+        }
+
+        this.submit();
+    });
+</script>
+{% endblock %}

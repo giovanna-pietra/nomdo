@@ -1,0 +1,479 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Equipe') }}{% endblock %}
+{% block titulo %}{{ t('Equipe') }}{% endblock %}
+{% block tour_page %}equipe{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-wrapper {
+        width: 100%;
+        max-width: 780px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .settings-card {
+        background: white;
+        border-radius: 20px;
+        padding: 26px 28px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,82,212,0.08);
+    }
+
+    .settings-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .settings-card-header .titulo-wrap { flex: 1; min-width: 0; }
+
+    .settings-card h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .settings-card h3 i {
+        color: #0052D4;
+        font-size: 0.95rem;
+    }
+
+    .settings-card > p.desc,
+    .settings-card-header p.desc {
+        color: #64748b;
+        font-size: 0.86rem;
+        margin: 0;
+        line-height: 1.55;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #0052D4, #0052D4);
+        color: white;
+        padding: 11px 20px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        font-size: 0.86rem;
+        cursor: pointer;
+        white-space: nowrap;
+        box-shadow: 0 6px 16px rgba(0,82,212,.22);
+        transition: transform .18s, box-shadow .18s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,82,212,.3); }
+
+    /* ── Lista (convites pendentes / equipe) ─────────────── */
+    .equipe-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 0;
+        border-bottom: 1px solid #f1f5f9;
+        gap: 12px;
+    }
+    .equipe-item:last-child { border-bottom: none; }
+
+    .equipe-item-info { min-width: 0; }
+
+    .equipe-item-info span:first-child {
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.93rem;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .equipe-item-info span.hint {
+        font-size: 0.79rem;
+        color: #94a3b8;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .equipe-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .btn-remover {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(252,111,111,0.18);
+        color: #c0392b;
+        border: 1px solid rgba(252,111,111,0.3);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background .15s, box-shadow .15s;
+    }
+    .btn-remover:hover { background: #fc6f6f; color: #ffffff; box-shadow: 0 4px 10px rgba(252,111,111,.35); }
+
+    .empty-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: #94a3b8;
+        font-size: 0.86rem;
+        padding: 22px 0 6px;
+        text-align: center;
+    }
+    .empty-hint i { font-size: 1.6rem; opacity: .55; }
+
+    .badge-pendente {
+        background: rgba(67,100,247,0.08);
+        color: #4364F7;
+        border-radius: 999px;
+        padding: 4px 11px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+
+    /* ── Modal "Convidar Anfitrião" (mesmo padrão de imoveis.html) ── */
+    .modal-equipe {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(15,23,42,.55);
+        z-index: 9999;
+        align-items: center; justify-content: center;
+        padding: 24px;
+        backdrop-filter: blur(5px);
+    }
+    .modal-equipe.aberto { display: flex; }
+
+    .modal-equipe-content {
+        background: #fff;
+        border-radius: 22px;
+        padding: 28px;
+        width: 100%;
+        max-width: 440px;
+        position: relative;
+        box-shadow: 0 25px 60px rgba(0,0,0,.2);
+        animation: modalEquipeIn .2s ease;
+    }
+    @keyframes modalEquipeIn {
+        from { opacity: 0; transform: translateY(10px) scale(.98); }
+        to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+
+    .modal-equipe-close {
+        position: absolute; top: 16px; right: 16px;
+        width: 38px; height: 38px;
+        border: none; border-radius: 50%;
+        background: #f8fafc; color: #64748b;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: .2s ease;
+    }
+    .modal-equipe-close:hover {
+        background: #fc6f6f; color: #fff;
+        transform: rotate(180deg) scale(1.08);
+    }
+
+    .modal-equipe-content h3 {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 6px;
+        display: flex; align-items: center; gap: 9px;
+    }
+    .modal-equipe-content h3 i { color: #0052D4; }
+    .modal-equipe-content p.desc {
+        color: #64748b; font-size: 0.85rem; margin: 0 0 20px; line-height: 1.55;
+    }
+
+    .convite-form input[type="email"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.93rem;
+        outline: none;
+        margin-bottom: 16px;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+    .convite-form input[type="email"]:focus {
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.1);
+    }
+    .convite-form .btn-primary { width: 100%; justify-content: center; }
+
+    @media (max-width: 560px) and (orientation: portrait) {
+        .equipe-item { flex-wrap: wrap; }
+        .equipe-item-actions { width: 100%; justify-content: flex-end; }
+        .settings-card-header { flex-direction: column; }
+        .settings-card-header .btn-primary { align-self: stretch; justify-content: center; }
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark .settings-card {
+        background: var(--dm-surface, #1e1f24) !important;
+        border-color: rgba(255,255,255,0.08);
+    }
+
+    /* Botão "Convidar": mesmo gradiente mais fechado usado nos outros
+       botões azuis da versão escura (Imóveis, Finanças). */
+    body.theme-dark .btn-primary {
+        background: linear-gradient(135deg, #17418f, #3157c2) !important;
+        box-shadow: 0 6px 18px rgba(0,0,0,.35) !important;
+    }
+
+    body.theme-dark .settings-card h3,
+    body.theme-dark .modal-equipe-content h3 {
+        color: rgba(255,255,255,0.92);
+    }
+
+    body.theme-dark .settings-card h3 i,
+    body.theme-dark .modal-equipe-content h3 i {
+        color: #9fc2ff;
+    }
+
+    body.theme-dark .settings-card > p.desc,
+    body.theme-dark .settings-card-header p.desc,
+    body.theme-dark .modal-equipe-content p.desc {
+        color: rgba(255,255,255,0.72);
+    }
+
+    body.theme-dark .equipe-item {
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
+
+    body.theme-dark .equipe-item-info span:first-child {
+        color: rgba(255,255,255,0.92);
+    }
+
+    body.theme-dark .equipe-item-info span.hint,
+    body.theme-dark .empty-hint {
+        color: rgba(255,255,255,0.65);
+    }
+
+    body.theme-dark .modal-equipe-content {
+        background: var(--dm-surface, #1e1f24) !important;
+    }
+
+    body.theme-dark .modal-equipe-close {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.8);
+    }
+
+    body.theme-dark .convite-form input[type="email"] {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.92);
+    }
+
+    body.theme-dark .convite-form input[type="email"]::placeholder {
+        color: rgba(255,255,255,0.5);
+    }
+
+    body.theme-dark .badge-pendente {
+        background: rgba(255,255,255,0.1) !important;
+        color: #9dc1ff !important;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="settings-wrapper">
+
+    <div class="settings-card" id="cardEquipeAtual">
+        <div class="settings-card-header">
+            <div class="titulo-wrap">
+                <h3><i class="fa-solid fa-user-group"></i> {{ t('Sua equipe') }}</h3>
+                <p class="desc">{{ t('Convide alguém por e-mail pra te ajudar a cuidar dos seus imóveis, estadias e do hub operacional. Quem aceitar não vê seu dashboard financeiro — só a parte de operação.') }}</p>
+            </div>
+            <button type="button" class="btn-primary" onclick="abrirModalConvidar()">
+                <i class="fa-solid fa-user-plus"></i> {{ t('Convidar') }}
+            </button>
+        </div>
+
+        {% if anfitrioes %}
+            {% for a in anfitrioes %}
+            <div class="equipe-item">
+                <div class="equipe-item-info">
+                    <span>{{ a.nome }}</span>
+                    <span class="hint">{{ a.email }}</span>
+                </div>
+                <div class="equipe-item-actions">
+                    <form method="post" action="{{ url_for('equipe.remover_anfitriao', anfitriao_id=a.id) }}"
+                          onsubmit="return confirmarRemocaoAnfitriao(event, this, {{ a.nome|tojson }});">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-remover">
+                            <i class="fa-solid fa-user-minus"></i> {{ t('Remover') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-hint">
+                <i class="fa-solid fa-people-group"></i>
+                <span>{{ t('Você ainda não tem ninguém na equipe.') }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="settings-card" id="cardConvitesPendentes">
+        <h3><i class="fa-solid fa-clock"></i> {{ t('Convites pendentes') }}</h3>
+        <p class="desc" style="margin-bottom:14px;">{{ t('Ainda não foram aceitos.') }}</p>
+
+        {% if convites_pendentes %}
+            {% for c in convites_pendentes %}
+            <div class="equipe-item">
+                <div class="equipe-item-info">
+                    <span>{{ c.email }}</span>
+                    <span class="hint">{{ t('Enviado em %(data)s', data=c.created_at.strftime('%d/%m/%Y')) }}</span>
+                </div>
+                <div class="equipe-item-actions">
+                    <span class="badge-pendente">{{ t('Pendente') }}</span>
+                    <form method="post" action="{{ url_for('equipe.cancelar_convite', convite_id=c.id) }}"
+                          onsubmit="return confirmarCancelamentoConvite(event, this, {{ c.email|tojson }});">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-remover">
+                            <i class="fa-solid fa-xmark"></i> {{ t('Cancelar') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-hint">
+                <i class="fa-solid fa-inbox"></i>
+                <span>{{ t('Nenhum convite pendente.') }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{# ===== MODAL: Convidar Anfitrião ===== #}
+<div id="modalConvidarAnfitriao" class="modal-equipe" role="dialog" aria-hidden="true">
+    <div class="modal-equipe-content">
+        <button type="button" class="modal-equipe-close" onclick="fecharModalConvidar()" aria-label="{{ t('Fechar') }}">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3><i class="fa-solid fa-user-plus"></i> {{ t('Convidar Anfitrião') }}</h3>
+        <p class="desc">{{ t('Envie um convite por e-mail. A pessoa só passa a operar os seus imóveis depois de aceitar usando esse mesmo e-mail.') }}</p>
+        <form class="convite-form" method="post" action="{{ url_for('equipe.convidar') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="email" name="email" placeholder="email@exemplo.com" required autofocus>
+            <button type="submit" class="btn-primary">
+                <i class="fa-solid fa-paper-plane"></i> {{ t('Enviar convite') }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModalConvidar() {
+    const m = document.getElementById('modalConvidarAnfitriao');
+    if (m) m.classList.add('aberto');
+}
+function fecharModalConvidar() {
+    const m = document.getElementById('modalConvidarAnfitriao');
+    if (m) m.classList.remove('aberto');
+}
+document.getElementById('modalConvidarAnfitriao')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) fecharModalConvidar();
+});
+
+/* Mesma ideia do confirmarComSwal() usado em imoveis.html: intercepta o
+   submit do form nativo, pergunta com um modal bonito (SweetAlert2) em vez
+   do confirm() do navegador, e só then reenvia o form de verdade. */
+async function confirmarRemocaoAnfitriao(event, form, nome) {
+    event.preventDefault();
+    const result = await Swal.fire({
+        title: '{{ t("Remover da equipe?") }}',
+        html: `<strong>${nome}</strong> {{ t("vai perder acesso aos seus imóveis, estadias e hub imediatamente.") }}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '{{ t("Sim, remover") }}',
+        cancelButtonText: '{{ t("Cancelar") }}',
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+    });
+    if (result.isConfirmed) form.submit();
+    return false;
+}
+
+async function confirmarCancelamentoConvite(event, form, email) {
+    event.preventDefault();
+    const result = await Swal.fire({
+        title: '{{ t("Cancelar este convite?") }}',
+        html: `{{ t("O convite enviado para") }} <strong>${email}</strong> {{ t("deixará de valer.") }}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '{{ t("Sim, cancelar convite") }}',
+        cancelButtonText: '{{ t("Voltar") }}',
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+    });
+    if (result.isConfirmed) form.submit();
+    return false;
+}
+</script>
+
+<script>
+NomdoTour.register('equipe', [
+    {
+        selector: '#cardEquipeAtual',
+        title: '{{ t("Sua equipe") }}',
+        text: '{{ t("Aqui aparecem os anfitriões que já fazem parte da sua equipe. Eles ajudam a cuidar dos imóveis e estadias, mas não têm acesso ao seu dashboard financeiro.") }}',
+        position: 'auto'
+    },
+    {
+        selector: '.settings-card-header .btn-primary',
+        title: '{{ t("Convide alguém") }}',
+        text: '{{ t("Clique aqui pra convidar um novo anfitrião por e-mail. É só ele aceitar o convite pra começar a te ajudar na operação.") }}',
+        position: 'bottom'
+    },
+    {
+        selector: '#modalConvidarAnfitriao .convite-form',
+        title: '{{ t("Envie o convite") }}',
+        text: '{{ t('Digite o e-mail da pessoa e clique em "Enviar convite". Ela só ganha acesso depois de aceitar usando esse mesmo e-mail.') }}',
+        position: 'auto',
+        before: function () { abrirModalConvidar(); },
+        beforeDelay: 300,
+        after: function () { fecharModalConvidar(); }
+    },
+    {
+        selector: '#cardConvitesPendentes',
+        title: '{{ t("Convites pendentes") }}',
+        text: '{{ t("Convites enviados que ainda não foram aceitos ficam listados aqui. Você pode cancelar um convite a qualquer momento se enviou pra pessoa errada ou mudou de ideia.") }}',
+        position: 'auto'
+    },
+    {
+        selector: '.btn-remover',
+        title: '{{ t("Remover acesso") }}',
+        text: '{{ t("Use este botão pra remover um anfitrião da equipe ou cancelar um convite pendente. A remoção é imediata e a pessoa perde acesso na hora.") }}',
+        position: 'auto'
+    }
+]);
+</script>
+{% endblock %}

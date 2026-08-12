@@ -1,0 +1,617 @@
+/* =========================
+   RESET
+========================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins, sans-serif;
+    transition:all .2s ease;
+}
+
+/* =========================
+   BODY
+========================= */
+
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    color:#333;
+    background:linear-gradient(135deg,#fff,rgba(0,82,212,0.08));
+}
+
+/* =========================
+   HEADER / NAVBAR
+========================= */
+
+.navbar,
+.logo,
+.icon-circle,
+.login-container,
+.btn-google,
+.divider,
+.categoria-card{
+    display:flex;
+    align-items:center;
+}
+
+.navbar{
+    justify-content:flex-start;
+    padding:15px 40px;
+}
+
+.logo{
+    gap:12px;
+}
+
+.img-logo{
+    width:10vw;
+    min-width:120px;
+    height:auto;
+    display:block;
+}
+
+.icon-circle{
+    width:35px;
+    height:35px;
+    justify-content:center;
+    border-radius:50%;
+    background:#0052D4;
+    color:#fff;
+}
+
+.logo-text{
+    font-size:1.1rem;
+    font-weight:600;
+}
+
+/* =========================
+   LOGIN CONTAINER
+========================= */
+
+.login-container{
+    justify-content:center;
+    align-items:flex-start;
+    padding:10px 24px;
+    box-sizing:border-box;
+}
+
+.login-box{
+    width:100%;
+    max-width:380px;
+    /* Item flex tem min-width:auto por padrão — sem isso, ele se recusa a
+       encolher menos que o conteúdo mais largo lá dentro (ex: o widget de
+       telefone com bandeira/DDI, ver .iti abaixo), o que podia deixar o
+       card mais largo que a própria tela e habilitar scroll horizontal. */
+    min-width:0;
+    overflow-x:hidden;
+}
+
+/* =========================
+   TEXTOS
+========================= */
+
+h1{
+    font-size:2rem;
+    margin-bottom:8px;
+}
+
+.subtitle{
+    margin-bottom:30px;
+    color:#666;
+    font-size:.95rem;
+}
+
+/* =========================
+   FORMULÁRIOS
+========================= */
+
+.input-group{
+    display:flex;
+    flex-direction:column;
+    margin-bottom:15px;
+}
+
+.input-group label{
+    margin-bottom:8px;
+    font-size:.9rem;
+    font-weight:600;
+}
+
+.input-group input{
+    padding:12px 15px;
+    border:1px solid #e0e0e0;
+    border-radius:8px;
+    background:rgba(0,82,212,0.08);
+    font-size:1rem;
+    outline:none;
+}
+
+.input-group input:focus{
+    border-color:#0052D4;
+}
+
+/* Campo de telefone usa o plugin intl-tel-input (bandeira + código do
+   país) — ele substitui o <input> por um wrapper próprio (.iti), fora do
+   nosso <input> original, então o "input-group input" acima não cobre
+   mais o campo inteiro depois que o plugin inicializa. Sem isso aqui, o
+   widget não herdava a largura certa do formulário (ficava mais estreito
+   ou até um pouco mais largo que o card em telas pequenas). */
+.input-group .iti{
+    display:block;
+    width:100%;
+}
+.iti input,
+.iti input[type="tel"],
+.iti input[type="text"]{
+    width:100%;
+}
+/* Lista de países (dropdown do plugin) — trava a largura dela na do
+   próprio campo, pra não vazar pros lados em telas estreitas quando a
+   pessoa abre a lista pra escolher o país. */
+.iti__country-list{
+    max-width:min(300px, 100vw);
+    box-sizing:border-box;
+}
+
+.input-group select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.input-group select:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(91, 26, 155, 0.1);
+}
+
+/* =========================
+   BOTÕES
+========================= */
+
+.btn-login,
+.btn-google{
+    width:100%;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.btn-login{
+    margin-top:10px;
+    padding:14px;
+    border:none;
+    background:#0052D4;
+    color:#fff;
+    font-size:1rem;
+    font-weight:600;
+}
+
+.btn-login:hover{
+    background:#0052D4;
+}
+
+/* GOOGLE */
+
+.btn-google{
+    justify-content:center;
+    gap:12px;
+    padding:12px;
+    border:1px solid #dadce0;
+    background:#fff;
+    color:#000;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+    box-shadow:0 1px 1px rgba(0,0,0,.04);
+}
+
+.btn-google i{
+    font-size:18px;
+}
+
+.btn-google:hover{
+    background:#e9eaea;
+    border-color:#c6c6c6;
+    box-shadow:0 2px 4px rgba(0,0,0,.08);
+}
+
+.btn-google:active{
+    background:rgba(0,82,212,0.08);
+    transform:scale(.98);
+}
+
+/* =========================
+   DIVIDER
+========================= */
+
+.divider{
+    margin:20px 0;
+}
+
+.divider::before,
+.divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:#e0e0e0;
+}
+
+.divider span{
+    margin:0 10px;
+    font-size:.85rem;
+    color:#888;
+}
+
+/* =========================
+   ALERTAS
+========================= */
+
+.alert-erro{
+    margin-bottom:15px;
+    padding:12px;
+    border-radius:8px;
+    background:rgba(252,111,111,0.18);
+    color:#c0392b;
+    font-weight:600;
+    font-size:.9rem;
+    text-align:center;
+    animation:fadeIn .3s ease;
+}
+
+.alert-sucesso{
+    margin-bottom:15px;
+    padding:12px;
+    border-radius:8px;
+    background:rgba(111,252,113,0.18);
+    color:#1a7a1c;
+    font-weight:600;
+    font-size:.9rem;
+    text-align:center;
+    animation:fadeIn .3s ease;
+}
+
+.alert-aviso{
+    margin-bottom:15px;
+    padding:12px;
+    border-radius:8px;
+    background:rgba(252,207,111,0.25);
+    color:#b8860b;
+    font-weight:600;
+    font-size:.9rem;
+    text-align:center;
+    animation:fadeIn .3s ease;
+}
+
+@keyframes fadeIn{
+
+    from{
+        opacity:0;
+        transform:translateY(-8px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+/* =========================
+   FOOTER LINKS
+========================= */
+
+.footer-links{
+    margin-top:15px;
+    padding-top:20px;
+    text-align:left;
+    border-top:1px solid #eee;
+}
+
+.footer-links p{
+    font-size:.9rem;
+    color:#666;
+}
+
+.footer-links a{
+    color:#0052D4;
+    text-decoration:none;
+    font-weight:600;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer{
+    width:100%;
+    margin-top:auto;
+    padding:12px 0;
+    text-align:center;
+    color:#777;
+    font-size:.8rem;
+}
+
+.footer p{
+    margin:0;
+}
+
+/* =========================
+   CATEGORIAS
+========================= */
+
+.categoria-box{
+    display:flex;
+    gap:15px;
+}
+
+.categoria-card{
+    flex:1;
+    flex-direction:column;
+    gap:10px;
+    padding:20px;
+    border:2px solid #e0e0e0;
+    border-radius:12px;
+    background:#f9f9f9;
+    text-align:center;
+    cursor:pointer;
+}
+
+.categoria-card:hover{
+    border-color:#0052D4;
+    background:rgba(0,82,212,0.08);
+}
+
+.categoria-card input{
+    display:none;
+}
+
+.categoria-card i{
+    font-size:24px;
+    color:#0052D4;
+}
+
+.categoria-card span{
+    font-weight:600;
+}
+
+.categoria-card:has(input:checked){
+    background:#0052D4;
+    border-color:#0052D4;
+    color:#fff;
+}
+
+.categoria-card:has(input:checked) i,
+.categoria-card:has(input:checked) span{
+    color:#fff;
+}
+
+/* =========================
+   CÓDIGO VERIFICAÇÃO
+========================= */
+
+.codigo-input{
+    text-align:center;
+    font-size:2rem !important;
+    letter-spacing:12px;
+    font-weight:bold;
+    color:#0052D4;
+}
+
+/* =========================
+   RESPONSIVIDADE
+========================= */
+
+
+
+@media (max-width:768px){
+
+    .navbar{
+        padding:12px 20px;
+    }
+
+    .img-logo{
+        min-width:100px;
+    }
+
+    .login-container{
+        padding:12px 16px;
+        align-items:center;
+    }
+
+    .login-box{
+        width:100%;
+        max-width:100%;
+    }
+
+    h1{
+        font-size:1.5rem;
+    }
+
+    .subtitle{
+        font-size:.85rem;
+        margin-bottom:20px;
+    }
+
+    .input-group input,
+    .input-group select{
+        min-height:48px;
+        box-sizing:border-box;
+    }
+
+    .btn-login,
+    .btn-google{
+        min-height:48px;
+    }
+}
+
+@media (max-width:480px) and (orientation: portrait){
+    h1{
+        font-size:1.3rem;
+    }
+
+    .subtitle{
+        font-size:.8rem;
+    }
+
+    .login-container{
+        padding:10px 12px;
+    }
+
+    .codigo-input{
+        font-size:1.5rem !important;
+        letter-spacing:8px;
+    }
+
+    .footer p{
+        font-size:0.65rem;
+    }
+}
+
+/* =========================
+   DARK MODE
+   Sem isso, o card de login/cadastro ficava com o mesmo azul do fundo
+   (nenhuma borda/separação visível), e os campos usavam um azul bem
+   fraco (rgba(0,82,212,0.08)) pensado pra contrastar com fundo BRANCO —
+   em cima do fundo escuro (que é esse mesmo azul), ficavam quase
+   invisíveis. Os inputs aqui viram brancos de propósito (pedido
+   explícito), pra ter o contraste máximo possível com o card escuro.
+========================= */
+
+body.theme-dark .login-box{
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    padding: 28px 26px;
+}
+
+body.theme-dark .subtitle{
+    color: rgba(255,255,255,0.70);
+}
+
+body.theme-dark .input-group label{
+    color: rgba(255,255,255,0.85);
+}
+
+/* Especificidade extra (.login-box .input-group input) de propósito —
+   sem isso, a regra genérica "body.theme-dark input" de theme_dark.css
+   (que deixa todo input azul escuro) ganharia da nossa por ter sido
+   carregada depois no HTML, mesmo com !important nos dois lados (em
+   empate de especificidade, quem carrega por último vence). */
+body.theme-dark .login-box .input-group input,
+body.theme-dark .login-box .input-group select,
+body.theme-dark .login-box .iti input{
+    background: #fff !important;
+    color: #1a1a1a !important;
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+body.theme-dark .login-box .input-group input::placeholder{
+    color: #94a3b8 !important;
+}
+
+body.theme-dark .login-box .input-group input:focus,
+body.theme-dark .login-box .input-group select:focus,
+body.theme-dark .login-box .iti input:focus{
+    border-color: #0052D4 !important;
+    box-shadow: 0 0 0 3px rgba(0,82,212,0.25);
+}
+
+/* Botão "Entrar"/"Cadastrar" — vira branco com texto azul, o oposto do
+   claro, pra se destacar bem do fundo azul escuro do card. */
+body.theme-dark .btn-login{
+    background: #fff;
+    color: #0052D4;
+}
+
+body.theme-dark .btn-login:hover{
+    background: #e8eefc;
+}
+
+body.theme-dark .btn-google{
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.16);
+    color: #fff;
+    box-shadow: none;
+}
+
+body.theme-dark .btn-google:hover{
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.24);
+    box-shadow: none;
+}
+
+body.theme-dark .divider::before,
+body.theme-dark .divider::after{
+    background: rgba(255,255,255,0.15);
+}
+
+body.theme-dark .divider span{
+    color: rgba(255,255,255,0.6);
+}
+
+body.theme-dark .alert-erro{
+    background: rgba(220,38,38,0.22);
+    color: #fecaca;
+}
+
+body.theme-dark .alert-sucesso{
+    background: rgba(22,163,74,0.22);
+    color: #bbf7d0;
+}
+
+body.theme-dark .alert-aviso{
+    background: rgba(217,119,6,0.22);
+    color: #fde68a;
+}
+
+body.theme-dark .footer-links{
+    border-top-color: rgba(255,255,255,0.14);
+}
+
+body.theme-dark .footer-links p{
+    color: rgba(255,255,255,0.70);
+}
+
+body.theme-dark .footer-links a{
+    color: #9dc1ff;
+}
+
+body.theme-dark .footer p{
+    color: rgba(255,255,255,0.55);
+}
+
+body.theme-dark .icon-circle{
+    background: rgba(255,255,255,0.12);
+}
+
+body.theme-dark .categoria-card{
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.9);
+}
+
+body.theme-dark .categoria-card:hover{
+    border-color: #9dc1ff;
+    background: rgba(0,82,212,0.25);
+}
+
+body.theme-dark .categoria-card i{
+    color: #9dc1ff;
+}
+
+body.theme-dark .categoria-card:has(input:checked){
+    background: #0052D4;
+    border-color: #9dc1ff;
+}
+
+body.theme-dark .codigo-input{
+    color: #9dc1ff;
+}

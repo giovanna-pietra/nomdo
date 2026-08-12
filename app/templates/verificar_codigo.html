@@ -1,0 +1,82 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}{{ t('Verificar Código') }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_login.css') }}">
+    <style>
+        /* ===== DARK MODE ===== */
+        body.theme-dark .subtitle {
+            color: rgba(255, 255, 255, 0.70) !important;
+        }
+
+        body.theme-dark .footer-links {
+            border-top-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        body.theme-dark .footer-links p {
+            color: rgba(255, 255, 255, 0.70) !important;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-top: -15px; text-align: center;">
+    {{ t('Verificação') }}
+</h1>
+
+<p class="subtitle" style="text-align: center;">
+
+    {{ t('Enviamos um código de 6 dígitos para:') }}
+
+    <br>
+
+    <strong>{{ email }}</strong>
+
+</p>
+
+<form method="POST">
+
+    <div class="input-group">
+
+        <label for="codigo">
+            {{ t('Digite o código abaixo:') }}
+        </label>
+
+        <input
+            type="text"
+            id="codigo"
+            name="codigo"
+            class="codigo-input"
+            placeholder="000000"
+            maxlength="6"
+            required
+            autocomplete="off"
+        >
+
+    </div>
+
+    <button type="submit" class="btn-login">
+
+        {{ t('Verificar Conta') }}
+
+    </button>
+
+</form>
+
+<div class="footer-links">
+
+    <p style="text-align: center;">
+
+        {{ t('Não recebeu?') }}
+
+        <a href="{{ url_for('auth.cadastro') }}">
+            {{ t('Tentar novamente') }}
+        </a>
+
+    </p>
+
+</div>
+
+{% endblock %}

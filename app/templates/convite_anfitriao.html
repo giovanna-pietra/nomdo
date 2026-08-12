@@ -1,0 +1,157 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}{{ t('Convite de Anfitrião') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .convite-icon {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 1.6rem;
+    }
+    .convite-icon.sucesso  { background: rgba(111,177,252,0.08); color: #6FB1FC; }
+    .convite-icon.atencao  { background: rgba(67,100,247,0.08); color: #4364F7; }
+    .convite-icon.erro     { background: rgba(0,82,212,0.08); color: #0052D4; }
+    .convite-icon.info     { background: rgba(0,82,212,0.08); color: #0052D4; }
+
+    .convite-titulo {
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0 0 8px;
+    }
+    .convite-subtitulo {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin: 0 0 26px;
+    }
+    .convite-email-badge {
+        color: #0052D4;
+        font-weight: 700;
+    }
+
+    .convite-actions { display: flex; flex-direction: column; gap: 10px; }
+    .convite-actions form { margin: 0; }
+    .convite-actions .btn-login,
+    .convite-actions .btn-google { margin-top: 0; }
+
+    .footer-links.convite-footer {
+        text-align: center;
+    }
+
+    @media (max-width: 480px) and (orientation: portrait) {
+        .convite-icon {
+            width: 52px;
+            height: 52px;
+            font-size: 1.3rem;
+            margin-bottom: 14px;
+        }
+
+        .convite-titulo {
+            font-size: 1.1rem;
+        }
+
+        .convite-subtitulo {
+            font-size: 0.86rem;
+            margin-bottom: 20px;
+        }
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark .convite-titulo {
+        color: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    body.theme-dark .convite-subtitulo {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+
+    body.theme-dark .footer-links {
+        border-top-color: rgba(255, 255, 255, 0.12) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if not convite %}
+
+    <div class="convite-icon erro"><i class="fa-solid fa-link-slash"></i></div>
+    <h1 class="convite-titulo">{{ t('Convite inválido') }}</h1>
+    <p class="convite-subtitulo">
+        {{ t('Esse link de convite não existe mais, já foi usado ou expirou.') }}
+    </p>
+
+    <div class="footer-links convite-footer">
+        <p>
+            <a href="{{ url_for('auth.login') }}">{{ t('Ir para o login') }}</a>
+        </p>
+    </div>
+
+{% elif not usuario_atual %}
+
+    <div class="convite-icon info"><i class="fa-solid fa-handshake"></i></div>
+    <h1 class="convite-titulo">{{ t('Você foi convidado(a)! 🤝') }}</h1>
+    <p class="convite-subtitulo">
+        {{ t('%(nome)s te convidou pra ajudar como Anfitrião no Nomdo.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}<br>
+        {{ t('E-mail convidado:') }} <span class="convite-email-badge">{{ convite.email }}</span>
+    </p>
+
+    <p style="text-align:center; color:#94a3b8; font-size:.82rem; margin-bottom:20px;">
+        {{ t('Entre ou crie uma conta gratuita usando esse mesmo e-mail pra aceitar o convite automaticamente.') }}
+    </p>
+
+    <div class="convite-actions">
+        <a href="{{ url_for('auth.login') }}" class="btn-login" style="display:block; text-align:center; text-decoration:none;">
+            {{ t('Já tenho conta — Entrar') }}
+        </a>
+
+        <div class="divider"><span>{{ t('ou') }}</span></div>
+
+        <a href="{{ url_for('auth.cadastro') }}" class="btn-google" style="text-decoration:none; justify-content:center;">
+            {{ t('Criar conta grátis') }}
+        </a>
+    </div>
+
+{% elif email_bate %}
+
+    <div class="convite-icon sucesso"><i class="fa-solid fa-people-group"></i></div>
+    <h1 class="convite-titulo">{{ t('Aceitar convite') }}</h1>
+    <p class="convite-subtitulo">
+        {{ t('%(nome)s quer sua ajuda como Anfitrião. Ao aceitar, você passa a ver e operar os imóveis, estadias e o hub dessa conta.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}
+    </p>
+
+    <form method="POST" action="{{ url_for('equipe.aceitar_convite', token=convite.token) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-login">{{ t('Aceitar convite') }}</button>
+    </form>
+
+    <div class="footer-links convite-footer">
+        <p>
+            <a href="{{ url_for('reservas.dashboard') }}">{{ t('Agora não, ir pro meu painel') }}</a>
+        </p>
+    </div>
+
+{% else %}
+
+    <div class="convite-icon atencao"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h1 class="convite-titulo">{{ t('Esse convite é pra outro e-mail') }}</h1>
+    <p class="convite-subtitulo">
+        {{ t('Você está logado(a) como') }} <span class="convite-email-badge">{{ usuario_atual.email }}</span>,
+        {{ t('mas esse convite foi enviado pra') }} <span class="convite-email-badge">{{ convite.email }}</span>.
+    </p>
+
+    <div class="footer-links convite-footer">
+        <p>
+            <a href="{{ url_for('auth.logout') }}">{{ t('Sair e entrar com a conta certa') }}</a>
+        </p>
+    </div>
+
+{% endif %}
+
+{% endblock %}

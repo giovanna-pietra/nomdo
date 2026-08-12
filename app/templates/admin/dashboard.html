@@ -1,0 +1,403 @@
+{% extends "base_admin.html" %}
+
+{% block title %}
+    {{ t('Nomdo - Painel de Controle Master') }}
+{% endblock %}
+
+{% block titulo %}
+    {{ t('Painel de Controle Master') }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos locais estendidos para sobrepor e integrar perfeitamente com a base */
+    :root {
+        --primary: #0052D4;
+        --primary-light: rgba(0,82,212,0.10);
+        --primary-soft: rgba(0,82,212,0.08);
+        --success: #16a34a;
+        --success-soft: rgba(22,163,74,0.08);
+        --danger: #dc2626;
+        --danger-soft: rgba(220,38,38,0.08);
+        --warning: #f59e0b;
+        --warning-soft: rgba(245,158,11,0.12);
+        --info: #0891b2;
+        --info-soft: rgba(8,145,178,0.08);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --card-bg: #ffffff;
+        --border-color: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    .dashboard-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        width: 100%;
+    }
+
+    /* HERO ADMINISTRATIVO MASTER */
+    .hero-admin {
+        background: radial-gradient(circle at top right, rgba(255,255,255,0.15), transparent 35%),
+                    linear-gradient(135deg, #7f1d1d, var(--danger));
+        border-radius: 24px;
+        padding: 30px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        box-shadow: 0 10px 25px rgba(220, 38, 38, 0.2);
+    }
+
+    .hero-admin h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .hero-admin p {
+        margin-top: 8px;
+        max-width: 600px;
+        opacity: 0.9;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* GRID DE MÉTRICAS PRINCIPAIS (Fixado nativamente em 3 Colunas x 2 Linhas) */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        width: 100%;
+    }
+
+    .kpi-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 22px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: transform 0.25s ease, box-shadow 0.25s ease; /* Transição adicionada */
+    }
+
+    /* Aplicação do Transform Translate igual ao exemplo anterior */
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .kpi-details span {
+        display: block;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-details h2 {
+        margin: 6px 0 0 0;
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .kpi-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    /* PALETA ADMINISTRATIVA DE ÍCONES (arco-íris, igual aos imóveis) */
+    .kpi-icon.bg-purple, .kpi-icon.bg-green, .kpi-icon.bg-blue, .kpi-icon.bg-orange, .kpi-icon.bg-red { color: #fff; }
+    .bg-purple { background: linear-gradient(135deg,#9333ea,#a855f7); }
+    .bg-green  { background: linear-gradient(120deg,#16a34a,#22c55e); }
+    .bg-blue   { background: linear-gradient(135deg,#0284c7,#0ea5e9); }
+    .bg-orange { background: linear-gradient(140deg,#f59e0b,#fb923c); }
+    .bg-red    { background: linear-gradient(135deg,#dc2626,#ef4444); }
+
+    /* SEÇÃO ANALÍTICA E GRÁFICOS */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 0.8fr;
+        gap: 24px;
+        width: 100%;
+    }
+
+    .chart-box {
+        background: var(--card-bg);
+        border-radius: 24px;
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.25s ease, box-shadow 0.25s ease; /* Transição adicionada */
+    }
+
+    /* Aplicação do Transform Translate nas caixas de gráficos */
+    .chart-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .chart-box h3 {
+        margin: 0 0 20px 0;
+        font-size: 1.05rem;
+        color: var(--text-main);
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 260px;
+        width: 100%;
+        margin: auto;
+    }
+
+    @media (max-width: 480px) and (orientation: portrait) {
+        .kpi-grid { grid-template-columns: 1fr; }
+        .hero-admin { padding: 16px; }
+        .hero-admin h2 { font-size: 1.2rem; }
+        .kpi-details h2 { font-size: 1.5rem; }
+        .chart-container { height: 200px; }
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark {
+        --text-main: rgba(255,255,255,0.92);
+        --text-muted: rgba(255,255,255,0.70);
+        --card-bg: var(--dm-surface, #1e1f24);
+        --border-color: rgba(255,255,255,0.08);
+    }
+
+    body.theme-dark .kpi-card,
+    body.theme-dark .chart-box {
+        box-shadow: none;
+    }
+
+    body.theme-dark .kpi-card:hover,
+    body.theme-dark .chart-box:hover {
+        box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="dashboard-wrapper">
+
+    <div class="hero-admin">
+        <div>
+            <h2><i class="fa-solid fa-unlock-keyhole"></i> {{ t('Central de Auditoria Master') }}</h2>
+            <p style="white-space: nowrap;">{{ t('Monitore a receita transacionada pelo site, distribution demográfica por idade/gênero e engajamento comportamental de contas.') }}</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Rendimento Total') }}</span>
+                <h2>{{ currency_symbol }} {{ stats.faturamento | default('0,00') }}</h2>
+            </div>
+            <div class="kpi-icon bg-green">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Total Imóveis') }}</span>
+                <h2>{{ stats.total_imoveis | default(0) }}</h2>
+            </div>
+            <div class="kpi-icon bg-orange">
+                <i class="fa-solid fa-house-medical"></i>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Total Estadias') }}</span>
+                <h2>{{ stats.total_estadias | default(0) }}</h2>
+            </div>
+            <div class="kpi-icon bg-purple">
+                <i class="fa-solid fa-calendar-days"></i>
+            </div>
+        </div>
+        
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Usuários Totais') }}</span>
+                <h2>{{ stats.total_usuarios | default(0) }}</h2>
+            </div>
+            <div class="kpi-icon bg-purple">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Ativos (Último mês)') }}</span>
+                <h2>{{ stats.novos_30d | default(0) }}</h2>
+            </div>
+            <div class="kpi-icon bg-blue">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-details">
+                <span>{{ t('Contas Inativas') }}</span>
+                <h2>{{ (stats.total_usuarios | default(0)) - (stats.usuarios_ativos | default(0)) }}</h2>
+            </div>
+            <div class="kpi-icon bg-red">
+                <i class="fa-solid fa-user-slash"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="analytics-grid">
+        <div class="chart-box">
+            <h3><i class="fa-solid fa-chart-line"></i> {{ t('Tendência Volumétrica Mensal') }}</h3>
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <h3><i class="fa-solid fa-cake-candles"></i> {{ t('Faixa Etária dos Usuários') }}</h3>
+            <div class="chart-container">
+                <canvas id="ageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-box" style="padding: 18px;">
+            <h3><i class="fa-solid fa-venus-mars"></i> {{ t('Distribuição por Gênero') }}</h3>
+            <div class="chart-container" style="height: 140px;">
+                <canvas id="genderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modoEscuroAdmin = document.body.classList.contains('theme-dark');
+        Chart.defaults.font.family = "'Poppins', sans-serif";
+        Chart.defaults.color = modoEscuroAdmin ? "rgba(255,255,255,0.8)" : "#64748b";
+        const corGridGraficoAdmin = modoEscuroAdmin ? 'rgba(255,255,255,0.08)' : 'rgba(0, 0, 0, 0.04)';
+
+        // 1. CHART: LINHA - EVOLUÇÃO DE CONTAS E RESERVAS
+        const ctxGrowth = document.getElementById('growthChart')?.getContext('2d');
+        if (ctxGrowth) {
+            new Chart(ctxGrowth, {
+                type: 'line',
+                data: {
+                    labels: {{ faturamento_chart.labels | default([]) | tojson }},
+                    datasets: [
+                        {
+                            label: '{{ t("Contas Criadas") }}',
+                            data: {{ faturamento_chart.users_by_month | default([]) | tojson }},
+                            borderColor: modoEscuroAdmin ? '#5b9bf5' : '#0052D4',
+                            backgroundColor: 'rgba(124, 58, 237, 0.05)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 3,
+                            pointRadius: 3
+                        },
+                        {
+                            label: '{{ t("Estadias Concluídas") }}',
+                            data: {{ faturamento_chart.estadias_by_month | default([]) | tojson }},
+                            borderColor: '#6FB1FC',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.35,
+                            borderWidth: 3,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: corGridGraficoAdmin }, beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        }
+
+        // 2. CHART: BARRAS - METRIFICAÇÃO POR IDADE (DYNAMIC)
+        const ctxAge = document.getElementById('ageChart')?.getContext('2d');
+        if (ctxAge) {
+            new Chart(ctxAge, {
+                type: 'bar',
+                data: {
+                    labels: ['18-24', '25-34', '35-44', '45-54', '55+'],
+                    datasets: [{
+                        label: '{{ t("Usuários por Idade") }}',
+                        data: {{ stats.faixas_etarias | default([0, 0, 0, 0, 0]) | tojson }},
+                        backgroundColor: modoEscuroAdmin
+                            ? ['rgba(91,155,245,0.18)', 'rgba(91,155,245,0.18)', '#5b9bf5', '#5b9bf5', '#5b9bf5']
+                            : ['rgba(0,82,212,0.08)', 'rgba(0,82,212,0.08)', '#0052D4', '#0052D4', '#0052D4'],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: corGridGraficoAdmin }, beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        }
+
+        // 3. CHART: ROSCA - DISTRIBUIÇÃO DE GÊNERO (DYNAMIC)
+        const ctxGender = document.getElementById('genderChart')?.getContext('2d');
+        if (ctxGender) {
+            new Chart(ctxGender, {
+                type: 'doughnut',
+                data: {
+                    labels: ['{{ t("Feminino") }}', '{{ t("Masculino") }}', '{{ t("Outros") }}'],
+                    datasets: [{
+                        data: {{ stats.distribuicao_genero | default([0, 0, 0]) | tojson }},
+                        backgroundColor: ['#0052D4', '#6FB1FC', '#4364F7'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,909 @@
+{% extends "base_dash.html" %}
+
+{% block title %}
+    {{ t('Dashboard Nomdo') }}
+{% endblock %}
+
+{% block titulo %}
+    {{ t('Dashboard Inteligente') }}
+{% endblock %}
+
+{% block tour_page %}home{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root{
+        --primary:#0052D4;
+        --primary2:#4364F7;
+        --bg:rgba(0,82,212,0.08);
+        --text:#1e293b;
+        --muted:#64748b;
+        --card:#ffffff;
+        --border:rgba(0,82,212,0.08);
+    }
+
+    .dashboard-wrapper{
+        display:flex;
+        flex-direction:column;
+        gap:24px;
+    }
+
+    .hero-dashboard{
+        background:
+            radial-gradient(circle at top right, rgba(255,255,255,.18), transparent 30%),
+            linear-gradient(135deg,var(--primary),var(--primary2));
+        border-radius:30px;
+        padding:34px;
+        color:white;
+        position:relative;
+        overflow:hidden;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:20px;
+        flex-wrap:wrap;
+    }
+
+    .hero-dashboard h2{
+        margin:0;
+        font-size:2rem;
+        font-weight:800;
+    }
+
+    .hero-dashboard p{
+        margin-top:10px;
+        max-width:650px;
+        opacity:.95;
+        line-height:1.7;
+    }
+
+    .hero-badges{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:20px;
+    }
+
+    .hero-badge{
+        background:rgba(255,255,255,.16);
+        backdrop-filter:blur(10px);
+        padding:10px 14px;
+        border-radius:999px;
+        font-size:.82rem;
+        font-weight:700;
+    }
+
+    .stats-grid{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:20px;
+    }
+
+    .card{
+        background:var(--card);
+        border-radius:24px;
+        padding:22px;
+        box-shadow:0 8px 30px rgba(15,23,42,.05);
+        border:1px solid var(--border);
+        transition:.25s;
+    }
+
+    .card:hover{
+        transform:translateY(-4px);
+    }
+
+    .stat-top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:18px;
+    }
+
+    .stat-icon{
+        width:54px;
+        height:54px;
+        border-radius:18px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.2rem;
+    }
+
+    .stat-icon.purple, .stat-icon.green, .stat-icon.orange, .stat-icon.blue, .stat-icon.pink, .stat-icon.gold{ color:#fff; }
+    .purple{ background:linear-gradient(135deg,#9333ea,#a855f7); }
+    .green{ background:linear-gradient(120deg,#16a34a,#22c55e); }
+    .orange{ background:linear-gradient(140deg,#f59e0b,#fb923c); }
+    .blue{ background:linear-gradient(135deg,#0284c7,#0ea5e9); }
+    .pink{ background:linear-gradient(150deg,#e11d48,#fb7185); }
+    .gold{ background:linear-gradient(125deg,#eab308,#facc15); }
+    .cyan{ background:rgba(6,182,212,0.10); color:#06b6d4; }
+
+    .card span{
+        color:var(--muted);
+        font-size:.88rem;
+    }
+
+    .card h2{
+        margin-top:10px;
+        margin-bottom:0;
+        font-size:1.8rem;
+        color:var(--text);
+    }
+
+    .footer-positive{
+        margin-top:14px;
+        color:#16a34a;
+        font-weight:700;
+        font-size:.82rem;
+    }
+
+    .section-grid{
+        display:grid;
+        grid-template-columns:1.5fr 1fr;
+        gap:24px;
+    }
+
+    .chart-card{
+        background:white;
+        border-radius:26px;
+        padding:24px;
+        border:1px solid var(--border);
+        overflow:hidden;
+    }
+
+    /* Chart.js às vezes mede o canvas antes do card terminar de assumir
+       seu tamanho final (ex: card entrando com animação/sombra nova),
+       e o canvas fica maior que o card — o overflow:hidden acima já
+       corta isso, e o max-width aqui garante que o canvas nunca force
+       o card (e a página) a ficar mais largo que devia. */
+    .chart-card canvas{
+        max-width:100% !important;
+    }
+
+    .chart-title{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:20px;
+    }
+
+    .hidden{
+        display:none !important;
+    }
+
+    .empty-state{
+        background:white;
+        border-radius:30px;
+        border:1px solid var(--border);
+        padding:70px 30px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        text-align:center;
+        gap:18px;
+        box-shadow:0 8px 30px rgba(15,23,42,.05);
+    }
+
+    .empty-title{
+        margin:0;
+        font-size:1.7rem;
+        color:var(--text);
+        font-weight:800;
+    }
+
+    .empty-text{
+        max-width:540px;
+        color:var(--muted);
+        line-height:1.7;
+        margin:0;
+    }
+
+    .empty-btn{
+        margin-top:10px;
+        background:linear-gradient(135deg,var(--primary),var(--primary2));
+        color:white;
+        text-decoration:none;
+        padding:14px 22px;
+        border-radius:16px;
+        font-weight:700;
+        display:inline-flex;
+        align-items:center;
+        gap:10px;
+        transition:.3s;
+    }
+
+    .empty-btn:hover{
+        transform:translateY(-2px);
+    }
+
+    
+
+    
+
+    /* Tablets e celulares: 2 cards por linha em vez de 1 — cabe bem e
+       ainda dá pra ler os números sem espremer demais. */
+    @media (max-width:992px) {
+
+        .stats-grid{
+            grid-template-columns:repeat(2,1fr);
+        }
+
+        .section-grid{
+            grid-template-columns:1fr;
+        }
+    }
+
+    @media (max-width:600px) {
+
+        .stats-grid{
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+        }
+
+        .card{
+            padding:16px;
+            border-radius:18px;
+        }
+
+        .stat-icon{
+            width:42px;
+            height:42px;
+            border-radius:14px;
+            font-size:1rem;
+        }
+
+        .card h2{
+            font-size:1.3rem;
+        }
+
+        .hero-dashboard{
+            padding:20px;
+        }
+
+        .hero-dashboard h2{
+            font-size:1.5rem;
+        }
+
+        .empty-state{
+            padding:50px 20px;
+        }
+
+        .empty-title{
+            font-size:1.35rem;
+        }
+
+        .section-grid{
+            grid-template-columns:1fr;
+        }
+
+        .chart-card{
+            padding:16px;
+            border-radius:18px;
+        }
+    }
+
+    @media (max-width:400px) {
+        /* Celulares bem estreitos: mantém as 2 colunas (só encolhe mais
+           o espaçamento/fonte) — 2 cards por linha continua valendo aqui. */
+        .stats-grid{
+            gap:8px;
+        }
+
+        .card{
+            padding:12px;
+        }
+
+        .card span{
+            font-size:.78rem;
+        }
+
+        .card h2{
+            font-size:1.1rem;
+        }
+
+        .stat-icon{
+            width:36px;
+            height:36px;
+            font-size:.9rem;
+        }
+    }
+
+    /* ===== DARK MODE =====
+       O fundo escuro é o mesmo azul da marca (#0052D4) — um card com essa
+       mesma cor lisa "some" dentro do fundo (era o problema antes: os
+       cards ficavam praticamente invisíveis, só a borda fina de 8% dava
+       alguma pista de que existiam). Agora o card vira uma "superfície
+       elevada": uma camada branca bem transparente sobre o azul, com
+       borda e sombra mais fortes pra dar profundidade e destacar bem do
+       fundo — igual ao card do herói, que já usa um gradiente próprio. */
+    body.theme-dark .card,
+    body.theme-dark .chart-card,
+    body.theme-dark .empty-state{
+        background:linear-gradient(165deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03)) !important;
+        border:1px solid rgba(255,255,255,0.16) !important;
+        box-shadow:0 12px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+    }
+
+    body.theme-dark .card span,
+    body.theme-dark .empty-text{
+        color:rgba(255,255,255,0.72) !important;
+    }
+
+    body.theme-dark .card h2,
+    body.theme-dark .empty-title{
+        color:rgba(255,255,255,0.92) !important;
+    }
+
+    body.theme-dark .card:hover{
+        background:linear-gradient(165deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05)) !important;
+        box-shadow:0 16px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    }
+
+    /* Ícones dos cards ganham um leve "glow" no escuro pra reforçar o
+       contraste colorido contra a superfície agora mais transparente. */
+    body.theme-dark .stat-icon{
+        box-shadow:0 6px 18px rgba(0,0,0,.4);
+    }
+
+    /* Tons mais escuros/fechados das mesmas cores, pra combinar melhor
+       com o fundo em cinza/preto (as versões claras originais, pensadas
+       pro fundo branco do modo claro, ficavam "gritando" demais aqui). */
+    body.theme-dark .purple{ background:linear-gradient(135deg,#6b21a8,#7e22ce) !important; }
+    body.theme-dark .green{ background:linear-gradient(120deg,#15803d,#16a34a) !important; }
+    body.theme-dark .orange{ background:linear-gradient(140deg,#b45309,#d97706) !important; }
+    body.theme-dark .blue{ background:linear-gradient(135deg,#075985,#0369a1) !important; }
+    body.theme-dark .pink{ background:linear-gradient(150deg,#9f1239,#be123c) !important; }
+    body.theme-dark .gold{ background:linear-gradient(125deg,#a16207,#ca8a04) !important; }
+
+    /* Herói: o azul vivo original (pensado pro fundo branco do modo
+       claro) ficava destoante ao lado dos cards em cinza/preto — troca
+       por um gradiente mais fechado/escuro, que mantém a identidade azul
+       da marca só que em tom compatível com o resto da página escura. */
+    body.theme-dark .hero-dashboard{
+        background:
+            radial-gradient(circle at top right, rgba(255,255,255,.10), transparent 30%),
+            linear-gradient(135deg, #0a2a63, #1d3a8f) !important;
+        border:1px solid rgba(255,255,255,0.12) !important;
+        box-shadow:0 20px 45px rgba(0,0,0,.4) !important;
+    }
+
+    body.theme-dark .hero-badge{
+        background:rgba(255,255,255,0.20) !important;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="dashboard-wrapper">
+
+    <div class="hero-dashboard">
+
+        <div>
+
+            <h2>
+                <i class="fa-solid fa-wave-square"></i>
+                {{ t('Dashboard Nomdo') }}
+            </h2>
+
+            <p>
+                {{ t('Acompanhe métricas, faturamento, ocupação e performance dos seus imóveis em tempo real.') }}
+            </p>
+
+            <div class="hero-badges">
+
+                <div class="hero-badge">
+                    <i class="fa-solid fa-building"></i>
+                    {{ stats.total_imoveis | default(0) }}
+                    {% if stats.total_imoveis == 1 %}
+                        {{ t('imóvel') }}
+                    {% else %}
+                        {{ t('imóveis') }}
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- HOST PANEL -->
+    <div id="host-panel">
+
+        {% if dashboard_desbloqueado %}
+
+        <!-- CARDS -->
+        <div class="stats-grid">
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>{{ t('Reservas Ativas') }}</span>
+                        <h2>{{ stats.reservas_ativas | default(0) }}</h2>
+                    </div>
+
+                    <div class="stat-icon green">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Reservas em andamento') }}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>{{ t('Média de Ocupação') }}</span>
+                        <h2>{{ stats.media_ocupacao | default('0') }}%</h2>
+                    </div>
+
+                    <div class="stat-icon blue">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Média geral dos imóveis') }}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>{{ t('Faturamento Total') }}</span>
+                        <h2>{{ currency_symbol }} {{ stats.faturamento_total | default('0,00') }}</h2>
+                    </div>
+
+                    <div class="stat-icon green">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Receita consolidada') }}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>{{ t('Imóvel Mais Procurado') }}</span>
+
+                        <h2 style="font-size:1.05rem;">
+                            {{ stats.imovel_mais_procurado | default('') }}
+                        </h2>
+                    </div>
+
+                    <div class="stat-icon gold">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Melhor performance') }}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>{{ t('Imóvel Menos Procurado') }}</span>
+
+                        <h2 style="font-size:1.05rem;">
+                            {{ stats.imovel_menos_procurado | default('') }}
+                        </h2>
+                    </div>
+
+                    <div class="stat-icon orange">
+                        <i class="fa-solid fa fa-thumbs-down"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Menor ocupação') }}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stat-top">
+                    <div>
+                        <span>RevPAR</span>
+                        <h2>{{ currency_symbol }} {{ stats.revpar | default('0,00') }}</h2>
+                    </div>
+
+                    <div class="stat-icon pink">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+
+                <div class="footer-positive">
+                    {{ t('Receita média por imóvel') }}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- GRÁFICOS -->
+        <div class="section-grid" style="margin-top:24px;">
+
+            <div class="chart-card">
+
+                <div class="chart-title">
+                    <h3>
+                        <i class="fa-solid fa-chart-column"></i>
+                        {{ t('Faturamento por Imóvel') }}
+                    </h3>
+                </div>
+
+                <div style="height:320px;position:relative;">
+                    <canvas id="faturamentoChart"></canvas>
+                </div>
+
+            </div>
+
+            <div class="chart-card">
+
+                <div class="chart-title">
+                    <h3>
+                        <i class="fa-solid fa-bed"></i>
+                        {{ t('Estadias por Imóvel') }}
+                    </h3>
+                </div>
+
+                <div style="height:320px;position:relative;">
+                    <canvas id="estadiasChart"></canvas>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- INSIGHTS -->
+        <div class="section-grid" style="margin-top:24px;">
+
+            <div class="chart-card" id="insights-card">
+
+                <div class="chart-title">
+                    <h3>
+                        <i class="fa-solid fa-bolt"></i>
+                        {{ t('Insights Inteligentes') }}
+                    </h3>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:16px;">
+
+                    {% if stats.imovel_mais_procurado %}
+                    <div style="padding:16px;border-radius:18px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.18);border-left:4px solid #eab308;">
+                        <strong style="display:flex;align-items:center;gap:10px;color:#b8860b;">
+                            <span style="width:28px;height:28px;flex-shrink:0;border-radius:9px;background:rgba(234,179,8,0.15);color:#b8860b;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;">
+                                <i class="fa-solid fa-crown"></i>
+                            </span>
+                            {{ t('Melhor imóvel do mês') }}
+                        </strong>
+
+                        <p style="margin-top:8px;color:var(--muted);">
+                            <strong style="color:#b8860b;">{{ stats.imovel_mais_procurado }}</strong>
+                            {{ t('teve a maior procura entre todos os imóveis cadastrados.') }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div style="padding:16px;border-radius:18px;background:rgba(2,132,199,0.08);border:1px solid rgba(2,132,199,0.18);border-left:4px solid #0284c7;">
+                        <strong style="display:flex;align-items:center;gap:10px;color:#0284c7;">
+                            <span style="width:28px;height:28px;flex-shrink:0;border-radius:9px;background:rgba(2,132,199,0.12);color:#0284c7;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;">
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </span>
+                            {{ t('Ocupação média') }}
+                        </strong>
+
+                        <p style="margin-top:8px;color:var(--muted);">
+                            {{ t('Seus imóveis estão com média de') }}
+                            <strong style="color:#0284c7;">{{ stats.media_ocupacao | default('0') }}%</strong>
+                            {{ t('de ocupação.') }}
+                        </p>
+                    </div>
+
+                    <div style="padding:16px;border-radius:18px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.18);border-left:4px solid #16a34a;">
+                        <strong style="display:flex;align-items:center;gap:10px;color:#16a34a;">
+                            <span style="width:28px;height:28px;flex-shrink:0;border-radius:9px;background:rgba(22,163,74,0.12);color:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </span>
+                            {{ t('Receita acumulada') }}
+                        </strong>
+
+                        <p style="margin-top:8px;color:var(--muted);">
+                            {{ t('Seu faturamento consolidado chegou em') }}
+                            <strong style="color:#16a34a;">{{ currency_symbol }} {{ stats.faturamento_total | default('0,00') }}</strong>.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="chart-card" id="performance-card">
+
+                <div class="chart-title">
+                    <h3>
+                        <i class="fa-solid fa-fire"></i>
+                        {{ t('Performance Geral') }}
+                    </h3>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:22px;">
+
+                    <div>
+                        <span style="font-size:.9rem;color:var(--muted);">
+                            {{ t('Ocupação Geral') }}
+                        </span>
+
+                        <div style="
+                            width:100%;
+                            height:12px;
+                            background:rgba(0,82,212,0.08);
+                            border-radius:999px;
+                            margin-top:8px;
+                            overflow:hidden;
+                        ">
+                            <div style="
+                                width:{{ stats.media_ocupacao | default(0) }}%;
+                                height:100%;
+                                background:linear-gradient(90deg,#0052D4,#0052D4);
+                                border-radius:999px;
+                            "></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span style="font-size:.9rem;color:var(--muted);">
+                            {{ t('Receita Total') }}
+                        </span>
+
+                        <h2 style="margin-top:10px;">
+                            {{ currency_symbol }} {{ stats.faturamento_total | default('0,00') }}
+                        </h2>
+                    </div>
+
+                    <div class="footer-positive">
+                        <i class="fa-solid fa-circle-check"></i>
+                        {{ t('Sistema operando normalmente') }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+</div>
+
+
+        {% elif tem_imoveis and not tem_estadias %}
+
+<!-- ONBOARDING: JÁ TEM IMÓVEL, FALTA A PRIMEIRA ESTADIA PRA DESBLOQUEAR -->
+<div class="empty-state">
+
+    <div class="empty-icon" style="background:rgba(252,207,111,0.25);color:var(--edit-dark, #b8860b);">
+        <i class="fa-solid fa-lock"></i>
+    </div>
+
+    <h2>
+        {{ t('Falta pouco pra desbloquear seu dashboard!') }}
+    </h2>
+
+    <strong>
+        {{ t('Seus imóveis já estão cadastrados — agora só falta registrar sua primeira estadia.') }}
+    </strong>
+
+    <p>
+        {{ t('Assim que houver pelo menos 1 estadia lançada, as métricas de faturamento, ocupação e performance aparecem aqui automaticamente.') }}
+    </p>
+
+    <a href="/imoveis" class="empty-btn">
+        <i class="fa-solid fa-calendar-plus"></i>
+        {{ t('Registrar Estadia') }}
+    </a>
+
+</div>
+
+        {% else %}
+
+<!-- EMPTY STATE -->
+<div class="empty-state">
+
+    <div class="empty-icon">
+        <i class="fa-regular fa-folder-open"></i>
+    </div>
+
+    <h2>
+        {% set nomes = nome_completo.split() %}
+        {% if nomes|length >= 2 %}
+            {{ t('Olá, %(nome)s! ✨', nome=nomes[0] + ' ' + nomes[-1]) }}
+        {% else %}
+            {{ t('Olá, %(nome)s! ✨', nome=nome_completo) }}
+        {% endif %}
+    </h2>
+
+    <strong>
+        {{ t('Ainda não há informações para exibir aqui.') }}
+    </strong>
+
+    <p>
+        {{ t('Adicione informações para começar a utilizar esta área da plataforma.') }}
+    </p>
+
+    <a href="/imoveis" class="empty-btn">
+        <i class="fa-solid fa-plus"></i>
+        {{ t('Cadastrar Imóvel') }}
+    </a>
+
+</div>
+
+        {% endif %}
+
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    {% if dashboard_desbloqueado %}
+
+    // Paleta oficial Nomdo (azul e roxo já usados no restante do site), alternando tons pra dar contraste.
+    // No modo escuro os tons claros da paleta original (pensada pro fundo
+    // branco) ficavam "lavados"/berrantes demais contra o fundo escuro —
+    // usa uma versão mais fechada das mesmas cores, mesma lógica aplicada
+    // nos ícones dos cards.
+    const modoEscuro = document.body.classList.contains('theme-dark');
+    const CORES_ARCO_IRIS = modoEscuro
+        ? ['#1d4ed8', '#7e22ce', '#0369a1', '#6d28d9', '#2563eb', '#9333ea', '#4338ca', '#3730a3']
+        : ['#0052D4', '#a855f7', '#0284c7', '#7c3aed', '#6FB1FC', '#9333ea', '#4364F7', '#4f46e5'];
+    const corEixoGrafico = modoEscuro ? 'rgba(255,255,255,0.65)' : '#64748b';
+    const corGridGrafico = modoEscuro ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,.05)';
+
+    // FATURAMENTO POR IMÓVEL
+    const faturamentoCtx = document
+        .getElementById('faturamentoChart')
+        .getContext('2d');
+
+    const faturamentoLabels = {{faturamento_chart["labels"] | default([]) | tojson }};
+
+    new Chart(faturamentoCtx, {
+
+        type: 'bar',
+
+        data: {
+
+            labels: faturamentoLabels,
+
+            datasets: [{
+                label: '{{ t("Faturamento") }}',
+                data: {{faturamento_chart["values"] | default([]) | tojson }},
+                borderRadius: 12,
+                backgroundColor: faturamentoLabels.map((_, i) => CORES_ARCO_IRIS[i % CORES_ARCO_IRIS.length])
+            }]
+        },
+
+        options: {
+            responsive:true,
+            maintainAspectRatio:false,
+
+            plugins:{
+                legend:{
+                    display:false
+                }
+            },
+
+            scales:{
+                x:{
+                    grid:{
+                        display:false
+                    },
+                    ticks:{
+                        color: corEixoGrafico
+                    }
+                },
+
+                y:{
+                    beginAtZero:true,
+                    grid:{
+                        color: corGridGrafico
+                    },
+                    ticks:{
+                        color: corEixoGrafico
+                    }
+                }
+            }
+        }
+
+    });
+
+    // ESTADIAS POR IMÓVEL
+    const estadiasCtx = document
+        .getElementById('estadiasChart')
+        .getContext('2d');
+
+    const estadiasLabels = {{ estadias_chart["labels"] | default([]) | tojson }};
+
+    new Chart(estadiasCtx, {
+
+        type:'doughnut',
+
+        data:{
+
+            labels: estadiasLabels,
+
+            datasets:[{
+                data: {{ estadias_chart["values"] | default([]) | tojson }},
+                borderWidth:0,
+                backgroundColor: estadiasLabels.map((_, i) => CORES_ARCO_IRIS[i % CORES_ARCO_IRIS.length])
+            }]
+        },
+
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+
+            plugins:{
+                legend:{
+                    position: 'bottom',
+                    labels:{
+                        color: corEixoGrafico
+                    }
+                }
+            }
+        }
+
+    });
+
+    {% endif %}
+
+</script>
+
+<script>
+
+    NomdoTour.register('home', [
+        {
+            selector: '.hero-dashboard',
+            title: '{{ t("Seu Dashboard Nomdo") }}',
+            text: '{{ t("Aqui você acompanha métricas, faturamento, ocupação e performance de todos os seus imóveis em tempo real.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.stats-grid',
+            title: '{{ t("Indicadores principais") }}',
+            text: '{{ t("Estes cards mostram reservas ativas, ocupação média, faturamento total, imóveis mais e menos procurados e o RevPAR — um resumo rápido da saúde do seu negócio.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '#faturamentoChart',
+            title: '{{ t("Faturamento por imóvel") }}',
+            text: '{{ t("Este gráfico compara o faturamento entre os seus imóveis, ajudando a identificar quais estão performando melhor.") }}',
+            position: 'top'
+        },
+        {
+            selector: '#estadiasChart',
+            title: '{{ t("Estadias por imóvel") }}',
+            text: '{{ t("Aqui você vê a distribuição das estadias entre os imóveis cadastrados.") }}',
+            position: 'top'
+        },
+        {
+            selector: '#insights-card',
+            title: '{{ t("Insights inteligentes") }}',
+            text: '{{ t("O Nomdo gera automaticamente observações sobre o seu melhor imóvel, ocupação média e receita acumulada.") }}',
+            position: 'top'
+        },
+        {
+            selector: '#performance-card',
+            title: '{{ t("Performance geral") }}',
+            text: '{{ t("Um resumo visual da ocupação geral e da receita total, pra você acompanhar o desempenho de tudo de relance.") }}',
+            position: 'left'
+        }
+    ]);
+
+</script>
+{% endblock %}

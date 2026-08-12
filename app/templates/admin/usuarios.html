@@ -1,0 +1,806 @@
+{% extends "base_admin.html" %}
+
+{% block title %}
+    {{ t('Gestão de Usuários') }}
+{% endblock %}
+
+{% block titulo %}{{ t('Usuários') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary: #0052D4;
+    --primary-light: rgba(0,82,212,0.10);
+    --primary-soft: rgba(0,82,212,0.08);
+
+    --success: #16a34a;
+    --success-soft: rgba(22,163,74,0.10);
+
+    --danger: #dc2626;
+    --danger-soft: rgba(220,38,38,0.08);
+
+    --warning: #d97706;
+    --warning-soft: rgba(217,119,6,0.12);
+
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.users-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.users-card {
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.02);
+}
+
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.top-header h2 {
+    color: var(--text-main);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge-total {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(90, 26, 155, 0.15);
+}
+
+.filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search-container-box {
+    position: relative;
+    flex: 2;
+    min-width: 280px;
+}
+
+.search-container-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.search-container-box input {
+    width: 100%;
+    padding: 12px 14px 12px 40px !important;
+}
+
+.filters input,
+.filters select {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+    font-size: 0.9rem;
+}
+
+.filters input:focus,
+.filters select:focus {
+    border-color: var(--primary-light);
+    background: white;
+    transform: translateY(-1px);
+}
+
+.btn-light {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-light:hover {
+    transform: translateY(-2px);
+    background: rgba(0,82,212,0.08);
+}
+
+.btn-light:focus,
+.btn-light:active {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead tr {
+    border-bottom: 2px solid var(--border-color);
+}
+
+th {
+    text-align: left;
+    padding: 14px 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+td {
+    padding: 18px 12px;
+    border-bottom: 1px solid #f8fafc;
+    vertical-align: middle;
+    color: var(--text-main);
+}
+
+tbody tr:hover {
+    background: rgba(0,82,212,0.08);
+}
+
+.user-name {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.status-badge {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.status-badge i {
+    color: inherit !important;
+}
+
+/* Status */
+.status-badge.active {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.status-badge.away {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+/* Usuário normal — neutro, pra não competir com o azul do Administrador */
+.status-badge.role-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Administrador em azul escuro sólido — bem destacado dos demais badges */
+.status-badge.admin-badge {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 800;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Ações */
+.actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: transform 0.2s ease, opacity 0.2s;
+    font-size: 16px;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    opacity: 0.95;
+}
+
+.action-btn:focus,
+.action-btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.view {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.delete {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+/* Promover/revogar Administrador — cor de ação de edição (amarelo) */
+.role-admin-on {
+    background-color: var(--warning-soft) !important;
+    color: var(--warning) !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.role-admin-off {
+    background-color: var(--warning-soft) !important;
+    color: var(--warning) !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Ícone do admin mesma cor do texto */
+.role-admin-on i,
+.role-admin-off i {
+    color: inherit !important;
+}
+
+/* Remove outline total dos botões */
+.role-admin-on:focus,
+.role-admin-off:focus,
+.role-admin-on:active,
+.role-admin-off:active {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* MODAL REESTRUTURADO */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    width: 100%;
+    max-width: 650px;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    position: relative; /* Adicionado para garantir o posicionamento absoluto do fechar */
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ESTILO REPLICADO DO BOTÃO FECHAR FLUTUANTE (PADRÃO RESERVAS) */
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: .25s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    z-index: 10;
+}
+
+.modal-close:hover {
+    background: #0052D4;
+    color: white;
+    transform: rotate(180deg) scale(1.08);
+    box-shadow: 0 8px 20px rgba(239,68,68,.25);
+}
+
+.modal-header {
+    padding: 24px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-body {
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.info-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.info-card span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.info-card strong {
+    color: var(--text-main);
+    font-size: 15px;
+    word-break: break-word;
+}
+
+/* Ícones coloridos na ficha de visualização — pra não ficar tudo no
+   mesmo tom neutro do texto do label. */
+.info-ic { font-size: 11px; }
+.info-ic-blue   { color: #0284c7; }
+.info-ic-purple { color: #9333ea; }
+.info-ic-orange { color: #f59e0b; }
+.info-ic-gold   { color: #ca8a04; }
+.info-ic-gray   { color: #94a3b8; }
+body.theme-dark .info-ic-blue   { color: #38bdf8; }
+body.theme-dark .info-ic-purple { color: #c084fc; }
+body.theme-dark .info-ic-orange { color: #fb923c; }
+body.theme-dark .info-ic-gold   { color: #eab308; }
+body.theme-dark .info-ic-gray   { color: #94a3b8; }
+
+/* ============================================================
+   RESPONSIVIDADE — USUÁRIOS
+   ============================================================ */
+
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .badge-total { font-size: 12px; padding: 6px 14px; }
+    .modal-header h3 { font-size: 1.05rem; }
+    .search-container-box input,
+    .filters select,
+    .btn-light { font-size: 0.85rem; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --text-main: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.70);
+    --card-bg: var(--dm-surface, #1e1f24);
+    --border-color: rgba(255,255,255,0.10);
+}
+
+body.theme-dark .users-card {
+    box-shadow: none;
+}
+
+body.theme-dark .filters input,
+body.theme-dark .filters select {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.92);
+}
+
+body.theme-dark .filters input::placeholder {
+    color: rgba(255,255,255,0.5);
+}
+
+body.theme-dark .filters input:focus,
+body.theme-dark .filters select:focus {
+    background: rgba(255,255,255,0.12);
+}
+
+body.theme-dark td {
+    border-bottom-color: rgba(255,255,255,0.08);
+}
+
+body.theme-dark tbody tr:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+body.theme-dark .status-badge.role-badge {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+}
+
+body.theme-dark .btn-light {
+    background: rgba(255,255,255,0.1) !important;
+    color: #9dc1ff !important;
+}
+
+body.theme-dark .id-badge {
+    background: rgba(255,255,255,0.1) !important;
+    color: #9dc1ff !important;
+}
+
+body.theme-dark .modal-content {
+    background: var(--dm-surface, #1e1f24) !important;
+}
+
+body.theme-dark .modal-close {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+}
+
+body.theme-dark .info-card {
+    background: rgba(255,255,255,0.08);
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="users-wrapper">
+    <div class="users-card">
+        <div class="top-header">
+            <h2><i class="fa-solid fa-users"></i> {{ t('Usuários Cadastrados') }}</h2>
+            <span class="badge-total" id="contador-linhas">{{ t('Total') }}: {{ usuarios|length }}</span>
+        </div>
+
+        <div class="filters">
+            <div class="search-container-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="inputBuscaRealtime" placeholder="{{ t('Pesquise por nome ou e-mail...') }}">
+            </div>
+
+            <select id="selectFiltroAtividade">
+                <option value="todos">{{ t('Todos os Status') }}</option>
+                <option value="ativo">{{ t('Ativos') }}</option>
+                <option value="inativo">{{ t('Inativos') }}</option>
+            </select>
+
+            <select id="selectFiltroAcesso">
+                <option value="todos">{{ t('Todos os Papéis') }}</option>
+                <option value="admin">{{ t('Administradores') }}</option>
+                <option value="comum">{{ t('Usuários Comuns') }}</option>
+            </select>
+
+            <button type="button" class="btn-light" id="btnLimparFiltros">{{ t('Limpar') }}</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ t('ID') }}</th>
+                        <th>{{ t('Usuário') }}</th>
+                        <th>{{ t('E-mail') }}</th>
+                        <th>{{ t('Atividade') }}</th>
+                        <th>{{ t('Nível de Acesso') }}</th>
+                        <th style="text-align:center;">{{ t('Ações') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUsuariosBody">
+                    {% for u in usuarios %}
+                    <tr class="user-row-item"
+                        data-nome="{{ u.nome | lower }}"
+                        data-email="{{ u.email | lower }}"
+                        data-ativo="{% if u.is_active %}ativo{% else %}inativo{% endif %}"
+                        data-acesso="{% if u.is_admin %}admin{% else %}comum{% endif %}"
+                        onclick="abrirFichaContexto(event, '{{ u.id }}', '{{ u.nome }}', '{{ u.email }}', '{{ u.categoria or t("Não informado") }}', '{{ u.is_active }}', '{{ u.is_admin }}')">
+
+                        <td style="vertical-align: middle;">
+        <span class="id-badge" style="
+            background: var(--primary-soft);
+            color: var(--primary);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        ">
+            #{{ u.id }}
+        </span>
+    </td>
+                        <td><div class="user-name">{{ u.nome }}</div></td>
+                        <td>{{ u.email }}</td>
+                        
+                        <td>
+                            {% if u.is_active %}
+                                <span class="status-badge active"><i class="fa-solid fa-bolt"></i> {{ t('Ativo') }}</span>
+                            {% else %}
+                                <span class="status-badge away"><i class="fa-solid fa-circle-xmark"></i> {{ t('Inativo') }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if u.is_admin %}
+                                <span class="status-badge admin-badge"><i class="fa-solid fa-user-shield"></i> {{ t('Administrador') }}</span>
+                            {% else %}
+                                <span class="status-badge role-badge"><i class="fa-solid fa-user"></i> {{ t('Convencional') }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <button type="button" class="action-btn view" title="{{ t('Visualizar Detalhes') }}"
+                                        onclick="abrirFichaBotao(event, '{{ u.id }}', '{{ u.nome }}', '{{ u.email }}', '{{ u.categoria or t("Não informado") }}', '{{ u.is_active }}', '{{ u.is_admin }}')">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+
+                                <button type="button"
+                                        class="action-btn {% if u.is_admin %}role-admin-on{% else %}role-admin-off{% endif %}"
+                                        title="{% if u.is_admin %}{{ t('Revogar Admin') }}{% else %}{{ t('Promover Admin') }}{% endif %}"
+                                        onclick="confirmAdmin(event, '{{ u.id }}', '{{ u.nome }}', {{ 'true' if u.is_admin else 'false' }})">
+                                    <i class="fa-solid fa-user-shield"></i>
+                                </button>
+
+                                <button type="button" class="action-btn delete" title="{{ t('Excluir Usuário') }}"
+                                        onclick="confirmDelete(event, '{{ u.id }}', '{{ u.nome }}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="linhaSemDados">
+                        <td colspan="6" style="text-align:center; color: var(--text-muted); padding: 30px;">{{ t('Nenhum usuário localizado na base de dados.') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <button type="button" class="modal-close" onclick="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-circle-info"></i> {{ t('Ficha Cadastral do Usuário') }}</h3>
+        </div>
+        <div class="modal-body">
+            <div class="info-card"><span><i class="fa-solid fa-hashtag info-ic info-ic-gray"></i> {{ t('ID Interno') }}</span><strong id="modal-id"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-user info-ic info-ic-purple"></i> {{ t('Nome Completo') }}</span><strong id="modal-nome"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-envelope info-ic info-ic-blue"></i> {{ t('E-mail Registrado') }}</span><strong id="modal-email"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-tag info-ic info-ic-orange"></i> {{ t('Categoria de Conta') }}</span><strong id="modal-categoria"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-toggle-on info-ic info-ic-gray"></i> {{ t('Status Operacional') }}</span><strong id="modal-status"></strong></div>
+            <div class="info-card"><span><i class="fa-solid fa-crown info-ic info-ic-gold"></i> {{ t('Credencial Administrativa') }}</span><strong id="modal-admin"></strong></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const modal = document.getElementById('userModal');
+
+    function abrirFichaContexto(event, id, nome, email, categoria, ativo, admin) {
+        if (event.target.closest('.actions') || event.target.closest('.status-badge')) {
+            return;
+        }
+        processarModalAtivacao(id, nome, email, categoria, ativo, admin);
+    }
+
+    function abrirFichaBotao(event, id, nome, email, categoria, ativo, admin) {
+        event.stopPropagation();
+        processarModalAtivacao(id, nome, email, categoria, ativo, admin);
+    }
+
+    function processarModalAtivacao(id, nome, email, categoria, ativo, admin) {
+        modal.style.display = 'flex';
+        document.getElementById('modal-id').innerText = '#' + id;
+        document.getElementById('modal-nome').innerText = nome;
+        document.getElementById('modal-email').innerText = email;
+        document.getElementById('modal-categoria').innerText = categoria;
+
+        const estaAtivo = (ativo === 'True' || ativo === 'true');
+        const elStatus = document.getElementById('modal-status');
+        elStatus.innerText = estaAtivo ? '{{ t("Ativo na Plataforma") }}' : '{{ t("Inativo / Suspenso") }}';
+        elStatus.style.color = estaAtivo ? '#16a34a' : '#dc2626';
+
+        const ehAdmin = (admin === 'True' || admin === 'true');
+        const elAdmin = document.getElementById('modal-admin');
+        elAdmin.innerText = ehAdmin ? '{{ t("Acesso Master") }}' : '{{ t("Acesso Regular") }}';
+        elAdmin.style.color = ehAdmin ? '#ca8a04' : 'var(--text-main)';
+    }
+
+    function closeModal() { modal.style.display = 'none'; }
+
+    window.onclick = function(event) {
+        if (event.target === modal) closeModal();
+    }
+
+    function confirmAdmin(event, userId, userName, isAdmin) {
+        event.stopPropagation();
+        const acao = isAdmin ? '{{ t("remover os privilégios administrativos de") }}' : '{{ t("conceder acesso master para") }}';
+        const titulo = isAdmin ? '{{ t("Revogar Credenciais?") }}' : '{{ t("Promover a Administrador?") }}';
+
+        Swal.fire({
+            title: titulo,
+            text: `{{ t("Deseja realmente") }} ${acao} ${userName}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4364F7',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '{{ t("Confirmar Operação") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true,
+            borderRadius: 20
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/admin/usuario/toggle-admin/${userId}`;
+            }
+        });
+    }
+
+    function confirmDelete(event, userId, userName) {
+        event.stopPropagation();
+        Swal.fire({
+            title: '{{ t("Remover Conta Permanentemente?") }}',
+            text: `{{ t("Atenção: Os registros vinculados à conta de") }} ${userName} {{ t("serão deletados do banco de dados de forma irreversível.") }}`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0052D4',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '{{ t("Deletar Registro") }}',
+            cancelButtonText: '{{ t("Cancelar") }}',
+            reverseButtons: true,
+            borderRadius: 20
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/admin/usuario/deletar/${userId}`;
+            }
+        });
+    }
+
+    const inputBusca = document.getElementById('inputBuscaRealtime');
+    const selectAtividade = document.getElementById('selectFiltroAtividade');
+    const selectAcesso = document.getElementById('selectFiltroAcesso');
+    const btnLimpar = document.getElementById('btnLimparFiltros');
+    const linhasUsuarios = document.querySelectorAll('.user-row-item');
+    const badgeContador = document.getElementById('contador-linhas');
+
+    function executarFiltragem() {
+        const query = inputBusca.value.toLowerCase().trim();
+        const filtroAtividade = selectAtividade.value;
+        const filtroAcesso = selectAcesso.value;
+        let ativosVisiveis = 0;
+
+        linhasUsuarios.forEach(row => {
+            const nome = row.getAttribute('data-nome');
+            const email = row.getAttribute('data-email');
+            const ativo = row.getAttribute('data-ativo');
+            const acesso = row.getAttribute('data-acesso');
+
+            const correspondeBusca = nome.includes(query) || email.includes(query);
+            const correspondeAtividade = (filtroAtividade === 'todos') || (ativo === filtroAtividade);
+            const correspondeAcesso = (filtroAcesso === 'todos') || (acesso === filtroAcesso);
+
+            if (correspondeBusca && correspondeAtividade && correspondeAcesso) {
+                row.style.display = '';
+                ativosVisiveis++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const linhaSemDados = document.getElementById('linhaSemDados');
+        if (linhaSemDados) {
+            linhaSemDados.style.display = ativosVisiveis === 0 ? '' : 'none';
+        }
+
+        if (badgeContador) {
+            badgeContador.innerText = `{{ t("Total") }}: ${ativosVisiveis}`;
+        }
+    }
+
+    if (inputBusca) inputBusca.addEventListener('input', executarFiltragem);
+    if (selectAtividade) selectAtividade.addEventListener('change', executarFiltragem);
+    if (selectAcesso) selectAcesso.addEventListener('change', executarFiltragem);
+    if (btnLimpar) {
+        btnLimpar.addEventListener('click', () => {
+            inputBusca.value = '';
+            selectAtividade.value = 'todos';
+            selectAcesso.value = 'todos';
+            executarFiltragem();
+        });
+    }
+</script>
+{% endblock %}
+    

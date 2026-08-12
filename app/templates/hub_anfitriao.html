@@ -1,0 +1,1153 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Hub Inteligente') }}{% endblock %}
+{% block titulo %}{{ t('Central Operacional') }}{% endblock %}
+{% block tour_page %}hub{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+/* Um pouco mais larga que antes (880px -> 1020px): a aba "Hoje" continua
+   confortável nessa largura, e as abas de gestão (Cuidados do Imóvel
+   etc., que têm listas/filtros/tabelas) precisam do espaço extra. */
+/* overflow-x:clip aqui é uma trava de segurança: garante que nada dentro
+   de nenhuma das 5 abas (inclusive conteúdo montado via JS) consiga forçar
+   scroll horizontal da página. Não afeta os modais/toast (que renderizam
+   no "top layer" do navegador, fora desse container). Usamos "clip" em vez
+   de "hidden" de propósito: "hidden" força o eixo Y a virar scrollável
+   também (regra do CSS quando só um dos eixos não é "visible"), o que
+   faria a barra de abas sticky (position:sticky, ver media query mais
+   abaixo) grudar relativo a esse container em vez da página — "clip" não
+   tem esse efeito colateral. */
+.hub { padding: 24px; max-width: 1020px; margin: 0 auto; box-sizing: border-box; overflow-x: clip; overflow-y: visible; }
+
+/* ── ABAS ────────────────────────────────────────────────── */
+/* Limpeza&Manutenção/Checklists/Rotinas/Precificação viraram abas desta
+   mesma página em vez de páginas separadas — todo o HTML das 5 abas é
+   renderizado de uma vez no servidor (cada aba já tinha sua própria query
+   de dados), só a visibilidade é controlada no cliente via CSS, e o JS de
+   cada aba só roda (window.__initTab_*) na primeira vez que ela é aberta. */
+.tab-bar {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding: 0 2px;
+}
+.tab-bar::-webkit-scrollbar { height: 4px; }
+.tab-btn {
+    appearance: none;
+    border: none;
+    background: none;
+    color: var(--ink-3);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 12px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color var(--t), border-color var(--t);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.tab-btn i { font-size: 12px; }
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--p); border-color: var(--p); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── CABEÇALHO INTELIGENTE ───────────────────────────────── */
+/* Bem mais leve que o hero antigo: sem gradiente grande, sem círculos
+   decorativos, sem parágrafo longo — só saudação + um resumo de uma linha
+   + a pílula de status. */
+.hub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.hub-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.hub-header-summary { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+/* ── CARD ────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
+}
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.card-title-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.card-title-row h2 i { color: var(--p); font-size: 14px; }
+/* Badge de contagem ao lado do título — só aparece quando há algo pendente
+   (fica com a classe is-hidden quando o total é zero). */
+.card-title-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; padding: 0 7px;
+    border-radius: 999px;
+    background: var(--red-bg); color: var(--red);
+    font-size: 11.5px; font-weight: 800;
+}
+.card-title-badge.is-hidden { display: none; }
+.btn-mini {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-3);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background var(--t), color var(--t);
+    white-space: nowrap;
+    /* Vira width:100% no mobile (regra lá embaixo) — sem border-box, o
+       padding lateral somava e o botão ("Ver todas") estourava a largura
+       do card, causando scroll horizontal na aba Hoje. */
+    box-sizing: border-box;
+}
+.btn-mini:hover { background: var(--p-soft); color: var(--p); }
+.btn-mini.primary { background: linear-gradient(135deg, var(--p), var(--p-mid)); color: #fff; border-color: transparent; }
+.btn-mini.primary:hover { filter: brightness(1.06); }
+.btn-mini.is-hidden { display: none; }
+
+/* ── PRIORIDADES DO DIA ──────────────────────────────────── */
+.priority-list { display: flex; flex-direction: column; gap: 10px; }
+.priority-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.priority-item.removendo { opacity: 0 !important; transform: scale(.96); pointer-events: none; }
+.priority-item.is-checkin { background: var(--blue-bg); border-color: var(--p-border); }
+.priority-item.is-vencido { border-left: 3px solid var(--red); }
+.priority-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink-3);
+}
+.priority-item.is-checkin .priority-icon { background: var(--p); color: #fff; border-color: transparent; }
+.priority-item.is-vencido .priority-icon { background: var(--red-bg); color: var(--red); border-color: transparent; }
+.priority-text { flex: 1; min-width: 0; }
+.priority-text a { color: inherit; text-decoration: none; }
+.priority-text strong { display: block; font-size: 13px; font-weight: 700; color: var(--ink); }
+.priority-text small { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.priority-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.priority-actions input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--p); cursor: pointer; }
+.priority-actions button {
+    width: 28px; height: 28px; border: none; background: none;
+    color: var(--ink-4); cursor: pointer; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), color var(--t);
+}
+.priority-actions button:hover { background: var(--red-bg); color: var(--red); }
+
+.empty-tranquilo, .empty-mini {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--ink-3);
+    font-size: 13px;
+}
+.empty-tranquilo i, .empty-mini i { font-size: 1.8rem; opacity: .25; display: block; margin-bottom: 10px; }
+.empty-tranquilo p, .empty-mini p { margin: 0; }
+
+/* ── INSIGHTS INTELIGENTES ───────────────────────────────── */
+.insight-list { display: flex; flex-direction: column; gap: 10px; }
+.insight-mini {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px; border-radius: 14px;
+    background: var(--p-soft); border: 1px solid var(--p-border);
+}
+.insight-mini i { color: var(--p); margin-top: 2px; flex-shrink: 0; }
+.insight-mini p { margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+
+/* ── MODAL DE MANUTENÇÃO (mantido como ação rápida, não card fixo) ── */
+.modal-box {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    border: none;
+    margin: auto;
+    animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+    /* Sem isso, os 32px de padding lateral SOMAVAM aos 92% de largura —
+       em qualquer tela com menos de ~800px (ou seja, todo celular) o modal
+       ficava mais largo que a própria viewport e cortava/vazava pras
+       laterais. Esse era o principal motivo do Hub ainda não parecer
+       responsivo no celular: os modais de "Nova Rotina"/"Nova Tarefa"
+       estouravam a tela. */
+    box-sizing: border-box;
+}
+dialog.modal-box::backdrop { background: rgba(15,15,26,.55); backdrop-filter: blur(5px); }
+@keyframes modalIn { from{transform:scale(.88);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+}
+.modal-close:hover { background: var(--red-bg); color: var(--red); transform: rotate(90deg); }
+.modal-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-box p  { margin: 0 0 22px; font-size: 13px; color: var(--ink-3); }
+.form-group   { margin-bottom: 16px; }
+.form-group label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+.form-group textarea { resize: vertical; min-height: 70px; }
+.btn-salvar {
+    width: 100%; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: white; font-weight: 800; font-size: 14px; cursor: pointer;
+    margin-top: 6px; box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-salvar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+/* popover="manual" no HTML promove o toast pro "top layer" do navegador —
+   sem isso, um <dialog> aberto (showModal) sempre renderiza por cima de
+   qualquer elemento normal, não importa o z-index, e o toast de erro da
+   validação do modal aparecia escondido atrás dele. */
+.toast {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: none;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+    box-sizing: border-box;
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#1a7a1c,#2fa432); }
+.toast.error   { background: linear-gradient(135deg,#c0392b,#e05d4c); }
+
+/* ── LOADING SKELETON ────────────────────────────────────── */
+.skeleton {
+    background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 12px;
+    height: 50px;
+    margin-bottom: 8px;
+}
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+/* ── UTILITÁRIOS ─────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .hub { padding: 18px; }
+}
+
+@media (max-width: 600px) {
+    .hub { padding: 14px; }
+    .card { padding: 16px; }
+    .card-title-row { flex-direction: column; align-items: flex-start; }
+    .card-title-row .btn-mini { width: 100%; justify-content: center; }
+    .modal-box { padding: 24px 20px 20px; }
+    .toast { width: 90%; text-align: center; }
+
+    .hub-header { flex-direction: column; align-items: stretch; }
+
+    /* Barra de abas no celular: antes rolava de lado (e nem sempre dava
+       pra perceber que dava pra arrastar). Agora as 5 abas ficam lado a
+       lado com largura igual, ícone em cima e legenda pequena embaixo —
+       cabem todas de uma vez, sem precisar arrastar. Fica "grudada"
+       (sticky) logo abaixo da barrinha do menu mobile, então continua à
+       vista mesmo rolando a página pra baixo. */
+    .tab-bar {
+        position: sticky;
+        top: 70px;
+        z-index: 900;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0;
+        overflow-x: visible;
+        background: var(--surface);
+        margin: 0 -14px 20px;
+        padding: 6px 8px 0;
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 8px 16px rgba(15, 23, 42, .05);
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: column;
+        gap: 4px;
+        padding: 7px 2px 10px;
+        font-size: 9.5px;
+        font-weight: 700;
+        line-height: 1.15;
+        white-space: normal;
+        text-align: center;
+        border-bottom-width: 3px;
+    }
+    .tab-btn i { font-size: 15px; }
+
+    /* Alvos de toque maiores no celular — os tamanhos "desktop" (28/18px)
+       ficam pequenos demais pra dedo; ampliados só aqui, sem mudar a
+       densidade visual no desktop. */
+    .priority-actions button { width: 36px; height: 36px; }
+    .priority-actions input[type="checkbox"] { width: 22px; height: 22px; }
+    .priority-icon { width: 38px; height: 38px; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    /* --surface era o mesmo azul chapado (#0052D4) do fundo antigo do
+       tema escuro — como todas as abas do Hub (Hoje, Checklists,
+       Precificação, Rotinas, Cuidados do Imóvel) usam var(--surface)
+       pros cards, essa única variável "vazava" o tom de azul destoante
+       em todas elas. Agora usa a mesma superfície neutra cinza/preta do
+       resto do app. */
+    --surface:  var(--dm-surface, #1e1f24);
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+
+/* Ícones de editar/excluir permanentes (não só no hover) em todas as
+   listas do Hub, pra ficarem sempre visíveis: lápis em amarelo, lixeira
+   em vermelho. */
+body.theme-dark .priority-actions button {
+    color: #ef4444 !important;
+}
+
+/* Antes, --surface também virava #0052D4 no dark mode, então qualquer
+   ícone usando var(--p)/#0052D4 como cor de texto sumia contra o fundo
+   — daí forçar tudo pra branco. Agora --surface é cinza/preto neutro,
+   então cada card da aba Hoje pode ter sua própria cor de destaque em
+   vez de tudo branco chapado. */
+body.theme-dark .card-title-row h2 .fa-bolt {
+    color: #fbbf24 !important; /* Prioridades do Dia */
+}
+body.theme-dark .card-title-row h2 .fa-broom {
+    color: #4ade80 !important; /* Cuidados do Imóvel */
+}
+body.theme-dark .card-title-row h2 .fa-sparkles {
+    color: #c084fc !important; /* Insights Inteligentes */
+}
+body.theme-dark .priority-item.is-checkin .priority-icon {
+    color: #fff !important;
+}
+body.theme-dark .insight-mini i {
+    color: #c084fc !important;
+}
+body.theme-dark .priority-item.is-checkin,
+body.theme-dark .insight-mini {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.14) !important;
+}
+body.theme-dark .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 75%) !important;
+}
+/* .tab-btn.active usa var(--p) como cor de texto/borda pra contrastar com
+   fundo branco no tema claro — no dark, --surface (fundo da barra de abas)
+   também é #0052D4, então ficava azul sobre azul. */
+body.theme-dark .tab-btn.active {
+    color: rgba(255,255,255,0.92) !important;
+    border-color: rgba(255,255,255,0.92) !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<!-- ── TOAST ────────────────────────────────────────────── -->
+<div class="toast" id="toast" popover="manual"></div>
+
+<!-- ── HUB ──────────────────────────────────────────────── -->
+<section class="hub">
+
+    <!-- BARRA DE ABAS -->
+    <nav class="tab-bar" id="hubTabBar">
+        <button type="button" class="tab-btn" data-tab="hoje"><i class="fa-solid fa-house"></i> {{ t('Hoje') }}</button>
+        <button type="button" class="tab-btn" data-tab="tarefas"><i class="fa-solid fa-broom"></i> {{ t('Cuidados do Imóvel') }}</button>
+        <button type="button" class="tab-btn" data-tab="checklists"><i class="fa-solid fa-list-check"></i> {{ t('Checklists') }}</button>
+        <button type="button" class="tab-btn" data-tab="rotinas"><i class="fa-solid fa-repeat"></i> {{ t('Rotinas') }}</button>
+        <button type="button" class="tab-btn" data-tab="precificacao"><i class="fa-solid fa-tag"></i> {{ t('Precificação') }}</button>
+    </nav>
+
+    <!-- ABA: HOJE (Central Operacional minimalista) -->
+    <div class="tab-panel" data-tab="hoje">
+
+        <!-- CABEÇALHO INTELIGENTE -->
+        <div class="hub-header">
+            <div>
+                <h1><span id="saudacaoTexto">{{ t('Olá') }}</span>, {{ (nome_completo.split(' ')[0]) if nome_completo else t('Anfitrião') }}.</h1>
+                <p class="hub-header-summary" id="resumoLinha">{{ t('Carregando sua operação…') }}</p>
+            </div>
+        </div>
+
+        <!-- PRIORIDADES DO DIA (sempre o card principal, primeiro na página) -->
+        <div class="card">
+            <div class="card-title-row">
+                <h2><i class="fa-solid fa-bolt"></i> {{ t('Prioridades do Dia') }}</h2>
+            </div>
+            <div class="priority-list" id="prioridadesContainer">
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+            </div>
+            <button type="button" class="btn-mini is-hidden" id="btnVerTodasPrioridades" data-action="ir-para-aba" style="margin-top:12px;">{{ t('Ver todas') }}</button>
+        </div>
+
+        <!-- CUIDADOS DO IMÓVEL (limpeza/manutenção/reposição) — o card inteiro
+             só aparece quando há algo pendente; concluído/vazio some daqui
+             automaticamente (não só a contagem). -->
+        <div class="card is-hidden" id="cardCuidadosImovel">
+            <div class="card-title-row">
+                <h2>
+                    <i class="fa-solid fa-broom"></i> {{ t('Cuidados do Imóvel') }}
+                    <span class="card-title-badge is-hidden" id="tarefasOperacionaisBadge">0</span>
+                </h2>
+                <button type="button" class="btn-mini" data-action="ir-para-aba" data-tab="tarefas">{{ t('Ver todas') }}</button>
+            </div>
+            <div class="priority-list" id="tarefasOperacionaisContainer">
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+            </div>
+        </div>
+
+        <!-- INSIGHTS INTELIGENTES (no máximo 3) -->
+        <div class="card">
+            <div class="card-title-row">
+                <h2><i class="fa-solid fa-sparkles"></i> {{ t('Insights Inteligentes') }}</h2>
+            </div>
+            <div class="insight-list" id="insightsContainer">
+                <div class="skeleton" style="height:60px;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ABA: CUIDADOS DO IMÓVEL (limpeza + manutenção + reposição, unificada) -->
+    <div class="tab-panel" data-tab="tarefas">
+        {% with tarefas_pendentes=tarefas_pendentes, tarefas_concluidas=tarefas_concluidas, imoveis=tarefas_imoveis, filtro_imovel_id=tarefas_filtro_imovel_id, filtro_tipo=tarefas_filtro_tipo, tipos_lembrete=tarefas_tipos_lembrete %}
+            {% include "partials/tab_tarefas.html" %}
+        {% endwith %}
+    </div>
+
+    <!-- ABA: CHECKLISTS DE HOSPEDAGEM -->
+    <div class="tab-panel" data-tab="checklists">
+        {% with imoveis=checklists_imoveis, imovel_selecionado=checklists_imovel_selecionado, modelo_antes=checklists_modelo_antes, modelo_depois=checklists_modelo_depois, estadia_atual=checklists_estadia_atual %}
+            {% include "partials/tab_checklists.html" %}
+        {% endwith %}
+    </div>
+
+    <!-- ABA: ROTINAS E LEMBRETES -->
+    <div class="tab-panel" data-tab="rotinas">
+        {% with rotinas=rotinas_rotinas, imoveis=rotinas_imoveis, tipos_lembrete=rotinas_tipos_lembrete, tipos_evento=rotinas_tipos_evento, filtro_imovel_id=rotinas_filtro_imovel_id, filtro_tipo=rotinas_filtro_tipo %}
+            {% include "partials/tab_rotinas.html" %}
+        {% endwith %}
+    </div>
+
+    <!-- ABA: PRECIFICAÇÃO -->
+    <div class="tab-panel" data-tab="precificacao">
+        {% with pct_precificacao=precificacao_pct, imoveis=precificacao_imoveis, eventos=precificacao_eventos, oportunidades=precificacao_oportunidades, niveis_impacto=precificacao_niveis_impacto %}
+            {% include "partials/tab_precificacao.html" %}
+        {% endwith %}
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   ESTADO
+   Rotinas/Cuidados do Imóvel/Checklists/Precificação viraram abas desta
+   mesma página — "ir pra lá" agora é trocar de aba no cliente (ver seção
+   ABAS mais abaixo), não mais navegar pra uma URL separada.
+───────────────────────────────────────────── */
+let _dadosHub = null;
+
+/* ─────────────────────────────────────────────
+   CLIENTE HTTP CENTRAL
+   Todo fetch da página passa por aqui: trata erro, mostra toast e já
+   devolve o JSON pronto — elimina try/catch duplicado em cada função.
+───────────────────────────────────────────── */
+async function apiRequest(url, options = {}) {
+    try {
+        const resp = await fetch(url, options);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.success === false) {
+            throw new Error(data.message || `Erro ${resp.status}`);
+        }
+        return data;
+    } catch (e) {
+        console.error(`[hub] Erro em ${url}:`, e);
+        mostrarToast(e.message || '{{ t("Erro de conexão.") }}', 'error');
+        throw e;
+    }
+}
+
+/* ─────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    clearTimeout(t._toastTimer);
+    t.innerText = msg;
+    t.className = `toast ${tipo}`;
+    // Promove o toast pro top layer (acima de qualquer <dialog> aberto).
+    if (typeof t.showPopover === 'function') {
+        try { t.showPopover(); } catch (e) { /* já estava aberto */ }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    t._toastTimer = setTimeout(() => {
+        t.classList.remove('show');
+        setTimeout(() => {
+            if (typeof t.hidePopover === 'function') {
+                try { t.hidePopover(); } catch (e) { /* já estava fechado */ }
+            }
+        }, 260);
+    }, 3200);
+}
+
+/* ─────────────────────────────────────────────
+   SAUDAÇÃO (Bom dia / Boa tarde / Boa noite)
+   Calculada no cliente com a hora local do usuário — não depende da hora
+   do servidor, que pode estar em outro fuso.
+───────────────────────────────────────────── */
+function aplicarSaudacao() {
+    const h = new Date().getHours();
+    const texto = h < 12 ? '{{ t("Bom dia") }}' : (h < 18 ? '{{ t("Boa tarde") }}' : '{{ t("Boa noite") }}');
+    const el = document.getElementById('saudacaoTexto');
+    if (el) el.innerText = texto;
+}
+
+/* ─────────────────────────────────────────────
+   STATUS OPERACIONAL (pílula 🟢/🟠/🔴)
+   Não existe uma flag explícita de "urgente" no payload do Hub — a
+   heurística usada aqui é:
+     🔴 vermelho -> existe algo já VENCIDO/crítico: rotina vencida
+                    (lembretes_vencidos > 0) OU manutenção em aberto
+                    (manutencoes_abertas > 0) — coisas que já deviam ter
+                    sido resolvidas.
+     🟠 laranja  -> nada vencido, mas ainda há pendências no geral
+                    (tarefas_pendentes_total > 0): limpeza normal, rotina
+                    perto de vencer etc.
+     🟢 verde    -> zero pendências.
+───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   RESUMO DE UMA LINHA NO CABEÇALHO
+   Só menciona categorias com valor > 0. Observação importante: o payload
+   de /api/hub/dados só traz o PRÓXIMO check-in (não uma contagem de todos
+   os check-ins do dia) e nenhum dado de check-out — por isso só afirmamos
+   "1 check-in" quando esse próximo cai hoje, e nunca mostramos checkouts
+   aqui (esse dado não existe no back-end atual; inventar um número seria
+   pior do que omitir a linha).
+───────────────────────────────────────────── */
+function renderResumoLinha(dados) {
+    const checkinHoje = dados.proximo_checkin && dados.proximo_checkin.quando === 'Hoje';
+    const partes = [];
+    if (checkinHoje) partes.push('{{ t("1 check-in") }}');
+    if (dados.limpezas_pendentes > 0) partes.push(`${dados.limpezas_pendentes} {{ t("limpeza(s) pendente(s)") }}`);
+    if (dados.manutencoes_abertas > 0) partes.push(`${dados.manutencoes_abertas} {{ t("manutenção(ões) aberta(s)") }}`);
+    if (dados.lembretes_vencidos > 0) partes.push(`${dados.lembretes_vencidos} {{ t("rotina(s) vencida(s)") }}`);
+
+    const el = document.getElementById('resumoLinha');
+    el.innerText = partes.length
+        ? `{{ t("Hoje sua operação possui:") }} ${partes.join(' · ')}.`
+        : '{{ t("Hoje sua operação está tranquila. Nenhuma pendência no momento.") }}';
+}
+
+/* ─────────────────────────────────────────────
+   PRIORIDADES DO DIA
+   Ordem de exibição (do mais urgente pro menos urgente):
+     1) rotinas já vencidas (cenário "problemas" — prazo já passou)
+     2) próximo check-in, se for hoje (cenário "check-in hoje")
+     3) checklists de hospedagem pendentes
+   Limpeza/manutenção/reposição saíram daqui e ganharam um card próprio
+   (ver renderTarefasOperacionais) — cenário "dia tranquilo": nada disso
+   existe -> mensagem única.
+───────────────────────────────────────────── */
+function renderPrioridades(dados) {
+    const cont = document.getElementById('prioridadesContainer');
+    const btnVerTodas = document.getElementById('btnVerTodasPrioridades');
+
+    const tarefas = (dados.tarefas || []).filter(t =>
+        t.tipo === 'checklist_antes' || t.tipo === 'checklist_depois'
+    );
+    const vencidas = (dados.lembretes || []).filter(l => l.vencido && l.ativo);
+    const checkinHoje = (dados.proximo_checkin && dados.proximo_checkin.quando === 'Hoje') ? dados.proximo_checkin : null;
+
+    if (!tarefas.length && !vencidas.length && !checkinHoje) {
+        cont.innerHTML = `
+            <div class="empty-tranquilo">
+                <i class="fa-solid fa-mug-hot"></i>
+                <p>{{ t("Hoje sua operação está tranquila. Nenhum check-in. Nenhum check-out pendente.") }}</p>
+            </div>`;
+        btnVerTodas.classList.add('is-hidden');
+        return;
+    }
+
+    const blocos = [];
+    vencidas.forEach(l => blocos.push(_htmlItemVencido(l)));
+    if (checkinHoje) blocos.push(_htmlItemCheckin(checkinHoje));
+    tarefas.forEach(t => blocos.push(_htmlItemTarefa(t)));
+
+    const visiveis = blocos.slice(0, 5);
+    const restantes = blocos.length - visiveis.length;
+    cont.innerHTML = visiveis.join('');
+
+    if (restantes > 0) {
+        // Não há uma única aba que agregue rotinas+checklists — como "Ver
+        // todas" só pode apontar pra um destino, mandamos pra aba do tipo
+        // que mais contribuiu com itens escondidos.
+        const nCheck = tarefas.filter(t => t.tipo === 'checklist_antes' || t.tipo === 'checklist_depois').length;
+        const destino = nCheck >= vencidas.length ? 'checklists' : 'rotinas';
+        btnVerTodas.dataset.tab = destino;
+        btnVerTodas.innerText = `{{ t("Ver todas") }} (+${restantes})`;
+        btnVerTodas.classList.remove('is-hidden');
+    } else {
+        btnVerTodas.classList.add('is-hidden');
+    }
+}
+
+/* ─────────────────────────────────────────────
+   CUIDADOS DO IMÓVEL (card próprio na aba Hoje, cobre limpeza/manutenção/
+   reposição/personalizado, além dos tipos "de regra" que só existem como
+   Rotina — pilha_fechadura/eletronicos/cafe/papel_higienico/outro. Quando
+   uma Rotina desses tipos vence, processar_lembretes() já cria a HubTarefa
+   correspondente automaticamente; esse filtro é o que garante que ela
+   apareça aqui (mesma lista de TIPOS_OPERACIONAIS de app/routes/pg_tarefas.py
+   — se mudar lá, muda aqui também).
+   O card inteiro só aparece quando há algo pendente (o back-end de
+   /api/hub/dados já filtra concluida=False) — nada de card vazio ou
+   "0 pendências" pendurado quando está tudo em dia.
+───────────────────────────────────────────── */
+function renderTarefasOperacionais(dados) {
+    const card = document.getElementById('cardCuidadosImovel');
+    const cont = document.getElementById('tarefasOperacionaisContainer');
+    const badge = document.getElementById('tarefasOperacionaisBadge');
+    if (!card || !cont || !badge) return;
+
+    const TIPOS_OPERACIONAIS = [
+        'limpeza_checkout', 'manutencao', 'comprar', 'repor', 'personalizado',
+        'pilha_fechadura', 'eletronicos', 'cafe', 'papel_higienico', 'outro'
+    ];
+    const tarefas = (dados.tarefas || []).filter(t => TIPOS_OPERACIONAIS.includes(t.tipo));
+
+    card.classList.toggle('is-hidden', !tarefas.length);
+    if (!tarefas.length) {
+        badge.classList.add('is-hidden');
+        return;
+    }
+
+    badge.innerText = tarefas.length;
+    badge.classList.remove('is-hidden');
+
+    cont.innerHTML = tarefas.slice(0, 5).map(_htmlItemTarefaOperacional).join('');
+}
+
+function _htmlItemTarefaOperacional(t) {
+    const previstaSufixo = t.data_prevista_fmt ? ` · {{ t("prevista") }} ${t.data_prevista_fmt}` : '';
+    return `
+        <div class="priority-item" data-tarefa-id="${t.id}">
+            <div class="priority-icon" style="background:${t.tipo_cor}22;color:${t.tipo_cor};border-color:transparent;">${t.tipo_icone}</div>
+            <div class="priority-text">
+                <a href="#" data-action="ir-para-aba" data-tab="tarefas">
+                    <strong>${t.titulo}</strong>
+                    <small>${t.imovel} · ${t.tipo_label}${previstaSufixo}</small>
+                </a>
+            </div>
+            <div class="priority-actions">
+                <input type="checkbox" data-action="concluir-tarefa" data-id="${t.id}" title="{{ t('Concluir') }}">
+                <button data-action="excluir-tarefa" data-id="${t.id}" title="{{ t('Excluir') }}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+}
+
+function _htmlItemCheckin(c) {
+    // Check-in/checkout ainda não têm uma agenda dedicada — mostramos a
+    // informação direto aqui, sem precisar de click-through.
+    return `
+        <div class="priority-item is-checkin">
+            <div class="priority-icon"><i class="fa-solid fa-door-open"></i></div>
+            <div class="priority-text">
+                <strong>{{ t("Próximo check-in é hoje") }}${c.hora ? ' · ' + c.hora : ''}</strong>
+                <small>${c.hospede} · ${c.imovel}</small>
+            </div>
+        </div>`;
+}
+
+function _htmlItemVencido(l) {
+    return `
+        <div class="priority-item is-vencido">
+            <div class="priority-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="priority-text">
+                <a href="#" data-action="ir-para-aba" data-tab="rotinas">
+                    <strong>${l.titulo}</strong>
+                    <small>${l.imovel} · {{ t("rotina vencida") }}</small>
+                </a>
+            </div>
+        </div>`;
+}
+
+function _htmlItemTarefa(t) {
+    // Só chega aqui checklist_antes/checklist_depois — limpeza/manutenção/
+    // comprar/repor têm seu próprio card (ver _htmlItemTarefaOperacional).
+    return `
+        <div class="priority-item" data-tarefa-id="${t.id}">
+            <div class="priority-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+            <div class="priority-text">
+                <a href="#" data-action="ir-para-aba" data-tab="checklists">
+                    <strong>${t.titulo}</strong>
+                    <small>${t.imovel} · {{ t("Checklist") }}</small>
+                </a>
+            </div>
+            <div class="priority-actions">
+                <input type="checkbox" data-action="concluir-tarefa" data-id="${t.id}" title="{{ t('Concluir') }}">
+                <button data-action="excluir-tarefa" data-id="${t.id}" title="{{ t('Excluir') }}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+}
+
+/* ─────────────────────────────────────────────
+   TAREFAS — concluir / excluir (UI otimista)
+   Mesmos endpoints e o mesmo padrão de otimismo/delegação de eventos que
+   já existiam no Hub antigo, só que direcionados ao container novo.
+───────────────────────────────────────────── */
+function _removerTarefaDoEstado(id) {
+    if (_dadosHub && _dadosHub.tarefas) {
+        _dadosHub.tarefas = _dadosHub.tarefas.filter(t => String(t.id) !== String(id));
+    }
+}
+
+async function concluirTarefa(id, itemEl) {
+    const el = itemEl || document.querySelector(`.priority-item[data-tarefa-id="${id}"]`);
+    if (el) el.classList.add('removendo');
+
+    try {
+        const data = await apiRequest(`/api/hub/tarefa/concluir/${id}`, { method: 'POST' });
+        mostrarToast(data.message || '{{ t("Tarefa concluída!") }}', 'success');
+        _removerTarefaDoEstado(id);
+        if (el) setTimeout(() => { el.remove(); _verificarPrioridadesVazio(); }, 220);
+        // A aba "Cuidados do Imóvel" já vem renderizada no HTML desde o
+        // carregamento da página (só o JS dela é lazy) — isso atualiza o
+        // card já existente lá (move pendente -> histórico) sem precisar
+        // recarregar a página pra essa mudança aparecer quando a pessoa
+        // for até aquela aba. Não faz nada se a tarefa não for do tipo
+        // Cuidados do Imóvel (ex: checklist), que não tem card lá.
+        if (typeof window.sincronizarTarefaCuidadosImovel === 'function') {
+            window.sincronizarTarefaCuidadosImovel(id, data.concluida);
+        }
+    } catch (e) {
+        if (el) el.classList.remove('removendo');
+        const checkbox = el && el.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = false;
+    }
+}
+
+async function excluirTarefa(id, itemEl) {
+    const result = await Swal.fire({
+        title: '{{ t("Excluir pendência?") }}',
+        text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '{{ t("Sim, excluir") }}',
+        cancelButtonText: '{{ t("Cancelar") }}',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    const el = itemEl || document.querySelector(`.priority-item[data-tarefa-id="${id}"]`);
+    if (el) el.classList.add('removendo');
+
+    try {
+        await apiRequest(`/api/hub/tarefa/excluir/${id}`, { method: 'DELETE' });
+        mostrarToast('{{ t("Pendência excluída.") }}', 'success');
+        _removerTarefaDoEstado(id);
+        if (el) setTimeout(() => { el.remove(); _verificarPrioridadesVazio(); }, 220);
+    } catch (e) {
+        if (el) el.classList.remove('removendo');
+    }
+}
+
+/* Se a exclusão/conclusão otimista esvaziar uma das listas visíveis,
+   reconstrói a partir do estado em memória — isso já cobre o fallback pro
+   "dia tranquilo"/"nada pendente" sem precisar de um carregarHub() completo. */
+function _verificarPrioridadesVazio() {
+    const cont = document.getElementById('prioridadesContainer');
+    if (cont && !cont.querySelector('.priority-item')) {
+        renderPrioridades(_dadosHub || {});
+    }
+    const contOperacional = document.getElementById('tarefasOperacionaisContainer');
+    if (contOperacional && !contOperacional.querySelector('.priority-item')) {
+        renderTarefasOperacionais(_dadosHub || {});
+    }
+}
+
+/* ─────────────────────────────────────────────
+   INSIGHTS INTELIGENTES (no máximo 3)
+   Não é um motor de insights novo — só reaproveita o que o back-end já
+   calculou: `dicas_precificacao` (ordenadas por impacto/urgência) e o
+   horário do `proximo_checkin`.
+───────────────────────────────────────────── */
+function _insightCheckin(c) {
+    // Só temos "quando" (Hoje/Amanhã/dd-mm) + um horário opcional — não um
+    // datetime completo — então a contagem é aproximada (“hoje às HH:MM”),
+    // não uma contagem exata de horas restantes.
+    let quando;
+    if (c.quando === 'Hoje') quando = c.hora ? `{{ t("hoje às") }} ${c.hora}` : '{{ t("ainda hoje") }}';
+    else if (c.quando === 'Amanhã') quando = c.hora ? `{{ t("amanhã às") }} ${c.hora}` : '{{ t("amanhã") }}';
+    else quando = `{{ t("em") }} ${c.quando}`;
+    return `
+        <div class="insight-mini">
+            <i class="fa-solid fa-door-open"></i>
+            <p>{{ t("Seu próximo check-in acontece") }} <strong>${quando}</strong> — ${c.hospede} {{ t("em") }} ${c.imovel}.</p>
+        </div>`;
+}
+
+function renderInsights(dados) {
+    const cont = document.getElementById('insightsContainer');
+    const insights = [];
+
+    if (dados.proximo_checkin) insights.push(_insightCheckin(dados.proximo_checkin));
+
+    const pesoImpacto = { alta: 3, media: 2, baixa: 1 };
+    const dicas = [...(dados.dicas_precificacao || [])].sort((a, b) => {
+        const diff = (pesoImpacto[b.nivel_impacto] || 0) - (pesoImpacto[a.nivel_impacto] || 0);
+        return diff !== 0 ? diff : (a.dias_restantes - b.dias_restantes);
+    });
+
+    dicas.slice(0, Math.max(0, 3 - insights.length)).forEach(d => {
+        const quando = d.dias_restantes === 0 ? '{{ t("hoje") }}' : `{{ t("em") }} ${d.dias_restantes} {{ t("dia(s)") }}`;
+        // Quando a oportunidade cobre mais de um imóvel (mesma região), mostra
+        // o nome da região + quantos imóveis, em vez de só o primeiro imóvel
+        // do grupo — evita dar a entender que só um imóvel é afetado.
+        const local = d.regiao || d.imovel_titulo;
+        const sufixo = (Array.isArray(d.imoveis) && d.imoveis.length > 1) ? ` (${d.imoveis.length} {{ t("imóveis") }})` : '';
+        insights.push(`
+            <div class="insight-mini">
+                <i class="fa-solid fa-tag"></i>
+                <p><strong>${d.titulo}</strong> {{ t("em") }} ${local}${sufixo} — {{ t("considere") }} +${d.percentual_sugerido}% ${quando}.</p>
+            </div>`);
+    });
+
+    if (!insights.length) {
+        cont.innerHTML = `
+            <div class="empty-mini">
+                <i class="fa-solid fa-sparkles"></i>
+                <p>{{ t("Nenhum insight por agora.") }}</p>
+            </div>`;
+        return;
+    }
+    cont.innerHTML = insights.slice(0, 3).join('');
+}
+
+/* ─────────────────────────────────────────────
+   ESTADO VAZIO (sem imóveis cadastrados)
+───────────────────────────────────────────── */
+function renderEmptyState() {
+    document.getElementById('resumoLinha').innerText = '{{ t("Cadastre seu primeiro imóvel para começar.") }}';
+
+    document.getElementById('prioridadesContainer').innerHTML = `
+        <div class="empty-tranquilo">
+            <i class="fa-solid fa-house-circle-plus"></i>
+            <p>{{ t("Nenhum imóvel cadastrado ainda.") }}</p>
+        </div>`;
+    document.getElementById('btnVerTodasPrioridades').classList.add('is-hidden');
+
+    document.getElementById('cardCuidadosImovel').classList.add('is-hidden');
+    document.getElementById('tarefasOperacionaisBadge').classList.add('is-hidden');
+
+    document.getElementById('insightsContainer').innerHTML = `
+        <div class="empty-mini">
+            <i class="fa-solid fa-sparkles"></i>
+            <p>{{ t("Assim que você cadastrar um imóvel, os insights aparecem aqui.") }}</p>
+        </div>`;
+}
+
+/* ─────────────────────────────────────────────
+   CARREGAR HUB
+───────────────────────────────────────────── */
+async function carregarHub() {
+    try {
+        const resp = await fetch('/api/hub/dados');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const dados = await resp.json();
+        _dadosHub = dados;
+
+        if (!dados.total_imoveis) {
+            renderEmptyState();
+            return;
+        }
+
+        renderResumoLinha(dados);
+        renderPrioridades(dados);
+        renderTarefasOperacionais(dados);
+        renderInsights(dados);
+    } catch (e) {
+        console.error('[hub] Erro ao carregar dados:', e);
+        mostrarToast('{{ t("Não foi possível carregar os dados do Hub.") }}', 'error');
+    }
+}
+
+/* ─────────────────────────────────────────────
+   DELEGAÇÃO DE EVENTOS (aba "Hoje")
+   Um único listener no painel da aba inteira (não só no container de
+   Prioridades) — cobre os dois cards com listas de tarefa (Prioridades e
+   Limpeza/Manutenção/Reposição) e o botão "Ver todas" de cada um, que
+   também fica fora do respectivo container. "ir-para-aba" troca de aba no
+   cliente em vez de navegar.
+───────────────────────────────────────────── */
+function inicializarDelegacaoEventos() {
+    const painel = document.querySelector('.tab-panel[data-tab="hoje"]');
+    painel?.addEventListener('change', e => {
+        const alvo = e.target.closest('[data-action="concluir-tarefa"]');
+        if (!alvo) return;
+        concluirTarefa(alvo.dataset.id, alvo.closest('.priority-item'));
+    });
+    painel?.addEventListener('click', e => {
+        const alvoExcluir = e.target.closest('[data-action="excluir-tarefa"]');
+        if (alvoExcluir) { excluirTarefa(alvoExcluir.dataset.id, alvoExcluir.closest('.priority-item')); return; }
+        const alvoAba = e.target.closest('[data-action="ir-para-aba"]');
+        if (alvoAba) { e.preventDefault(); ativarTab(alvoAba.dataset.tab); }
+    });
+}
+
+/* ─────────────────────────────────────────────
+   ABAS (Hoje / Cuidados do Imóvel / Checklists / Rotinas / Precificação)
+   Todo o HTML das 5 abas já vem renderizado do servidor (só uma fica
+   visível via CSS `.tab-panel.active`) — trocar de aba nunca recarrega a
+   página. O JS específico de cada aba (window.__initTab_<nome>, definido
+   dentro do respectivo partial em app/templates/partials/) só roda na
+   PRIMEIRA vez que a aba é aberta, e a URL é sincronizada via
+   history.pushState (?tab=...) pra permitir favoritar/compartilhar uma
+   aba específica e o botão voltar do navegador funcionar entre elas.
+───────────────────────────────────────────── */
+const ABAS_HUB = ['hoje', 'tarefas', 'checklists', 'rotinas', 'precificacao'];
+const _abasJaIniciadas = new Set();
+
+function ativarTab(tab, atualizarUrl = true) {
+    if (!ABAS_HUB.includes(tab)) tab = 'hoje';
+
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+    if (!_abasJaIniciadas.has(tab)) {
+        _abasJaIniciadas.add(tab);
+        const initFn = window[`__initTab_${tab}`];
+        if (typeof initFn === 'function') {
+            try { initFn(); } catch (e) { console.error(`[hub] Erro ao iniciar aba "${tab}":`, e); }
+        }
+    }
+
+    if (atualizarUrl) {
+        const url = tab === 'hoje' ? window.location.pathname : `${window.location.pathname}?tab=${tab}`;
+        history.pushState({ tab }, '', url);
+    }
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        ativarTab(btn.dataset.tab);
+        // Ao voltar pra "Hoje" depois de concluir/excluir algo em outra
+        // aba (ex.: marcar uma manutenção como feita na aba unificada),
+        // sem isso os cards de Prioridades/Limpeza-Manutenção ficariam com
+        // o snapshot antigo (carregado só uma vez no carregamento inicial).
+        if (btn.dataset.tab === 'hoje') carregarHub();
+    });
+});
+
+window.addEventListener('popstate', e => {
+    const tab = (e.state && e.state.tab) || new URLSearchParams(location.search).get('tab') || 'hoje';
+    ativarTab(tab, false);
+});
+
+/* ─────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────── */
+aplicarSaudacao();
+inicializarDelegacaoEventos();
+carregarHub();
+ativarTab("{{ tab_ativa|default('hoje') }}", false);
+
+/* ─────────────────────────────────────────────
+   TOUR GUIADO (ver app/static/js/onboarding.js)
+───────────────────────────────────────────── */
+NomdoTour.register('hub', [
+    {
+        selector: '#hubTabBar',
+        title: '{{ t("Abas do Hub") }}',
+        text: '{{ t("O Hub do Anfitrião reúne tudo que você usa no dia a dia em 5 abas: Hoje, Cuidados do Imóvel, Checklists, Rotinas e Precificação.") }}',
+        position: 'bottom'
+    },
+    {
+        selector: '.hub-header',
+        title: '{{ t("Sua central do dia") }}',
+        text: '{{ t("Aqui fica um resumo rápido da sua operação — check-ins, check-outs e o que precisa da sua atenção hoje.") }}',
+        position: 'bottom'
+    },
+    {
+        before: function () { ativarTab('hoje', false); },
+        selector: '#prioridadesContainer',
+        title: '{{ t("Prioridades do Dia") }}',
+        text: '{{ t("A lista mais importante da tela: tarefas e situações urgentes que precisam ser resolvidas hoje, em ordem de prioridade.") }}',
+        position: 'auto'
+    },
+    {
+        selector: '#insightsContainer',
+        title: '{{ t("Insights Inteligentes") }}',
+        text: '{{ t("Alertas e sugestões automáticas geradas a partir dos seus dados — por exemplo, um imóvel parado há muito tempo ou uma oportunidade de preço.") }}',
+        position: 'auto'
+    },
+    {
+        before: function () { ativarTab('tarefas', false); },
+        beforeDelay: 300,
+        selector: '.tab-panel[data-tab="tarefas"]',
+        title: '{{ t("Cuidados do Imóvel") }}',
+        text: '{{ t("Limpezas, manutenções e reposições em um só lugar. Crie tarefas avulsas ou recorrentes e marque como concluídas quando resolver.") }}',
+        position: 'auto'
+    },
+    {
+        before: function () { ativarTab('checklists', false); },
+        beforeDelay: 300,
+        selector: '.tab-panel[data-tab="checklists"]',
+        title: '{{ t("Checklists de Hospedagem") }}',
+        text: '{{ t("Monte checklists de antes/depois da estadia (o que verificar, limpar ou repor) pra nunca esquecer um passo na virada de hóspede.") }}',
+        position: 'auto'
+    },
+    {
+        before: function () { ativarTab('rotinas', false); },
+        beforeDelay: 300,
+        selector: '.tab-panel[data-tab="rotinas"]',
+        title: '{{ t("Rotinas e Lembretes") }}',
+        text: '{{ t("Cadastre rotinas recorrentes (trocar gás, revisar ar-condicionado etc.) e lembretes pontuais pra cada imóvel — o sistema avisa quando vence.") }}',
+        position: 'auto'
+    },
+    {
+        before: function () { ativarTab('precificacao', false); },
+        beforeDelay: 300,
+        selector: '.tab-panel[data-tab="precificacao"]',
+        title: '{{ t("Precificação Inteligente") }}',
+        text: '{{ t("Feriados, datas comerciais e eventos próximos que são boas oportunidades pra ajustar o preço da diária — com até 1 ano de antecedência.") }}',
+        position: 'auto',
+        after: function () { ativarTab('hoje', false); }
+    }
+]);
+</script>
+{% endblock %}

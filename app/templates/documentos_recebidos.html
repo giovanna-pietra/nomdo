@@ -1,0 +1,464 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Documentos Recebidos') }}{% endblock %}
+{% block titulo %}{{ t('Documentos Recebidos') }}{% endblock %}
+{% block permite_dark_mode %}nao{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 920px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+/* ── FILTROS ─────────────────────────────────────────────── */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.filtros label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-right: 4px;
+}
+.filtros select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    cursor: pointer;
+}
+.filtros select:focus { outline: none; border-color: var(--p-mid); }
+.filtro-contagem { margin-left: auto; font-size: 12.5px; color: var(--ink-4); font-weight: 600; }
+
+/* ── LISTA DE FORMULÁRIOS ────────────────────────────────── */
+.lista-formularios { display: flex; flex-direction: column; gap: 10px; }
+
+.form-card {
+    padding: 16px 18px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-card-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+}
+.form-card-row.sem-respostas { cursor: default; }
+
+.form-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    background: var(--bg);
+    color: var(--p);
+}
+
+.form-info { flex: 1; min-width: 0; }
+.form-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+.form-info .form-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge.pendente { background: var(--amber-bg); color: var(--amber); }
+.badge.respondido { background: var(--green-bg); color: var(--green); }
+
+.form-toggle {
+    width: 30px; height: 30px; border: none; background: transparent;
+    color: var(--ink-4); cursor: pointer; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+    transition: transform var(--t), background var(--t), color var(--t);
+}
+.form-toggle:hover { background: var(--bg); color: var(--p); }
+.form-card.aberto .form-toggle { transform: rotate(180deg); }
+
+/* ── RESPOSTAS (expandido) ───────────────────────────────── */
+.respostas {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+.form-card.aberto .respostas { display: block; }
+
+.resposta-item { margin-bottom: 14px; }
+.resposta-item:last-child { margin-bottom: 0; }
+.resposta-item .resposta-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.resposta-item .resposta-label .obrigatorio { color: var(--red); font-weight: 800; }
+.resposta-texto {
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: inline-block;
+}
+.resposta-vazia { font-size: 13px; color: var(--ink-4); font-style: italic; }
+
+.resposta-foto-link { display: inline-block; }
+.resposta-foto-link img {
+    width: 96px; height: 96px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: block;
+    transition: transform var(--t);
+}
+.resposta-foto-link:hover img { transform: scale(1.03); }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+/* ── LIGHTBOX ────────────────────────────────────────────── */
+.lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.82);
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+}
+.lightbox.show { display: flex; }
+.lightbox img {
+    max-width: 92vw;
+    max-height: 88vh;
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg);
+}
+.lightbox-fechar {
+    position: absolute;
+    top: 22px; right: 26px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#6FB1FC,#6FB1FC); }
+.toast.error { background: linear-gradient(135deg,#0052D4,#0052D4); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .page-header { flex-direction: column; }
+    .form-card-row { flex-wrap: wrap; }
+    .form-info { flex-basis: 100%; order: 1; }
+    .toast { width: 90%; text-align: center; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  #0052D4;
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .form-icon {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .filtros,
+body.theme-dark .form-card,
+body.theme-dark .empty-state {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .resposta-texto {
+    background: rgba(255,255,255,0.08) !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="toast" id="toast"></div>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Documentos Recebidos') }}</h1>
+            <p>{{ t('Acompanhe os formulários de documentos enviados aos hóspedes — o link é enviado automaticamente antes do check-in e o hóspede envia fotos/textos por ele.') }}</p>
+        </div>
+    </div>
+
+    <div class="filtros">
+        <label for="filtro-imovel">{{ t('Imóvel') }}</label>
+        <select id="filtro-imovel">
+            <option value="">{{ t('Todos') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}" {% if filtro_imovel_id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="filtro-status">{{ t('Status') }}</label>
+        <select id="filtro-status">
+            <option value="" {% if filtro_status == '' %}selected{% endif %}>{{ t('Todos') }}</option>
+            <option value="pendente" {% if filtro_status == 'pendente' %}selected{% endif %}>{{ t('Pendentes') }}</option>
+            <option value="respondido" {% if filtro_status == 'respondido' %}selected{% endif %}>{{ t('Respondidos') }}</option>
+        </select>
+
+        <span class="filtro-contagem">{{ formularios|length }} {{ t('formulário(s)') }}</span>
+    </div>
+
+    <div class="lista-formularios" id="listaFormularios">
+        {% for f in formularios %}
+        <div class="form-card" data-form-id="{{ f.id }}">
+            <div class="form-card-row {% if not f.respostas %}sem-respostas{% endif %}" {% if f.respostas %}data-action="alternar"{% endif %}>
+                <div class="form-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="form-info">
+                    <strong>{{ f.hospede or t("Hóspede") }}</strong>
+                    <div class="form-meta">
+                        <span><i class="fa-solid fa-building"></i> {{ f.imovel or "—" }}</span>
+                        {% if f.checkin %}<span><i class="fa-solid fa-calendar"></i> {{ t('Check-in') }} {{ f.checkin }}</span>{% endif %}
+                        {% if f.status == 'pendente' and f.expira_em %}
+                        <span><i class="fa-solid fa-hourglass-half"></i> {{ t('Expira em') }} {{ f.expira_em }}</span>
+                        {% endif %}
+                        {% if f.status == 'respondido' and f.respondido_em %}
+                        <span><i class="fa-solid fa-check"></i> {{ t('Respondido em') }} {{ f.respondido_em }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="badge {{ f.status }}">
+                    {% if f.status == 'respondido' %}<i class="fa-solid fa-check"></i> {{ t('Respondido') }}{% else %}<i class="fa-solid fa-clock"></i> {{ t('Pendente') }}{% endif %}
+                </span>
+                {% if f.respostas %}
+                <button type="button" class="form-toggle" title="{{ t('Ver respostas') }}"><i class="fa-solid fa-chevron-down"></i></button>
+                {% endif %}
+            </div>
+
+            {% if f.respostas %}
+            <div class="respostas">
+                {% for r in f.respostas %}
+                <div class="resposta-item">
+                    <div class="resposta-label">
+                        {{ r.nome }}
+                        {% if r.obrigatorio %}<span class="obrigatorio">*</span>{% endif %}
+                    </div>
+                    {% if r.tipo == 'foto' %}
+                        {% if r.url_arquivo %}
+                        <a href="{{ r.url_arquivo }}" class="resposta-foto-link" data-action="ampliar" data-src="{{ r.url_arquivo }}">
+                            <img src="{{ r.url_arquivo }}" alt="{{ r.nome }}">
+                        </a>
+                        {% else %}
+                        <span class="resposta-vazia">{{ t('Não enviado') }}</span>
+                        {% endif %}
+                    {% else %}
+                        {% if r.valor %}
+                        <span class="resposta-texto">{{ r.valor }}</span>
+                        {% else %}
+                        <span class="resposta-vazia">{{ t('Não preenchido') }}</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="empty-state" id="estadoVazio">
+            <i class="fa-solid fa-file-lines"></i>
+            <p>{{ t('Nenhum formulário de documentos encontrado.') }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+<div class="lightbox" id="lightbox">
+    <button type="button" class="lightbox-fechar" id="lightboxFechar"><i class="fa-solid fa-xmark"></i></button>
+    <img id="lightboxImg" src="" alt="">
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = `toast ${tipo} show`;
+    setTimeout(() => { t.className = `toast ${tipo}`; }, 3200);
+}
+
+/* ─────────────────────────────────────────────
+   FILTROS — recarrega a página via query params (página de gestão,
+   não precisa de SPA/AJAX pra isso).
+───────────────────────────────────────────── */
+function aplicarFiltros() {
+    const imovel = document.getElementById('filtro-imovel').value;
+    const status = document.getElementById('filtro-status').value;
+    const params = new URLSearchParams();
+    if (imovel) params.set('imovel_id', imovel);
+    if (status) params.set('status', status);
+    const qs = params.toString();
+    window.location.href = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+}
+
+document.getElementById('filtro-imovel').addEventListener('change', aplicarFiltros);
+document.getElementById('filtro-status').addEventListener('change', aplicarFiltros);
+
+/* ─────────────────────────────────────────────
+   EXPANDIR/RECOLHER RESPOSTAS + LIGHTBOX DE FOTOS
+   (delegação de eventos, sem listener por card)
+───────────────────────────────────────────── */
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+function abrirLightbox(src) {
+    lightboxImg.src = src;
+    lightbox.classList.add('show');
+}
+function fecharLightbox() {
+    lightbox.classList.remove('show');
+    lightboxImg.src = '';
+}
+
+document.getElementById('lightboxFechar').addEventListener('click', fecharLightbox);
+lightbox.addEventListener('click', e => {
+    if (e.target === lightbox) fecharLightbox();
+});
+
+document.getElementById('listaFormularios').addEventListener('click', e => {
+    const linkFoto = e.target.closest('[data-action="ampliar"]');
+    if (linkFoto) {
+        e.preventDefault();
+        abrirLightbox(linkFoto.dataset.src);
+        return;
+    }
+
+    const linha = e.target.closest('[data-action="alternar"]');
+    if (linha) {
+        const card = linha.closest('.form-card');
+        card.classList.toggle('aberto');
+    }
+});
+</script>
+{% endblock %}

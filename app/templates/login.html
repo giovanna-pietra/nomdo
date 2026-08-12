@@ -1,0 +1,122 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}{{ t('Login') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== DARK MODE ===== */
+    body.theme-dark .subtitle {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+
+    body.theme-dark .divider::before,
+    body.theme-dark .divider::after {
+        background: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-dark .divider span {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+
+    body.theme-dark .btn-google {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+        box-shadow: none !important;
+    }
+
+    body.theme-dark .btn-google:hover {
+        background: rgba(255, 255, 255, 0.14) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    body.theme-dark .footer-links {
+        border-top-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-dark .footer-links p {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="text-align: center;">{{ t('Entrar') }}</h1>
+<p style="text-align: center;"class="subtitle">{{ t('Acesse seu painel de gerenciamento') }}</p>
+
+<form method="POST">
+
+    <div class="input-group">
+        <label for="email">{{ t('Email') }}:</label>
+        <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="seu@email.com"
+            required
+        >
+    </div>
+
+    <div class="input-group">
+        <label for="password">{{ t('Senha') }}</label>
+        <input
+            type="password"
+            id="password"
+            name="senha"
+            placeholder="••••••••"
+            minlength="8"
+            required
+        >
+    </div>
+
+    <label class="remember-me">
+        <input type="checkbox" name="lembrar" checked>
+        {{ t('Mantenha-me conectado') }}
+    </label>
+
+    <button type="submit" class="btn-login">
+        {{ t('Entrar') }}
+    </button>
+
+    <div class="divider">
+        <span>{{ t('ou') }}</span>
+    </div>
+
+    <a href="{{ url_for('auth.login_google') }}" class="btn-google">
+        <img
+            src="{{ url_for('static', filename='img/google_icon.png') }}"
+            width="18"
+        >
+        {{ t('Entrar com Google') }}
+    </a>
+
+</form>
+
+<div class="footer-links" style="text-align: center;">
+    <p>
+        {{ t('Ainda não tem conta?') }}
+        <a href="{{ url_for('auth.cadastro') }}">{{ t('Criar conta') }}</a>
+    </p>
+
+    <br>
+
+    <p class="text-center">
+        {{ t('Esqueceu a senha?') }}
+        <a href="{{ url_for('auth.esqueci_senha') }}">{{ t('Recuperar senha') }}</a>
+    </p>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.querySelector('.btn-login');
+
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> {{ t("Entrando...") }}';
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+});
+</script>
+{% endblock %}

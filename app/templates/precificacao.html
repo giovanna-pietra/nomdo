@@ -1,0 +1,933 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Precificação') }}{% endblock %}
+{% block titulo %}{{ t('Precificação') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 960px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 620px; }
+
+.btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ── TABS ────────────────────────────────────────────────── */
+.tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 18px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+}
+.tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-3);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background var(--t), color var(--t);
+}
+.tab-btn:hover { color: var(--p); }
+.tab-btn.active { background: var(--surface); color: var(--p); box-shadow: var(--shadow-sm); }
+.tab-panel.is-hidden { display: none; }
+
+/* ── CARD ────────────────────────────────────────────────── */
+.card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
+}
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.card-title-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.card-title-row h2 i { color: var(--p); font-size: 14px; }
+.card-desc { margin: 0 0 18px; font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+.filtro-contagem { font-size: 12.5px; color: var(--ink-4); font-weight: 600; white-space: nowrap; }
+
+/* ── CONFIG DE PERCENTUAIS ───────────────────────────────── */
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 6px;
+}
+.config-default { font-weight: 400; text-transform: none; color: var(--ink-4); letter-spacing: 0; }
+
+/* ── FORM ────────────────────────────────────────────────── */
+.form-group   { margin-bottom: 16px; }
+.form-group label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+.form-row-inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.form-row-inline label { margin-bottom: 0; }
+
+.btn-salvar {
+    width: 100%; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: white; font-weight: 800; font-size: 14px; cursor: pointer;
+    margin-top: 6px; box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-salvar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── SWITCH (recorrente) ─────────────────────────────────── */
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: var(--t); border-radius: 999px;
+}
+.switch .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: #fff; transition: var(--t); border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.switch input:checked + .slider { background: linear-gradient(135deg, var(--p), var(--p-mid)); }
+.switch input:checked + .slider:before { transform: translateX(18px); }
+
+/* ── BADGES / NÍVEIS DE IMPACTO ──────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge-alta  { background: var(--red-bg);   color: var(--red); }
+.badge-media { background: var(--amber-bg); color: var(--amber); }
+.badge-baixa { background: var(--p-soft);   color: var(--p); }
+
+/* ── OPORTUNIDADES ───────────────────────────────────────── */
+.lista-oportunidades { display: flex; flex-direction: column; gap: 10px; }
+.oportunidade-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+.oportunidade-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-3);
+}
+.oportunidade-card.nivel-alta .oportunidade-icon  { background: var(--red-bg);   color: var(--red);   border-color: transparent; }
+.oportunidade-card.nivel-media .oportunidade-icon { background: var(--amber-bg); color: var(--amber); border-color: transparent; }
+.oportunidade-card.nivel-baixa .oportunidade-icon { background: var(--p-soft);   color: var(--p);     border-color: transparent; }
+.oportunidade-info { flex: 1; min-width: 0; }
+.oportunidade-info strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.oportunidade-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+
+/* ── EVENTOS CADASTRADOS ─────────────────────────────────── */
+.lista-eventos { display: flex; flex-direction: column; gap: 10px; }
+.evento-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.evento-card.removendo { opacity: 0 !important; transform: scale(.97); pointer-events: none; }
+.evento-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+}
+.evento-info { flex: 1; min-width: 0; }
+.evento-info strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.evento-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.evento-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.evento-actions button {
+    width: 34px; height: 34px; border: none; background: var(--bg);
+    color: var(--ink-3); cursor: pointer; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background var(--t), color var(--t);
+}
+.evento-actions button.acao-editar:hover { background: var(--p-soft); color: var(--p); }
+.evento-actions button.acao-excluir:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── EVENTOS NA REGIÃO ───────────────────────────────────── */
+.regiao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 6px;
+}
+.regiao-evento-card {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.regiao-evento-img { width: 100%; height: 110px; object-fit: cover; display: block; background: var(--border); }
+.regiao-evento-info { padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.regiao-evento-info strong { font-size: 13px; color: var(--ink); font-weight: 700; }
+.regiao-evento-info span { font-size: 12px; color: var(--ink-3); }
+.regiao-evento-info a { font-size: 12px; color: var(--p); font-weight: 700; text-decoration: none; margin-top: 6px; }
+.regiao-evento-info a:hover { text-decoration: underline; }
+.link-google { font-size: 12.5px; color: var(--p); font-weight: 700; text-decoration: none; }
+.link-google:hover { text-decoration: underline; }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--ink-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0 0 6px; font-size: 13.5px; }
+
+/* ── LOADING SKELETON ────────────────────────────────────── */
+.skeleton {
+    background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 12px;
+    height: 50px;
+    margin-bottom: 8px;
+}
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.modal-box {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    border: none;
+    margin: auto;
+    animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+dialog.modal-box::backdrop { background: rgba(15,15,26,.55); backdrop-filter: blur(5px); }
+@keyframes modalIn { from{transform:scale(.88);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+}
+.modal-close:hover { background: var(--red-bg); color: var(--red); transform: rotate(90deg); }
+.modal-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-box p  { margin: 0 0 22px; font-size: 13px; color: var(--ink-3); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#6FB1FC,#6FB1FC); }
+.toast.error { background: linear-gradient(135deg,#0052D4,#0052D4); }
+
+/* ── UTILITÁRIOS ─────────────────────────────────────────── */
+.is-hidden { display: none !important; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .card { padding: 18px; }
+    .page-header { flex-direction: column; }
+    .btn-primario { width: 100%; justify-content: center; }
+    .config-grid { grid-template-columns: 1fr; }
+    .evento-card, .oportunidade-card { flex-wrap: wrap; }
+    .evento-info, .oportunidade-info { flex-basis: 100%; order: 1; }
+    .modal-box { padding: 24px 20px 20px; }
+    .toast { width: 90%; text-align: center; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  #0052D4;
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .card-title-row h2 i {
+    color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .tabs,
+body.theme-dark .evento-card,
+body.theme-dark .oportunidade-card,
+body.theme-dark .empty-state,
+body.theme-dark .regiao-evento-card {
+    background: rgba(255,255,255,0.06) !important;
+}
+body.theme-dark .tab-btn.active { background: rgba(255,255,255,0.14) !important; }
+body.theme-dark .switch .slider { background-color: rgba(255,255,255,0.18); }
+body.theme-dark .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 75%) !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="toast" id="toast"></div>
+
+<!-- ── MODAL DE EVENTO DE PRECIFICAÇÃO (criar/editar) ──────── -->
+<dialog class="modal-box" id="modalEvento">
+    <button class="modal-close" type="button" onclick="fecharModalEvento()">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h3 id="modalEventoTitulo"><i class="fa-solid fa-tag" style="color:var(--p-mid);margin-right:8px;"></i>{{ t('Novo Evento') }}</h3>
+    <p>{{ t('Cadastre uma data especial (show, festival, temporada local) para sugerir um aumento de preço.') }}</p>
+
+    <input type="hidden" id="evento-id" value="">
+
+    <div class="form-group">
+        <label>{{ t('Título') }}</label>
+        <input type="text" id="evento-titulo" placeholder="{{ t('Ex: Carnaval, Festival de Inverno…') }}">
+    </div>
+
+    <div class="form-group">
+        <label>{{ t('Data') }}</label>
+        <input type="date" id="evento-data">
+    </div>
+
+    <div class="form-group">
+        <label>{{ t('Nível de impacto') }}</label>
+        <select id="evento-nivel">
+            {% for chave, meta in niveis_impacto.items() %}
+            <option value="{{ chave }}" {% if chave == 'media' %}selected{% endif %}>{{ t(meta.label) }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group form-row-inline">
+        <label>{{ t('Recorrente (repete todo ano)') }}</label>
+        <label class="switch">
+            <input type="checkbox" id="evento-recorrente">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="form-group">
+        <label>{{ t('Imóvel') }}</label>
+        <select id="evento-imovel">
+            <option value="todos">{{ t('Todos os imóveis') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}">{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button class="btn-salvar" type="button" onclick="salvarEvento()">
+        <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+    </button>
+</dialog>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Precificação') }}</h1>
+            <p>{{ t('Configure percentuais de aumento sugerido, cadastre datas especiais e acompanhe eventos na região dos seus imóveis.') }}</p>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button type="button" class="tab-btn active" data-tab="oportunidades">
+            <i class="fa-solid fa-chart-line"></i> {{ t('Oportunidades') }}
+        </button>
+        <button type="button" class="tab-btn" data-tab="eventos">
+            <i class="fa-solid fa-calendar-days"></i> {{ t('Eventos Cadastrados') }}
+        </button>
+        <button type="button" class="tab-btn" data-tab="regiao">
+            <i class="fa-solid fa-map-location-dot"></i> {{ t('Eventos na Região') }}
+        </button>
+    </div>
+
+    <!-- ── TAB: OPORTUNIDADES ─────────────────────────────── -->
+    <div class="tab-panel" id="tab-oportunidades">
+
+        <div class="card">
+            <div class="card-title-row">
+                <h2><i class="fa-solid fa-sliders"></i> {{ t('Percentuais de Aumento Sugerido') }}</h2>
+            </div>
+            <p class="card-desc">{{ t('Defina, para cada nível de demanda, o percentual sugerido de aumento no preço. Deixe o campo em branco para voltar ao padrão.') }}</p>
+
+            <div class="config-grid">
+                <div class="form-group">
+                    <label>{{ t('Alta demanda') }} <span class="config-default">{{ t('(padrão 30%)') }}</span></label>
+                    <input type="number" id="pct-alta" min="0" max="200" value="{{ pct_precificacao.alta }}">
+                </div>
+                <div class="form-group">
+                    <label>{{ t('Média demanda') }} <span class="config-default">{{ t('(padrão 15%)') }}</span></label>
+                    <input type="number" id="pct-media" min="0" max="200" value="{{ pct_precificacao.media }}">
+                </div>
+                <div class="form-group">
+                    <label>{{ t('Baixa demanda') }} <span class="config-default">{{ t('(padrão 5%)') }}</span></label>
+                    <input type="number" id="pct-baixa" min="0" max="200" value="{{ pct_precificacao.baixa }}">
+                </div>
+            </div>
+
+            <button class="btn-salvar" type="button" onclick="salvarConfigPercentuais()">
+                <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar percentuais') }}
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-title-row">
+                <h2><i class="fa-solid fa-chart-line"></i> {{ t('Oportunidades de Precificação') }}</h2>
+                <span class="filtro-contagem">{{ oportunidades|length }} {{ t('oportunidade(s)') }}</span>
+            </div>
+            <p class="card-desc">{{ t('Combinação de feriados nacionais e dos seus eventos cadastrados, ordenada por data.') }}</p>
+
+            <div class="lista-oportunidades">
+                {% for o in oportunidades %}
+                <div class="oportunidade-card nivel-{{ o.nivel_impacto }}">
+                    <div class="oportunidade-icon">
+                        <i class="fa-solid {{ 'fa-calendar-star' if o.tipo == 'feriado' else 'fa-tag' }}"></i>
+                    </div>
+                    <div class="oportunidade-info">
+                        <strong>{{ o.titulo }}</strong>
+                        <div class="oportunidade-meta">
+                            <span><i class="fa-solid fa-building"></i> {{ o.imovel_titulo }}</span>
+                            <span><i class="fa-solid fa-calendar"></i> {{ o.data_fmt }}</span>
+                            <span>{{ t('Hoje') if o.dias_restantes == 0 else t('Em %(dias)s dia(s)', dias=o.dias_restantes) }}</span>
+                        </div>
+                    </div>
+                    <span class="badge badge-{{ o.nivel_impacto }}">+{{ o.percentual_sugerido }}%</span>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <p>{{ t('Nenhuma oportunidade de precificação nos próximos dias.') }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── TAB: EVENTOS CADASTRADOS ───────────────────────── -->
+    <div class="tab-panel is-hidden" id="tab-eventos">
+
+        <div class="card">
+            <div class="page-header" style="margin-bottom:16px;">
+                <div>
+                    <h2 style="margin:0;font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:10px;">
+                        <i class="fa-solid fa-calendar-days" style="color:var(--p);"></i> {{ t('Seus eventos cadastrados') }}
+                    </h2>
+                    <p style="margin:6px 0 0;font-size:12.5px;color:var(--ink-3);">{{ t('Datas personalizadas usadas para sugerir aumento de preço.') }}</p>
+                </div>
+                <button type="button" class="btn-primario" onclick="abrirModalNovoEvento()">
+                    <i class="fa-solid fa-plus"></i> {{ t('Novo Evento') }}
+                </button>
+            </div>
+
+            <div class="lista-eventos" id="listaEventos">
+                {% for ev in eventos %}
+                <div class="evento-card"
+                     data-id="{{ ev.id }}"
+                     data-titulo="{{ ev.titulo|e }}"
+                     data-data="{{ ev.data.isoformat() }}"
+                     data-nivel="{{ ev.nivel_impacto }}"
+                     data-recorrente="{{ '1' if ev.recorrente else '0' }}"
+                     data-imovel-id="{{ ev.imovel_id or '' }}">
+                    <div class="evento-icon" style="background:{{ niveis_impacto[ev.nivel_impacto].cor }}22;color:{{ niveis_impacto[ev.nivel_impacto].cor }};">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div class="evento-info">
+                        <strong>{{ ev.titulo }}</strong>
+                        <div class="evento-meta">
+                            <span><i class="fa-solid fa-calendar"></i> {{ ev.data.strftime('%d/%m/%Y') }}</span>
+                            <span><i class="fa-solid fa-building"></i> {{ ev.imovel.titulo if ev.imovel else t('Todos os imóveis') }}</span>
+                            {% if ev.recorrente %}<span><i class="fa-solid fa-rotate"></i> {{ t('Recorrente') }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <span class="badge badge-{{ ev.nivel_impacto }}">{{ t(niveis_impacto[ev.nivel_impacto].label) }}</span>
+                    <div class="evento-actions">
+                        <button type="button" class="acao-editar" data-action="editar-evento" data-id="{{ ev.id }}" title="{{ t('Editar') }}">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" class="acao-excluir" data-action="excluir-evento" data-id="{{ ev.id }}" title="{{ t('Excluir') }}">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state" id="estadoVazioEventos">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <p>{{ t('Nenhum evento cadastrado ainda. Use o botão acima para criar o primeiro.') }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── TAB: EVENTOS NA REGIÃO ─────────────────────────── -->
+    <div class="tab-panel is-hidden" id="tab-regiao">
+
+        <div class="card">
+            <div class="card-title-row">
+                <h2><i class="fa-solid fa-map-location-dot"></i> {{ t('Eventos na Região') }}</h2>
+            </div>
+            <p class="card-desc">{{ t('Shows, feiras e festivais próximos ao imóvel selecionado — apenas informativo, não altera a precificação automaticamente.') }}</p>
+
+            <div class="form-group" style="max-width:360px;">
+                <label>{{ t('Imóvel') }}</label>
+                <select id="regiao-imovel-select">
+                    <option value="">{{ t('Selecione um imóvel') }}</option>
+                    {% for im in imoveis %}
+                    <option value="{{ im.id }}">{{ im.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="regiaoResultado"></div>
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   TOAST + CLIENTE HTTP CENTRAL
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = `toast ${tipo} show`;
+    setTimeout(() => { t.className = `toast ${tipo}`; }, 3200);
+}
+
+async function apiRequest(url, options = {}) {
+    try {
+        const resp = await fetch(url, options);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.success === false) throw new Error(data.message || `{{ t("Erro") }} ${resp.status}`);
+        return data;
+    } catch (e) {
+        console.error(`[pagina] Erro em ${url}:`, e);
+        mostrarToast(e.message || '{{ t("Erro de conexão.") }}', 'error');
+        throw e;
+    }
+}
+
+/* ─────────────────────────────────────────────
+   TABS (troca client-side, sem reload)
+───────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('is-hidden'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('is-hidden');
+    });
+});
+
+/* ─────────────────────────────────────────────
+   CONFIGURAÇÃO DE PERCENTUAIS
+───────────────────────────────────────────── */
+async function salvarConfigPercentuais() {
+    const alta = document.getElementById('pct-alta').value.trim();
+    const media = document.getElementById('pct-media').value.trim();
+    const baixa = document.getElementById('pct-baixa').value.trim();
+
+    const payload = {
+        alta:  alta  === '' ? null : parseInt(alta),
+        media: media === '' ? null : parseInt(media),
+        baixa: baixa === '' ? null : parseInt(baixa),
+    };
+
+    const btn = document.querySelector('#tab-oportunidades .btn-salvar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t("Salvando…") }}';
+
+    try {
+        const data = await apiRequest('/api/hub/precificacao/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        mostrarToast('{{ t("Percentuais salvos com sucesso.") }}', 'success');
+        document.getElementById('pct-alta').value = data.pct_precificacao.alta;
+        document.getElementById('pct-media').value = data.pct_precificacao.media;
+        document.getElementById('pct-baixa').value = data.pct_precificacao.baixa;
+    } catch (e) {
+        // apiRequest já mostrou o toast de erro.
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> {{ t("Salvar percentuais") }}';
+    }
+}
+
+/* ─────────────────────────────────────────────
+   MODAL DE EVENTO — criar / editar
+───────────────────────────────────────────── */
+const modalEvento = document.getElementById('modalEvento');
+
+function abrirModalNovoEvento() {
+    document.getElementById('evento-id').value = '';
+    document.getElementById('evento-titulo').value = '';
+    document.getElementById('evento-data').value = '';
+    document.getElementById('evento-nivel').value = 'media';
+    document.getElementById('evento-recorrente').checked = false;
+    document.getElementById('evento-imovel').value = 'todos';
+
+    document.getElementById('modalEventoTitulo').innerHTML =
+        '<i class="fa-solid fa-tag" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Novo Evento") }}';
+
+    modalEvento.showModal();
+}
+
+function abrirModalEdicaoEvento(card) {
+    document.getElementById('evento-id').value = card.dataset.id;
+    document.getElementById('evento-titulo').value = card.dataset.titulo || '';
+    document.getElementById('evento-data').value = card.dataset.data || '';
+    document.getElementById('evento-nivel').value = card.dataset.nivel || 'media';
+    document.getElementById('evento-recorrente').checked = card.dataset.recorrente === '1';
+    document.getElementById('evento-imovel').value = card.dataset.imovelId || 'todos';
+
+    document.getElementById('modalEventoTitulo').innerHTML =
+        '<i class="fa-solid fa-pen" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Editar Evento") }}';
+
+    modalEvento.showModal();
+}
+
+function fecharModalEvento() {
+    modalEvento.close();
+}
+
+modalEvento.addEventListener('click', e => {
+    if (e.target === modalEvento) modalEvento.close();
+});
+
+async function salvarEvento() {
+    const id = document.getElementById('evento-id').value;
+    const titulo = document.getElementById('evento-titulo').value.trim();
+    const dataEvento = document.getElementById('evento-data').value;
+    const nivel = document.getElementById('evento-nivel').value;
+    const recorrente = document.getElementById('evento-recorrente').checked;
+    const imovelSel = document.getElementById('evento-imovel').value;
+
+    if (!titulo || !dataEvento) {
+        mostrarToast('{{ t("Informe título e data.") }}', 'error');
+        return;
+    }
+
+    const payload = {
+        titulo,
+        data: dataEvento,
+        nivel_impacto: nivel,
+        recorrente,
+        imovel_id: imovelSel === 'todos' ? null : parseInt(imovelSel),
+    };
+    if (id) payload.id = parseInt(id);
+
+    const btn = document.querySelector('#modalEvento .btn-salvar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t("Salvando…") }}';
+
+    try {
+        const data = await apiRequest('/api/hub/eventos/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        mostrarToast(data.message || '{{ t("Evento salvo com sucesso.") }}', 'success');
+        fecharModalEvento();
+        // Criar/editar pode mudar oportunidades calculadas na outra aba —
+        // reload silencioso é o jeito mais simples de refletir isso.
+        setTimeout(() => window.location.reload(), 400);
+    } catch (e) {
+        // apiRequest já mostrou o toast de erro.
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> {{ t("Salvar") }}';
+    }
+}
+
+/* ─────────────────────────────────────────────
+   EXCLUIR EVENTO — UI otimista, delegação de eventos
+───────────────────────────────────────────── */
+function _mostrarEstadoVazioEventosSeNecessario() {
+    const lista = document.getElementById('listaEventos');
+    if (lista && !lista.querySelector('.evento-card')) {
+        lista.innerHTML = `
+            <div class="empty-state" id="estadoVazioEventos">
+                <i class="fa-solid fa-calendar-days"></i>
+                <p>{{ t("Nenhum evento cadastrado ainda. Use o botão acima para criar o primeiro.") }}</p>
+            </div>`;
+    }
+}
+
+async function excluirEvento(id, card) {
+    const result = await Swal.fire({
+        title: '{{ t("Excluir evento?") }}',
+        text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '{{ t("Sim, excluir") }}',
+        cancelButtonText: '{{ t("Cancelar") }}',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    card.classList.add('removendo');
+    try {
+        await apiRequest(`/api/hub/eventos/excluir/${id}`, { method: 'DELETE' });
+        mostrarToast('{{ t("Evento excluído.") }}', 'success');
+        setTimeout(() => { card.remove(); _mostrarEstadoVazioEventosSeNecessario(); }, 220);
+    } catch (e) {
+        card.classList.remove('removendo');
+    }
+}
+
+const listaEventosEl = document.getElementById('listaEventos');
+listaEventosEl.addEventListener('click', e => {
+    const card = e.target.closest('.evento-card');
+    if (!card) return;
+    const id = card.dataset.id;
+
+    if (e.target.closest('[data-action="editar-evento"]')) { abrirModalEdicaoEvento(card); return; }
+    if (e.target.closest('[data-action="excluir-evento"]')) { excluirEvento(id, card); return; }
+});
+
+/* ─────────────────────────────────────────────
+   EVENTOS NA REGIÃO (Ticketmaster) — debounce + cache em memória
+   Cada troca de imóvel dispara no máximo uma requisição por imóvel; se o
+   anfitrião voltar pra um imóvel já consultado, usamos o resultado salvo
+   no Map em vez de refazer a chamada síncrona à API externa.
+───────────────────────────────────────────── */
+const _cacheEventosRegiao = new Map();
+let _debounceRegiaoTimer = null;
+
+document.getElementById('regiao-imovel-select').addEventListener('change', e => {
+    clearTimeout(_debounceRegiaoTimer);
+    const imovelId = e.target.value;
+    const cont = document.getElementById('regiaoResultado');
+    if (!imovelId) { cont.innerHTML = ''; return; }
+
+    _debounceRegiaoTimer = setTimeout(() => carregarEventosRegiao(imovelId), 300);
+});
+
+async function carregarEventosRegiao(imovelId) {
+    const cont = document.getElementById('regiaoResultado');
+
+    if (_cacheEventosRegiao.has(imovelId)) {
+        renderEventosRegiao(_cacheEventosRegiao.get(imovelId));
+        return;
+    }
+
+    cont.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+
+    try {
+        const data = await apiRequest(`/api/hub/eventos-regionais/${imovelId}`);
+        _cacheEventosRegiao.set(imovelId, data);
+        renderEventosRegiao(data);
+    } catch (e) {
+        cont.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <p>{{ t("Não foi possível carregar eventos agora.") }}</p>
+            </div>`;
+    }
+}
+
+function renderEventosRegiao(data) {
+    const cont = document.getElementById('regiaoResultado');
+
+    if (!data.ticketmaster_configurado) {
+        cont.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-plug-circle-xmark"></i>
+                <p>{{ t("Busca automática de eventos não está configurada para esta conta.") }}</p>
+                <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Buscar eventos no Google") }}</a>
+            </div>`;
+        return;
+    }
+
+    if (!data.eventos || !data.eventos.length) {
+        const msg = data.message || '{{ t("Nenhum evento encontrado para esse imóvel no momento.") }}';
+        cont.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-calendar-xmark"></i>
+                <p>${msg}</p>
+                <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Buscar eventos no Google") }}</a>
+            </div>`;
+        return;
+    }
+
+    const cards = data.eventos.map(ev => `
+        <div class="regiao-evento-card">
+            ${ev.imagem ? `<img class="regiao-evento-img" src="${ev.imagem}" alt="">` : ''}
+            <div class="regiao-evento-info">
+                <strong>${ev.nome || '{{ t("Evento") }}'}</strong>
+                <span><i class="fa-solid fa-calendar"></i> ${ev.data || '—'}${ev.hora ? ' · ' + ev.hora : ''}</span>
+                <span><i class="fa-solid fa-location-dot"></i> ${ev.local || '—'}</span>
+                ${ev.url ? `<a href="${ev.url}" target="_blank" rel="noopener">{{ t("Ver detalhes") }}</a>` : ''}
+            </div>
+        </div>`).join('');
+
+    cont.innerHTML = `
+        <div class="regiao-grid">${cards}</div>
+        <p style="margin-top:14px;">
+            <a class="link-google" href="${data.busca_google_url}" target="_blank" rel="noopener">{{ t("Ver mais eventos no Google") }}</a>
+        </p>`;
+}
+</script>
+{% endblock %}

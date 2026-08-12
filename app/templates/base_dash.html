@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'pt-br' }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- Trava pra páginas "de sistema" que NÃO devem ter tema escuro (ex:
+         documentos_recebidos.html, que é mais uma tela de formulário/lista
+         de documentos do hóspede do que uma funcionalidade operacional do
+         anfitrião) — o padrão é permitir (valor "sim"); a página filha
+         sobrescreve este mesmo bloco com o valor "nao" pra desativar só
+         pra ela, sem afetar as demais páginas que estendem este layout. -->
+    <!-- {% block permite_dark_mode %}sim{% endblock %} -->
+
+    <title>
+        {% block title %} Nomdo {% endblock %}
+    </title>
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icone_fundo.png') }}">
+
+    <!-- Tipografia da marca Nomdo: Poppins Bold (títulos) + Poppins Regular (texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_dashboard.css') }}">
+    {% if user and user.theme in ['dark', 'auto'] and self.permite_dark_mode() == 'sim' %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/theme_dark.css') }}">
+    {% endif %}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {% block extra_css %}
+    {% endblock %}
+
+    <style>
+        .empty-state {
+            width: 100%;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(0,82,212,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 18px rgba(90, 26, 155, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-icon i {
+            color: #0052D4 !important;
+            font-size: 48px !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+
+        .empty-state h2 {
+            font-size: 28px;
+            color: #222;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        
+        /* Separador de seção no menu lateral — só um rótulo, sem link */
+        .nav-section-label {
+            padding: 14px 16px 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: #94a3b8;
+            pointer-events: none;
+            user-select: none;
+        }
+        body.sidebar-collapsed .nav-section-label { opacity: 0; height: 4px; padding: 0; overflow: hidden; }
+        body.theme-dark .nav-section-label { color: rgba(255,255,255,.45); }
+
+        /* Logout Button — vermelho já no estado normal (não só no hover),
+           pra dar destaque visual de que "Sair" é uma ação diferente do
+           resto do menu. */
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: #dc2626;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.08rem;
+            background: rgba(220,38,38,0.08);
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-logout span {
+            font-weight: 700;
+            font-size: 1.08rem;
+        }
+
+        .btn-logout i {
+            font-size: 1rem;
+        }
+
+        /* Hover */
+        .btn-logout:hover {
+            background-color: #b91c1c !important;
+            color: #fff !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-logout:hover span,
+        .btn-logout:hover i {
+            color: #fff !important;
+        }
+
+        /* Modal "Central de Suporte" (SweetAlert2) — o `width` passado no
+           JS (min(420px, 92vw)) já evita estourar a largura da tela, mas
+           em celulares bem estreitos o padding/fonte padrão do SweetAlert2
+           ainda sobra grande demais; essas regras encolhem isso. */
+        @media (max-width: 420px) {
+            .swal2-popup { padding: 1.25em 1em !important; }
+            .swal2-popup .swal2-title { font-size: 1.2em !important; padding: 0 0 .3em !important; }
+            .swal2-popup .swal2-html-container { font-size: .92em !important; margin: 0.5em 0 0 !important; }
+            .suporte-opcao { padding: 13px !important; font-size: 0.92rem !important; }
+        }
+
+    </style>
+</head>
+
+<body class="{% if user and self.permite_dark_mode() == 'sim' %}{% if user.theme == 'dark' %}theme-dark{% elif user.theme == 'auto' %}theme-auto{% endif %}{% endif %}" data-tour-page="{% block tour_page %}{% endblock %}">
+    <script>
+        // Preferências do usuário (moeda/idioma) expostas globalmente pro
+        // JS de cada página formatar valores sem precisar hardcodar BRL/pt-br.
+        window.NOMDO_CURRENCY = {{ (current_currency or 'BRL')|tojson }};
+        window.NOMDO_LANG = {{ (current_lang or 'pt-br')|tojson }};
+
+        // Notificações push no navegador (Web Push) — chave pública VAPID,
+        // token CSRF (essa camada usa sessão de cookie, não Bearer token
+        // como o app mobile) e o estado atual do toggle, pro push.js saber
+        // se deve tentar renovar a inscrição silenciosamente ao carregar
+        // a página (ver NomdoPush.garantirInscricaoSeJaPermitido()).
+        window.NOMDO_VAPID_PUBLIC_KEY = {{ (config.VAPID_PUBLIC_KEY or '')|tojson }};
+        window.NOMDO_CSRF_TOKEN = {{ csrf_token()|tojson }};
+        window.NOMDO_NOTIFY_BROWSER = {{ (user.notify_browser if user else False)|tojson }};
+
+        // Aplica o estado recolhido/expandido da sidebar ANTES do primeiro
+        // paint, pra não piscar a sidebar aberta e depois recolher.
+        (function () {
+            try {
+                var isDesktopLike = window.innerWidth > 600 || (window.matchMedia && window.matchMedia('(orientation: landscape)').matches);
+                if (isDesktopLike && localStorage.getItem('sidebarCollapsed') === '1') {
+                    document.body.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+
+        // Mantém o layout mobile (sidebar off-canvas) mesmo quando o
+        // navegador do celular está em "Ver site para computador" — nesse
+        // modo o viewport reportado engana (fica largo), mas o tamanho
+        // físico real da tela (screen.width/height) não muda, então usamos
+        // ele pra decidir se o dispositivo é um celular de verdade.
+        (function () {
+            try {
+                var ladoMenor = Math.min(window.screen.width, window.screen.height);
+                if (ladoMenor > 0 && ladoMenor <= 600) {
+                    document.body.classList.add('force-mobile-nav');
+                }
+            } catch (e) {}
+        })();
+
+        // Altura real da tela pro menu mobile — 100vh/100dvh no celular
+        // não são confiáveis em todo navegador (a barra de endereço some/
+        // aparece, o teclado abre em páginas com formulário como a de
+        // Usuário...), cada um mudando o cálculo de um jeito. window.
+        // innerHeight é o valor mais consistente entre navegadores; salva
+        // como variável CSS e recalcula sempre que o layout realmente
+        // muda, pra sidebar nunca ficar mais alta que a tela de verdade
+        // (o que causava aquele "dá pra rolar/puxar a navbar").
+        (function () {
+            function atualizarAlturaReal() {
+                document.documentElement.style.setProperty('--vh-real', (window.innerHeight * 0.01) + 'px');
+            }
+            atualizarAlturaReal();
+            window.addEventListener('resize', atualizarAlturaReal);
+            window.addEventListener('orientationchange', atualizarAlturaReal);
+        })();
+    </script>
+
+    <div class="mobile-topbar">
+        <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="{{ t('Abrir menu') }}">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <a href="{{ url_for('reservas.dashboard') }}">
+            <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
+            <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
+        </a>
+        <span style="width:32px;"></span>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="dashboard-container">
+
+        <nav class="sidebar">
+
+            <div class="sidebar-top">
+
+                <div class="sidebar-top-row">
+                    <div class="logo">
+                        <a href="{{ url_for('reservas.dashboard') }}">
+                            <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
+                            <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
+                        </a>
+                    </div>
+
+                    <a href="{{ url_for('reservas.dashboard') }}" class="sidebar-icon-logo-link">
+                        <img src="{{ url_for('static', filename='img/icone_fundo.png') }}" alt="Nomdo" class="sidebar-icon-logo">
+                    </a>
+
+                    <button type="button" class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" aria-label="{{ t('Recolher menu') }}" title="{{ t('Recolher/expandir menu') }}">
+                        <i class="fa-solid fa-angles-left icon-collapse"></i>
+                        <i class="fa-solid fa-angles-right icon-expand"></i>
+                    </button>
+
+                    <button type="button" class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="{{ t('Fechar menu') }}" title="{{ t('Fechar menu') }}">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </button>
+                </div>
+
+                <ul class="nav-links">
+                    <li class="{% if request.endpoint == 'reservas.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('reservas.dashboard') }}" title="{{ t('Início') }}">
+                            <i class="fa-solid fa-house"></i>
+                            <span>{{ t('Início') }}</span>
+                        </a>
+                    </li>
+
+                    {% if categoria_usuario in ('Anfitrião', 'Proprietário') %}
+                            <li class="{% if request.endpoint == 'imoveis.imoveis' %}active{% endif %}">
+                                <a href="{{ url_for('imoveis.imoveis') }}" title="{{ t('Imóveis') }}">
+                                    <i class="fa-solid fa-building"></i>
+                                    <span>{{ t('Imóveis') }}</span>
+                                </a>
+                            </li>
+                            <li class="{% if request.endpoint == 'main.financas' %}active{% endif %}">
+                                <a href="{{ url_for('main.financas') }}" title="{{ t('Finanças') }}">
+                                    <i class="fa-solid fa-wallet"></i>
+                                    <span>{{ t('Finanças') }}</span>
+                                </a>
+                            </li>
+                            <li class="{% if request.endpoint == 'main.hub_anfitriao' %}active{% endif %}">
+                                <a href="{{ url_for('main.hub_anfitriao') }}" title="{{ t('Hub do Anfitrião') }}">
+                                    <i class="fa-solid fa-lightbulb"></i>
+                                    <span>{{ t('Hub do Anfitrião') }}</span>
+                                </a>
+                            </li>
+
+                            <!-- Limpezas, Manutenções, Checklists, Rotinas e Precificação
+                                 viraram abas dentro do Hub do Anfitrião em vez de páginas
+                                 próprias no menu — ver app/templates/hub_anfitriao.html -->
+
+                            <!-- Documentos tirado do menu por enquanto (a pedido) — a página
+                                 e a rota (documentos_recebidos.pagina) continuam existindo,
+                                 só não aparecem mais aqui. -->
+
+                            {% if user and not user.e_ajudante %}
+                            {% if categoria_usuario == 'Proprietário' %}
+                            <li class="{% if request.endpoint == 'main.dashboard_proprietario' %}active{% endif %}">
+                                <a href="{{ url_for('main.dashboard_proprietario') }}" title="{{ t('Dashboard Proprietário') }}">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                    <span>{{ t('Dashboard Proprietário') }}</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li class="{% if request.endpoint == 'equipe.equipe' %}active{% endif %}">
+                                <a href="{{ url_for('equipe.equipe') }}" title="{{ t('Equipe') }}">
+                                    <i class="fa-solid fa-users"></i>
+                                    <span>{{ t('Equipe') }}</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                    {% endif %}
+
+
+                   <!--  <li class="{% if request.endpoint == 'main.configuracoes' %}active{% endif %}">
+                        <a href="{{ url_for('main.configuracoes') }}">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>{{ t('Configurações') }}</span>
+                        </a>
+                    </li> -->
+
+                </ul>
+
+            </div>
+
+            <div class="sidebar-footer">
+
+                <a href="{{ url_for('usuario.usuario') }}" class="user-info {% if request.endpoint == 'usuario.usuario' %}active-page{% endif %}" title="{{ nome_usuario }}">
+
+                    <div class="user-avatar-container">
+                        <div class="user-avatar dynamic-color" data-name="{{ nome_usuario }}">
+                            {% if user and user.foto %}
+                                <img src="{{ url_for('static', filename=user.foto) }}" alt="Foto do usuário">
+                            {% else %}
+                                {{ nome_usuario[0] if nome_usuario else '?' }}
+                            {% endif %}
+                        </div>
+
+                        {% if not categoria_usuario or categoria_usuario == 'None' or categoria_usuario == '' or (user and (not user.telefone or not user.data_nascimento)) %}
+                        <div class="alert-badge">
+                            <i class="fa-solid fa-exclamation"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="user-details">
+                        <span class="user-name">{{ nome_usuario }}</span>
+                        <span class="user-category">
+                            {{ categoria_usuario if categoria_usuario and categoria_usuario != 'None' else t('Conta incompleta') }}
+                        </span>
+                    </div>
+
+                </a>
+
+                <button type="button" class="btn-support" onclick="abrirSuporte()" title="{{ t('Suporte') }}">
+                    <span>{{ t('Suporte') }}</span>
+                    <i class="fa-solid fa-headset"></i>
+                </button>
+
+                <button type="button" class="btn-logout" onclick="confirmarSaida()" title="{{ t('Sair') }}">
+                    <span>{{ t('Sair') }}</span>
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+
+            </div>
+
+        </nav>
+
+        <main class="content">
+
+            <header class="content-header">
+                <h1>
+                    {% block titulo %} {% endblock %}
+                </h1>
+            </header>
+
+            {% block conteudo %}
+                <br>
+                {% if not conteudo_existe %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fa-regular fa-folder-open"></i>
+                    </div>
+
+                    <h2>
+                        {% set nomes = nome_completo.split() %}
+                        {% if nomes|length >= 2 %}
+                            {{ t('Olá, %(nome)s! ✨', nome=nomes[0] + ' ' + nomes[-1]) }}
+                        {% else %}
+                            {{ t('Olá, %(nome)s! ✨', nome=nome_completo) }}
+                        {% endif %}
+                    </h2>
+
+                    <strong>{{ t('Ainda não há informações para exibir aqui.') }}</strong>
+                    <br>
+                    <p>{{ t('Adicione informações para começar a utilizar esta área da plataforma.') }}</p>
+                </div>
+                {% endif %}
+            {% endblock %}
+
+        </main>
+
+    </div>
+
+    <!-- Botão de ajuda — reabre o tour guiado da página atual a
+         qualquer momento (o tour em si só é registrado nas páginas
+         que chamam NomdoTour.register(...) no próprio extra_js). -->
+    <button type="button" class="nomdo-help-fab" onclick="NomdoTour.start(document.body.getAttribute('data-tour-page'))" title="{{ t('Ajuda / Como funciona esta página') }}" aria-label="{{ t('Ajuda') }}">
+        <span class="nomdo-help-pulse"></span>
+        <i class="fa-solid fa-question"></i>
+    </button>
+
+    <footer class="footer">
+        <br>
+        <p><span class="footer-line1">© 2026 Pietra Enterprise Ltda.</span> <span class="footer-line2">{{ t('Todos os direitos reservados.') }}</span></p>
+        <br>
+    </footer>
+
+    <script>
+        // Função para gerar cor baseada no nome
+        function stringToColor(str) {
+            if (!str) return "#ccc";
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return `hsl(${Math.abs(hash) % 360}, 65%, 60%)`;
+        }
+
+        // Aplicar cores dinâmicas nos avatares
+        function aplicarCores() {
+            document.querySelectorAll('.dynamic-color').forEach(el => {
+                const name = el.getAttribute('data-name');
+                const temImagem = el.querySelector('img');
+
+                if (!temImagem) {
+                    el.style.backgroundColor = stringToColor(name);
+                } else {
+                    el.style.backgroundColor = 'transparent';
+                }
+            });
+        }
+
+        window.addEventListener('load', aplicarCores);
+
+        // Menu mobile (sidebar off-canvas)
+        // `overflow:hidden` sozinho no body não impede o scroll de "vazar"
+        // atrás do menu no iOS Safari quando a página é mais alta que a
+        // tela (ex: página de Usuário, com bastante formulário — é por
+        // isso que só aparecia lá, não numa página curta). O jeito que
+        // funciona de verdade é travar o body com position:fixed no
+        // scroll atual (guardado aqui) e devolver a posição ao fechar.
+        let _scrollYAntesDoMenu = 0;
+
+        function abrirMenuMobile() {
+            _scrollYAntesDoMenu = window.scrollY || window.pageYOffset || 0;
+            document.body.style.top = `-${_scrollYAntesDoMenu}px`;
+            document.body.classList.add('sidebar-open');
+        }
+
+        function fecharMenuMobile() {
+            document.body.classList.remove('sidebar-open');
+            document.body.style.top = '';
+            window.scrollTo(0, _scrollYAntesDoMenu);
+        }
+
+        function toggleSidebar() {
+            if (document.body.classList.contains('sidebar-open')) {
+                fecharMenuMobile();
+            } else {
+                abrirMenuMobile();
+            }
+        }
+
+        // Sidebar recolhível (desktop) — vira só o ícone de menu
+        function toggleSidebarCollapse() {
+            const recolhida = document.body.classList.toggle('sidebar-collapsed');
+            try {
+                localStorage.setItem('sidebarCollapsed', recolhida ? '1' : '0');
+            } catch (e) {}
+        }
+
+        // Fecha o menu automaticamente ao navegar (mobile)
+        document.querySelectorAll('.sidebar .nav-links a, .sidebar-footer a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                fecharMenuMobile();
+            });
+        });
+
+        // Tema (aplica no layout sem mudar o CSS original)
+        (function applyAutoTheme() {
+            const body = document.body;
+            if (!body.classList.contains("theme-auto")) return;
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            if (prefersDark) body.classList.add("theme-dark");
+        })();
+
+        // Função de Suporte com SweetAlert2
+        function abrirSuporte() {
+            if (typeof Swal === 'undefined') {
+                console.error("SweetAlert2 não foi carregado corretamente.");
+                alert("{{ t('Erro ao abrir suporte. Verifique sua conexão.') }}");
+                return;
+            }
+
+            Swal.fire({
+                title: '{{ t("Central de Suporte") }}',
+                html: `
+                <p>{{ t("Escolha uma das opções abaixo:") }}</p>
+                    <div style="display:flex; flex-direction:column; gap:14px; margin-top:20px;">
+                        <a href="https://wa.me/551152428905" target="_blank" class="suporte-opcao"
+                           style="text-decoration:none; background:#25d366; color:white; padding:16px; border-radius:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; box-sizing:border-box;">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </a>
+
+                        <a href="mailto:suporte@staykey.com" class="suporte-opcao"
+                           style="text-decoration:none; background:#0052D4; color:white; padding:16px; border-radius:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; box-sizing:border-box;">
+                            <i class="fa-solid fa-envelope"></i> {{ t("Enviar E-mail") }}
+                        </a>
+
+                        <a href="{{ url_for('suporte.chamado') }}" class="suporte-opcao suporte-opcao-chamado"
+                           style="text-decoration:none; background:rgba(0,82,212,0.08); color:#0052D4; padding:16px; border-radius:14px; font-weight:600; border:2px solid rgba(0,82,212,0.08); display:flex; align-items:center; justify-content:center; gap:10px; box-sizing:border-box;">
+                            <i class="fa-solid fa-ticket"></i> {{ t("Abrir Chamado") }}
+                        </a>
+                    </div>
+                `,
+                showConfirmButton: false,
+                width: 'min(420px, 92vw)'
+            });
+        }
+
+        // Função de confirmação de saída com SweetAlert2
+        function confirmarSaida() {
+            Swal.fire({
+                title: '{{ t("Deseja realmente sair?") }}',
+                text: '{{ t("Sua sessão atual na plataforma será encerrada.") }}',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0052D4',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ t("Sim, sair") }}',
+                cancelButtonText: '{{ t("Cancelar") }}',
+                reverseButtons: true,
+                borderRadius: 20
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "{{ url_for('auth.logout') }}";
+                }
+            });
+        }
+    </script>
+
+    <script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/push.js') }}"></script>
+    <script>
+        // Renova a inscrição de push silenciosamente se o usuário já tinha
+        // permitido notificações antes (ex: limpou dados do navegador) —
+        // nunca pede permissão sozinho aqui, só quando a pessoa mexe no
+        // toggle em Configurações.
+        if (window.NomdoPush) {
+            window.NomdoPush.garantirInscricaoSeJaPermitido();
+        }
+    </script>
+
+    {% block extra_js %}
+    {% endblock %}
+
+</body>
+</html>

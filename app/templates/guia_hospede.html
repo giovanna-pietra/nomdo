@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang or 'pt-br' }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ imovel.titulo }} — {{ t('Guia Digital do Hóspede') }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+<link rel="shortcut icon" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root {
+    --primary:         #0052D4;
+    --primary-mid:    #4364F7;
+    --primary-soft:   rgba(0,82,212,0.08);
+    --primary-border: rgba(0,82,212,0.12);
+    --text-soft:      #64748b;
+    --border-soft:    #e5e7eb;
+    --warn:           #4364F7;
+    --text:           #111827;
+
+    /* Paleta extra (além do azul) — cada seção do guia ganha uma cor de
+       identidade própria em vez de tudo ficar no mesmo tom de azul. */
+    --green:          #16a34a;
+    --green-soft:     rgba(22,163,74,0.08);
+    --green-border:   rgba(22,163,74,0.16);
+    --amber:          #b8860b;
+    --amber-soft:     rgba(217,119,6,0.10);
+    --amber-border:   rgba(217,119,6,0.18);
+    --red:            #dc2626;
+    --red-soft:       rgba(220,38,38,0.08);
+    --red-border:     rgba(220,38,38,0.16);
+    --purple:         #7c3aed;
+    --purple-soft:    rgba(124,58,237,0.08);
+    --purple-border:  rgba(124,58,237,0.16);
+
+    --bg-wifi:        rgba(0,82,212,0.08);
+    --border-wifi:    rgba(0,82,212,0.12);
+    --bg-info:        rgba(111,177,252,0.08);
+    --border-info:    rgba(111,177,252,0.12);
+    --bg-utensilios:  var(--purple-soft);
+    --border-utensilios: var(--purple-border);
+    --bg-regras:      var(--amber-soft);
+    --border-regras:  var(--amber-border);
+    --bg-contato:     var(--green-soft);
+    --border-contato:  var(--green-border);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0; font-family: 'Poppins', sans-serif; background: #f5f7fb;
+    color: var(--text); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+/* ── Hero ── */
+.hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-mid)) !important;
+    color: #fff !important; padding: 34px 20px 46px;
+    text-align: center; position: relative;
+}
+.hero::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 24px;
+    background: #f5f7fb; border-radius: 24px 24px 0 0;
+}
+.hero i.icon-house { font-size: 2rem; opacity: .9; margin-bottom: 10px; display: block; }
+.hero h1 { font-size: 1.25rem; font-weight: 800; margin: 0 0 4px; color: #fff !important; }
+.hero p  { font-size: 0.82rem; opacity: .9; margin: 0; color: #fff !important; }
+
+/* ── Container ── */
+.wrap { max-width: 560px; margin: -20px auto 0; padding: 0 16px 40px; position: relative; z-index: 1; }
+
+.card {
+    background: #fff; border: 1px solid var(--border-soft); border-radius: 18px;
+    padding: 18px 20px; margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(15,23,42,.04);
+}
+.card h2 {
+    font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    margin: 0 0 14px; display: flex; align-items: center; gap: 7px;
+}
+
+.section-wifi h2 { color: #0052D4; }
+.section-info h2 { color: #6FB1FC; }
+.section-utensilios h2 { color: var(--purple); }
+.section-regras h2 { color: var(--amber); }
+.section-contato h2 { color: var(--green); }
+
+/* ── Acesso / Linhas ── */
+.acesso-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-soft);
+}
+.acesso-row:last-child { border-bottom: none; }
+.acesso-row .label { font-size: 0.72rem; color: var(--text-soft); font-weight: 600; }
+.acesso-row .valor { font-size: 0.92rem; font-weight: 700; color: var(--primary-mid); word-break: break-all; }
+.btn-copiar {
+    border: none; background: var(--primary-soft); color: var(--primary-mid);
+    width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+    flex-shrink: 0; transition: .15s;
+}
+.btn-copiar:hover { background: var(--primary-border); }
+.btn-copiar.copiado { background: rgba(111,177,252,0.12); color: #6FB1FC; }
+
+/* ── Horários / capacidade ── */
+.grid-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.info-chip {
+    background: var(--bg-info); border: 1px solid var(--border-info);
+    border-radius: 12px; padding: 10px 12px; text-align: center;
+}
+.info-chip strong { display: block; font-size: 0.95rem; color: #6FB1FC; }
+.info-chip small { font-size: 0.65rem; color: #6FB1FC; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+
+/* Cada chip com uma cor própria (check-in/check-out/capacidade/quartos...)
+   em vez de tudo no mesmo azul claro. */
+.info-chip.chip-green  { background: var(--green-soft);  border-color: var(--green-border); }
+.info-chip.chip-green strong, .info-chip.chip-green small  { color: var(--green); }
+.info-chip.chip-red    { background: var(--red-soft);    border-color: var(--red-border); }
+.info-chip.chip-red strong, .info-chip.chip-red small      { color: var(--red); }
+.info-chip.chip-amber  { background: var(--amber-soft);  border-color: var(--amber-border); }
+.info-chip.chip-amber strong, .info-chip.chip-amber small  { color: var(--amber); }
+.info-chip.chip-purple { background: var(--purple-soft); border-color: var(--purple-border); }
+.info-chip.chip-purple strong, .info-chip.chip-purple small { color: var(--purple); }
+.info-chip.chip-blue   { background: var(--bg-info);     border-color: var(--border-info); }
+.info-chip.chip-blue strong, .info-chip.chip-blue small    { color: #6FB1FC; }
+
+/* ── Utensílios com Preço ── */
+.utensilio-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-utensilios); border: 1px solid var(--border-utensilios);
+    padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 0.86rem;
+}
+.utensilio-item:last-child { margin-bottom: 0; }
+.utensilio-nome { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.utensilio-preco { font-size: 0.75rem; font-weight: 700; background: #fff; border: 1px solid var(--border-utensilios); padding: 3px 8px; border-radius: 8px; color: var(--purple); }
+
+/* ── Regras ── */
+.regra-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    background: var(--bg-regras); border: 1px solid var(--border-regras);
+    border-radius: 12px; margin-bottom: 8px; font-size: 0.84rem; color: #374151;
+}
+.regra-item:last-child { margin-bottom: 0; }
+.regra-item i { color: var(--amber); font-size: 0.9rem; margin-top: 2px; flex-shrink: 0; }
+.regra-item strong { color: var(--amber); font-weight: 700; }
+
+/* ── Contato Estilização ── */
+.contato-box {
+    background: var(--bg-contato); border: 1px solid var(--border-contato); border-radius: 12px; padding: 12px 14px;
+}
+.contato-btn-whatsapp {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: #25d366; color: #fff; padding: 8px 16px; border-radius: 10px;
+    text-decoration: none; font-size: 0.85rem; font-weight: 700; margin-top: 8px; transition: 0.2s;
+}
+.contato-btn-whatsapp:hover { background: #20ba5a; }
+
+/* ── Filtros Estilo Dashboard ── */
+.filter-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.place-filter {
+    border: none; background: #f3f4f6; color: #475569;
+    padding: 8px 12px; border-radius: 10px; cursor: pointer;
+    font-size: .72rem; font-weight: 700; transition: .2s;
+    display: flex; align-items: center; gap: 5px;
+}
+.place-filter:hover { background: #e2e8f0; color: #334155; }
+.place-filter.active { background: linear-gradient(135deg, #334155, #64748b); color: white; }
+.place-filter[data-cat="supermarket"].active { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.place-filter[data-cat="restaurant"].active  { background: linear-gradient(135deg, #ea580c, #f97316); }
+.place-filter[data-cat="pharmacy"].active    { background: linear-gradient(135deg, #dc2626, #ef4444); }
+.place-filter[data-cat="leisure"].active     { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+
+/* ── Lista de Lugares ── */
+#places-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.place-card {
+    background: white; border: 1px solid rgba(15,23,42,0.08); border-radius: 14px;
+    padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: .2s ease; cursor: pointer;
+}
+.place-card:hover { transform: translateY(-2px); border-color: rgba(15,23,42,0.14); box-shadow: 0 6px 15px rgba(15,23,42,.08); }
+.place-main-info { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
+.place-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-size: .8rem;
+}
+.place-info { flex-grow: 1; }
+.place-info strong { display: block; font-size: .8rem; color: var(--text); line-height: 1.2; }
+.place-info small { color: var(--text-soft); font-size: .68rem; font-weight: 600; display: block; margin-top: 2px; }
+.place-stars { font-size: 0.68rem; color: #f5a623; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.place-stars div { display: flex; gap: 1px; margin-bottom: 2px; }
+.place-stars span { color: var(--text-soft); font-size: 0.65rem; font-weight: 500; }
+
+/* ── Ações de Impressão ── */
+.print-actions { display: flex; justify-content: center; margin-bottom: 16px; }
+.btn-print {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #111827; color: #fff; border: none; padding: 10px 24px;
+    border-radius: 12px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.15s;
+    width: 100%; box-shadow: 0 4px 12px rgba(17,24,39,0.15);
+}
+
+/* ── CONTEXTO FIXO DO MAPA ── */
+#map { 
+    height: 250px !important; 
+    min-height: 250px !important;
+    width: 100% !important;
+    border-radius: 18px; 
+    border: 1px solid var(--border-soft); 
+    margin-bottom: 12px; 
+    display: block !important;
+    position: relative !important;
+    z-index: 10; 
+}
+.btn-maps {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 44px; border-radius: 12px; border: none;
+    background: var(--primary-soft); color: var(--primary-mid); font-weight: 700; font-size: 0.82rem;
+    text-decoration: none; transition: .15s;
+}
+
+/* ── Cancelamento ── */
+.cancel-box { background: var(--amber-soft); border: 1px solid var(--amber-border); border-radius: 14px; padding: 14px 16px; }
+.cancel-box h2 { color: var(--amber); }
+.cancel-box p { font-size: 0.82rem; color: #7a5b0a; margin: 4px 0; line-height: 1.5; }
+
+/* ── Footer ── */
+.footer-note { text-align: center; font-size: 0.72rem; color: var(--text-soft); margin-top: 22px; line-height: 1.6; }
+
+.lang-corner { position: absolute; top: 14px; right: 14px; z-index: 2; }
+
+/* ── RESPONSIVIDADE ── */
+
+
+
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .hero { padding: 26px 16px 38px; }
+    .hero i.icon-house { font-size: 1.7rem; margin-bottom: 8px; }
+    .hero h1 { font-size: 1.05rem; }
+    .hero p { font-size: 0.76rem; }
+    .wrap { margin: -16px auto 0; padding: 0 12px 32px; }
+
+    .card { padding: 16px 16px; margin-bottom: 12px; }
+    .card h2 { font-size: 0.72rem; margin-bottom: 12px; }
+
+    .acesso-row { flex-wrap: wrap; gap: 6px; }
+    .acesso-row .valor { font-size: 0.86rem; }
+
+    .grid-info { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .info-chip { padding: 8px 8px; }
+    .info-chip strong { font-size: 0.85rem; }
+    .info-chip small { font-size: 0.6rem; }
+
+    .utensilio-item { padding: 9px 12px; font-size: 0.8rem; flex-wrap: wrap; gap: 6px; }
+    .regra-item { font-size: 0.8rem; padding: 9px 10px; }
+
+    .contato-buttons-wrapper { flex-direction: column; }
+    .contato-btn-whatsapp { width: 100%; }
+
+    .filter-container { gap: 5px; }
+    .place-filter { padding: 7px 10px; font-size: 0.66rem; }
+
+    .place-card { padding: 9px 10px; gap: 8px; }
+    .place-main-info { gap: 8px; }
+    .place-icon { width: 30px; height: 30px; font-size: 0.72rem; }
+    .place-info strong {
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 42vw;
+    }
+    .place-stars { font-size: 0.62rem; }
+
+    #map { height: 200px !important; min-height: 200px !important; }
+    .btn-print { font-size: 0.8rem; padding: 10px 16px; }
+
+    .cancel-box { padding: 12px 14px; }
+    .cancel-box p { font-size: 0.78rem; }
+}
+
+@media (max-width: 360px) and (orientation: portrait) {
+    .grid-info { grid-template-columns: 1fr 1fr; }
+    .hero h1 { font-size: 0.98rem; }
+    .place-info strong { max-width: 36vw; }
+}
+
+/* ── CORREÇÃO DA IMPRESSÃO COMPLETA ── */
+@media print {
+    html, body {
+        background: #f5f7fb !important;
+        color: var(--text) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .wrap { max-width: 100%; margin: 0 auto; padding: 10px; }
+    .card { 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02) !important; 
+        border: 1px solid var(--border-soft) !important; 
+        background: #fff !important;
+        page-break-inside: avoid; 
+    }
+    .hero {
+        background: linear-gradient(135deg, var(--primary), var(--primary-mid)) !important;
+        color: #fff !important;
+    }
+    .hero h1, .hero p, .hero i { color: #fff !important; }
+    
+    /* Esconde elementos puramente interativos que falham no papel */
+    .btn-copiar, .print-actions, .btn-maps, .filter-container, .contato-buttons-wrapper, .lang-corner {
+        display: none !important;
+    }
+    
+    /* Ativa a exibição dos links textuais legíveis */
+    .print-only-links {
+        display: flex !important;
+    }
+
+    #map { display: block !important; height: 250px !important; }
+    #places-list { display: flex !important; }
+    .place-card { background: white !important; border: 1px solid rgba(0,82,212,0.08) !important; }
+    .place-icon { background: linear-gradient(135deg, var(--primary), var(--primary-mid)) !important; color: white !important; }
+}
+
+/* O Guia do Hóspede é uma página pública, sem sessão/preferência de tema
+   — propositalmente SEMPRE no modo claro, independente do modo escuro do
+   celular/navegador de quem está visitando (o guia é lido rapidamente por
+   um hóspede, geralmente sob luz do dia ou em telas de recepção; manter
+   sempre claro evita depender do OS de terceiros e garante legibilidade
+   consistente, além de ser mais previsível pra impressão/PDF). */
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="lang-corner">{% include "partials/seletor_idioma.html" %}</div>
+    <i class="fa-solid fa-house-chimney icon-house"></i>
+    <h1>🏠 {{ imovel.titulo }}</h1>
+    <p>📍 {{ imovel.endereco }}</p>
+</div>
+
+<div class="wrap">
+
+    <div class="print-actions">
+        <button class="btn-print" onclick="window.print()">
+            <i class="fa-solid fa-file-pdf"></i> {{ t('Imprimir ou Salvar Guia em PDF') }}
+        </button>
+    </div>
+
+    {# ── Seção Anfitrião ── #}
+    {% if imovel.contato_telefone or imovel.contato_email %}
+    <div class="card section-contato">
+        <h2>📞 {{ t('Contato com o Anfitrião') }}</h2>
+        <div class="contato-box">
+            <div class="label" style="font-size: 0.72rem; color: var(--text-soft); font-weight: 600;">{{ t('Precisa de suporte operacional ou emergência? Fale direto com o anfitrião:') }}</div>
+
+                        <div class="contato-buttons-wrapper" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                {% if imovel.contato_telefone %}
+                <a href="https://wa.me/{{ imovel.contato_telefone | replace(' ', '') | replace('-', '') | replace('(', '') | replace(')', '') | replace('+', '') }}"
+                   target="_blank" rel="noopener" class="contato-btn-whatsapp" style="margin-top:0;">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+                {% endif %}
+                {% if imovel.contato_email %}
+                <a href="mailto:{{ imovel.contato_email }}" class="contato-btn-whatsapp" style="margin-top:0; background:#0052D4;">
+                    <i class="fa-solid fa-envelope"></i> {{ t('E-mail') }}
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="print-only-links" style="display: none; margin-top: 10px; font-size: 0.85rem; flex-direction: column; gap: 6px;">
+                {% if imovel.contato_telefone %}
+                <div><strong>{{ t('WhatsApp / Tel:') }}</strong> {{ imovel.contato_telefone }}</div>
+                {% endif %}
+                {% if imovel.contato_email %}
+                <div><strong>{{ t('E-mail:') }}</strong> {{ imovel.contato_email }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Seção Wi-Fi ── #}
+    <div class="card section-wifi">
+        <h2>🔑 {{ t('Conectividade & Acesso') }}</h2>
+        <div class="acesso-row">
+            <div><div class="label">📶 {{ t('Rede Wi-Fi') }}</div><div class="valor" id="wifi-rede-txt">{{ imovel.wifi_rede or t('Não configurada') }}</div></div>
+            {% if imovel.wifi_rede %}<button class="btn-copiar" onclick="copiarTexto('wifi-rede-txt', this)"><i class="fa-regular fa-copy"></i></button>{% endif %}
+        </div>
+        <div class="acesso-row">
+            <div><div class="label">🔒 {{ t('Senha do Wi-Fi') }}</div><div class="valor" id="wifi-senha-txt">{{ imovel.wifi_senha or t('Não configurada') }}</div></div>
+            {% if imovel.wifi_senha %}<button class="btn-copiar" onclick="copiarTexto('wifi-senha-txt', this)"><i class="fa-regular fa-copy"></i></button>{% endif %}
+        </div>
+        <div class="acesso-row">
+            <div><div class="label">🚪 {{ t('Fechadura Eletrônica (Senha)') }}</div><div class="valor" id="fechadura-txt">{{ imovel.senha_fechadura or t('Será fornecida no check-in') }}</div></div>
+            {% if imovel.senha_fechadura %}<button class="btn-copiar" onclick="copiarTexto('fechadura-txt', this)"><i class="fa-regular fa-copy"></i></button>{% endif %}
+        </div>
+    </div>
+
+    {# ── Seção Estadia ── #}
+    <div class="card section-info">
+        <h2>📅 {{ t('Informações da Estadia') }}</h2>
+        <div class="grid-info">
+            <div class="info-chip chip-green"><strong>🕒 {{ imovel.checkin_padrao or '14:00' }}</strong><small>{{ t('Check-in') }}</small></div>
+            <div class="info-chip chip-red"><strong>🕚 {{ imovel.checkout_padrao or '11:00' }}</strong><small>{{ t('Check-out') }}</small></div>
+            <div class="info-chip chip-blue"><strong>👥 {{ imovel.capacidade_max or '--' }}</strong><small>{{ t('Hóspedes Máx') }}</small></div>
+            <div class="info-chip chip-purple"><strong>🛏️ {{ imovel.qtd_quartos or '--' }}</strong><small>{{ t('Quartos') }}</small></div>
+            <div class="info-chip chip-amber"><strong>🚿 {{ imovel.qtd_banheiros or '--' }}</strong><small>{{ t('Banheiros') }}</small></div>
+            <div class="info-chip chip-blue"><strong>✨ {{ imovel.qtd_camas or '--' }}</strong><small>{{ t('Camas Disp.') }}</small></div>
+        </div>
+    </div>
+
+    {# ── Seção Utensílios ── #}
+    <div class="card section-utensilios" id="card-utensilios" style="display:none;">
+        <h2>🛋️ {{ t('Utensílios & Taxas de Reposição') }}</h2>
+        <div id="lista-utensilios"></div>
+    </div>
+
+    {# ── Seção Regras ── #}
+    <div class="card section-regras" id="card-regras" style="display:none;">
+        <h2>⚠️ {{ t('Regras Importantes da Casa') }}</h2>
+        <div id="lista-regras"></div>
+    </div>
+
+    {# ── Seção Localização ── #}
+    {% if imovel.lat and imovel.lng %}
+    <div class="card">
+        <h2>🗺️ {{ t('Localização & Exploração Local') }}</h2>
+        <div id="map"></div>
+        <a class="btn-maps" id="btn-google-maps" href="https://www.google.com/maps/search/?api=1&query={{ imovel.lat }},{{ imovel.lng }}" target="_blank" rel="noopener">
+            <i class="fa-solid fa-diamond-turn-right"></i> {{ t('Rota Direta no Google Maps') }}
+        </a>
+
+        <h3 style="margin-top: 20px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--primary-mid);">
+            🔍 {{ t('O que fazer por perto') }}
+        </h3>
+
+        <div class="filter-container">
+            <button class="place-filter active" data-cat="supermarket" onclick="searchNearby('supermarket', this, 'fa-cart-shopping')">
+                <i class="fa-solid fa-cart-shopping"></i> {{ t('Mercados') }}
+            </button>
+            <button class="place-filter" data-cat="restaurant" onclick="searchNearby('restaurant', this, 'fa-utensils')">
+                <i class="fa-solid fa-utensils"></i> {{ t('Restaurantes') }}
+            </button>
+            <button class="place-filter" data-cat="pharmacy" onclick="searchNearby('pharmacy', this, 'fa-prescription-bottle-medical')">
+                <i class="fa-solid fa-prescription-bottle-medical"></i> {{ t('Farmácias') }}
+            </button>
+            <button class="place-filter" data-cat="leisure" onclick="searchNearby('leisure', this, 'fa-umbrella-beach')">
+                <i class="fa-solid fa-umbrella-beach"></i> {{ t('Atrações & Lazer') }}
+            </button>
+        </div>
+
+        <div id="places-list">
+            <div class="empty-msg" style="text-align:center; font-size:.75rem; color:var(--text-soft); padding:10px 0;">
+                {{ t('Selecione uma categoria ou aguarde o carregamento...') }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Cancelamento ── #}
+    {% if imovel.prazo_cancelamento_gratis or (imovel.multa_tipo and imovel.multa_tipo != 'sem_multa') %}
+    <div class="card cancel-box">
+        <h2>📄 {{ t('Política de Cancelamento') }}</h2>
+        {% if imovel.prazo_cancelamento_gratis %}
+        <p>{{ t('Cancelamento gratuito até %(dias)s dia(s) antes do check-in.', dias=imovel.prazo_cancelamento_gratis) }}</p>
+        {% endif %}
+        {% if imovel.multa_tipo == 'percentual' and imovel.multa_valor %}
+        <p>{{ t('Após esse prazo: incidência de multa de %(valor)s%% sobre o valor integral da estadia.', valor=imovel.multa_valor) }}</p>
+        {% elif imovel.multa_tipo == 'fixo' and imovel.multa_valor %}
+        <p>{{ t('Após esse prazo: incidência de multa com taxa fixa de R$ %(valor)s.', valor=imovel.multa_valor) }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <p class="footer-note">
+        ℹ️ {{ t('Em caso de qualquer dúvida, suporte operacional ou emergência, contate seu anfitrião.') }}<br>
+        {{ t('Guia gerado automaticamente através do Nomdo') }}
+    </p>
+
+</div>
+
+{% if imovel.lat and imovel.lng %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endif %}
+<script>
+const UTENSILIOS_RAW = {{ imovel.utensilios | tojson | safe if imovel.utensilios else '[]' }};
+const REGRAS_RAW     = {{ imovel.regras | tojson | safe if imovel.regras else '[]' }};
+
+function _parseLista(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+        const t = raw.trim();
+        if (!t || t === '[]' || t === 'null') return [];
+        try { const p = JSON.parse(t); return Array.isArray(p) ? p : []; } catch (_) { return []; }
+    }
+    return [];
+}
+
+const utensilios = _parseLista(UTENSILIOS_RAW);
+const regras     = _parseLista(REGRAS_RAW);
+
+if (utensilios.length > 0) {
+    document.getElementById('card-utensilios').style.display = 'block';
+    document.getElementById('lista-utensilios').innerHTML = utensilios.map(u => {
+        const nome = typeof u === 'object' ? u.nome : u;
+        const valor = typeof u === 'object' && u.valor ? `R$ ${u.valor}` : '{{ t("Incluso") }}';
+        return nome ? `
+            <div class="utensilio-item">
+                <span class="utensilio-nome">🔹 ${nome}</span>
+                <span class="utensilio-preco">${valor}</span>
+            </div>
+        ` : '';
+    }).join('');
+}
+
+if (regras.length > 0) {
+    document.getElementById('card-regras').style.display = 'block';
+    document.getElementById('lista-regras').innerHTML = regras.map(r => {
+        const texto = typeof r === 'object' ? r.texto : r;
+        let horario = '';
+        if (typeof r === 'object') {
+            if (r.horario_inicio || r.horario_fim) {
+                horario = ` ({{ t("Válido das") }} ${r.horario_inicio || '--:--'} {{ t("às") }} ${r.horario_fim || '--:--'})`;
+            } else if (r.horario) {
+                horario = ` ({{ t("Horário:") }} ${r.horario})`;
+            }
+        }
+        const multa = typeof r === 'object' && r.multa ? ` · <strong>{{ t("Multa:") }} R$ ${r.multa}</strong>` : '';
+        return texto ? `
+            <div class="regra-item">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>${texto}${horario}${multa}</span>
+            </div>
+        ` : '';
+    }).join('');
+}
+
+function copiarTexto(elId, btn) {
+    const texto = document.getElementById(elId).textContent;
+    navigator.clipboard.writeText(texto).then(() => {
+        btn.classList.add('copiado');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => {
+            btn.classList.remove('copiado');
+            btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+        }, 1600);
+    });
+}
+
+/* Valida a coordenada com o MESMO critério usado em imoveis.html
+   (_coordsValidas): intervalo real de lat/lng, sem "adivinhar" onde
+   ficaria o ponto decimal. Coordenadas fora do intervalo válido (ex:
+   corrompidas por um bug antigo de parsing) são tratadas como inválidas
+   e a localização é re-geocodificada pelo endereço — o mesmo
+   comportamento de fallback já usado nas telas de Editar/Visualizar
+   imóvel, que é por isso que aquelas telas sempre pareciam corretas. */
+function _coordsValidas(lat, lng) {
+    return lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)
+        && !(Math.abs(lat) < 0.0001 && Math.abs(lng) < 0.0001)
+        && Math.abs(lat) <= 90
+        && Math.abs(lng) <= 180;
+}
+
+let imovelLat = parseFloat("{{ imovel.lat or '' }}");
+let imovelLng = parseFloat("{{ imovel.lng or '' }}");
+if (isNaN(imovelLat)) imovelLat = null;
+if (isNaN(imovelLng)) imovelLng = null;
+const imovelEndereco = {{ (imovel.endereco or '') | tojson }};
+const GUIA_SLUG = {{ (imovel.slug_publico or '') | tojson }};
+const FOURSQUARE_DISPONIVEL = {{ 'true' if foursquare_disponivel else 'false' }};
+
+let map;
+let homeMarker = null;
+let placesMarkers = [];
+
+{% if imovel.lat and imovel.lng %}
+
+// Mapa e locais próximos via Leaflet + OpenStreetMap — 100% gratuito,
+// sem precisar de chave/conta do Google. Quando uma chave do Google Maps
+// (GOOGLE_MAPS_API_KEY) for configurada no futuro, dá pra trocar essa
+// parte pelo mapa/Places do Google (com estrelas e nº de avaliações reais,
+// que o OpenStreetMap não tem) — até lá, o guia sempre mostra o mapa e os
+// locais por perto por categoria + distância, mesmo sem nenhuma chave.
+const NEARBY_ICON_COLOR = {
+    supermarket: '#16a34a',
+    restaurant:  '#ea580c',
+    pharmacy:    '#dc2626',
+    leisure:     '#7c3aed',
+};
+
+// Filtros do Overpass (OpenStreetMap) por categoria — cada categoria pode
+// juntar mais de uma tag pra cobrir mais resultados reais. Farmácia agora
+// também pega "healthcare=pharmacy" e drogarias (shop=chemist), e Atrações
+// & Lazer passou a contar shopping (shop=mall) e praças (place=square),
+// que antes não entravam em nenhuma tag buscada.
+const OVERPASS_FILTROS = {
+    supermarket: ['["shop"="supermarket"]'],
+    restaurant:  ['["amenity"="restaurant"]'],
+    pharmacy:    ['["amenity"="pharmacy"]', '["healthcare"="pharmacy"]', '["shop"="chemist"]', '["shop"="pharmacy"]', '["healthcare"="chemist"]'],
+    leisure:     [
+        '["tourism"~"attraction|museum|viewpoint|artwork|gallery|zoo|theme_park"]',
+        '["leisure"~"park|beach_resort|garden"]',
+        '["shop"="mall"]',
+        '["place"="square"]',
+    ],
+};
+
+function initMapaGuia() {
+    if (_coordsValidas(imovelLat, imovelLng)) {
+        _inicializarMapaGuia(imovelLat, imovelLng);
+    } else if (imovelEndereco) {
+        _geocodificarEExibirMapaGuia(imovelEndereco);
+    }
+}
+
+function _inicializarMapaGuia(lat, lng) {
+    imovelLat = lat;
+    imovelLng = lng;
+
+    if (map) { try { map.remove(); } catch (_) {} }
+
+    map = L.map('map', { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    homeMarker = L.marker([lat, lng]).addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 200);
+
+    searchNearby('supermarket', document.querySelector('.place-filter'), 'fa-cart-shopping');
+}
+
+// Fallback de geocodificação (Nominatim/OpenStreetMap, gratuito) só pra
+// quando o imóvel tem endereço mas lat/lng inválidos.
+async function _geocodificarEExibirMapaGuia(endereco) {
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(endereco)}`;
+        const r   = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        const arr = await r.json();
+        if (!arr.length) return;
+        _inicializarMapaGuia(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
+    } catch (e) {
+        console.warn('Geocoding da guia falhou:', e);
+    }
+}
+
+// O Overpass público (overpass-api.de) é compartilhado por todo mundo e de
+// vez em quando fica lento ou recusa pedido (rate limit). A versão anterior
+// disparava os 3 espelhos abaixo AO MESMO TEMPO a cada clique — na prática
+// isso triplicava o número de pedidos batendo nos servidores públicos, e
+// depois de algumas trocas de categoria rápidas o Overpass passava a
+// bloquear a gente temporariamente (parecia "abuso"), o que explica
+// "funcionou uma vez e depois parou de carregar". Agora os espelhos são
+// tentados em SEQUÊNCIA — um de cada vez, só passando pro próximo se o
+// anterior falhar/demorar — bem mais leve pro serviço público e mais
+// estável pra quem está usando o guia.
+const OVERPASS_ESPELHOS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://lz4.overpass-api.de/api/interpreter',
+];
+
+function _fetchComTimeout(url, opts, ms, sinalExterno) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    if (sinalExterno) {
+        if (sinalExterno.aborted) ctrl.abort();
+        else sinalExterno.addEventListener('abort', () => ctrl.abort(), { once: true });
+    }
+    return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
+async function _buscarOverpass(query, sinalExterno) {
+    let ultimoErro = null;
+    for (const url of OVERPASS_ESPELHOS) {
+        if (sinalExterno && sinalExterno.aborted) {
+            throw new DOMException('cancelado', 'AbortError');
+        }
+        try {
+            const resp = await _fetchComTimeout(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'data=' + encodeURIComponent(query),
+            }, 7000, sinalExterno);
+            if (!resp.ok) throw new Error(`overpass respondeu ${resp.status}`);
+            return await resp.json();
+        } catch (e) {
+            if (sinalExterno && sinalExterno.aborted) throw e; // cancelado de propósito — não adianta tentar o próximo espelho
+            ultimoErro = e; // esse espelho falhou, tenta o próximo
+        }
+    }
+    throw ultimoErro || new Error('todos os espelhos do Overpass falharam');
+}
+
+// Busca via Foursquare (backend do Nomdo, que guarda a chave em segredo) —
+// só tentada quando FOURSQUARE_DISPONIVEL é true. Vem com nota/nº de
+// avaliações reais quando o plano da chave inclui esses campos; se não
+// vier nota, a estrela simplesmente não aparece nesse card.
+async function _buscarPlacesFoursquare(type, sinal) {
+    const resp = await fetch(`/api/g/${encodeURIComponent(GUIA_SLUG)}/locais-proximos?tipo=${encodeURIComponent(type)}`, { signal: sinal });
+    if (!resp.ok) throw new Error(`backend respondeu ${resp.status}`);
+    const data = await resp.json();
+    if (!data.foursquare_configurado || data.erro) throw new Error('foursquare indisponível');
+    return (data.locais || []).map(l => ({
+        name: l.nome,
+        lat: l.lat,
+        lng: l.lng,
+        dist: l.distancia_km,
+        rating: l.rating,           // já vem em escala 0-5 (ou null)
+        numReviews: l.total_avaliacoes || 0,
+    }));
+}
+
+// Busca via Overpass/OpenStreetMap — gratuita, sem chave, mas sem nota de
+// avaliação (o OSM não tem esse dado).
+async function _buscarPlacesOverpass(type, sinal) {
+    const raio    = 10000;
+    const filtros = OVERPASS_FILTROS[type] || OVERPASS_FILTROS.supermarket;
+    const partes  = filtros.map(f => `node${f}(around:${raio},${imovelLat},${imovelLng});way${f}(around:${raio},${imovelLat},${imovelLng});`).join('\n');
+    const query   = `[out:json][timeout:20];(${partes});out center 30;`;
+
+    const data = await _buscarOverpass(query, sinal);
+    let places = (data.elements || []).map(el => {
+        const lat = el.lat ?? (el.center && el.center.lat);
+        const lng = el.lon ?? (el.center && el.center.lon);
+        if (lat == null || lng == null) return null;
+        const tags = el.tags || {};
+        const nome = tags.name || tags['name:pt'] || null;
+        if (!nome) return null; // sem nome não ajuda o hóspede a identificar o lugar
+        return { name: nome, lat, lng, dist: calcDistance(imovelLat, imovelLng, lat, lng), rating: null, numReviews: 0 };
+    }).filter(Boolean);
+
+    // Remove duplicados (mesmo nome bem próximo um do outro).
+    const vistos = new Set();
+    places = places.filter(p => {
+        const chave = `${p.name}|${p.lat.toFixed(3)}|${p.lng.toFixed(3)}`;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+    });
+
+    places.sort((a, b) => a.dist - b.dist);
+    return places.slice(0, 5);
+}
+
+function _renderizarPlaces(places, type, iconClass) {
+    const listContainer = document.getElementById('places-list');
+    listContainer.innerHTML = '';
+
+    places.forEach(place => {
+        const cor = NEARBY_ICON_COLOR[type] || '#7c3aed';
+        const icone = L.divIcon({
+            className: '',
+            html: `<div style="width:14px;height:14px;border-radius:50%;background:${cor};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+        });
+        const marker = L.marker([place.lat, place.lng], { icon: icone }).addTo(map).bindPopup(`<strong>${place.name}</strong>`);
+        placesMarkers.push(marker);
+
+        const estrelas = place.rating != null
+            ? `<div class="place-stars">
+                   <div>⭐ ${place.rating.toFixed(1)}</div>
+                   <span>${place.numReviews ? place.numReviews + ' {{ t("avaliações") }}' : ''}</span>
+               </div>`
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'place-card';
+        card.innerHTML = `
+            <div class="place-main-info">
+                <div class="place-icon" style="background:${cor};"><i class="fa-solid ${iconClass}"></i></div>
+                <div class="place-info">
+                    <strong>${place.name}</strong>
+                    <small>${place.dist.toFixed(1)} {{ t("km de distância") }}</small>
+                </div>
+            </div>
+            ${estrelas}
+        `;
+        card.addEventListener('click', () => {
+            map.setView([place.lat, place.lng], 17);
+            marker.openPopup();
+        });
+        listContainer.appendChild(card);
+    });
+}
+
+// Guarda o resultado de cada categoria já buscada nessa visita ao guia —
+// clicar de novo numa categoria que já carregou antes fica instantâneo e
+// não depende de internet/API de novo (era isso que estava fazendo uma
+// categoria "parar de carregar" ao voltar pra ela).
+const _placesCache = {};
+let _controllerAtual = null;
+let _buscaAtual = 0;
+
+async function searchNearby(type, btn, iconClass) {
+    if (!map || !_coordsValidas(imovelLat, imovelLng)) return;
+
+    document.querySelectorAll('.place-filter').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    placesMarkers.forEach(m => map.removeLayer(m));
+    placesMarkers = [];
+
+    // Cancela qualquer busca anterior que ainda esteja em andamento — trocar
+    // de categoria rápido antes deixava várias buscas empilhadas rodando
+    // ao mesmo tempo, o que tanto deixava tudo mais lento quanto aumentava
+    // a chance de bloqueio nos serviços públicos usados na busca.
+    if (_controllerAtual) _controllerAtual.abort();
+    const controller = new AbortController();
+    _controllerAtual = controller;
+    const idBusca = ++_buscaAtual;
+
+    if (_placesCache[type]) {
+        if (!_placesCache[type].length) {
+            document.getElementById('places-list').innerHTML = '<div class="empty-msg" style="text-align:center;font-size:.75rem;padding:10px 0;">{{ t("Nenhum local encontrado em um raio de 10km.") }}</div>';
+        } else {
+            _renderizarPlaces(_placesCache[type], type, iconClass);
+        }
+        return;
+    }
+
+    const listContainer = document.getElementById('places-list');
+    listContainer.innerHTML = '<div style="text-align:center;font-size:.75rem;color:var(--text-soft);padding:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> {{ t("Aguarde! Buscando estabelecimentos próximos...") }}</div>';
+
+    try {
+        let places = [];
+        if (FOURSQUARE_DISPONIVEL) {
+            try {
+                places = await _buscarPlacesFoursquare(type, controller.signal);
+            } catch (e) {
+                if (controller.signal.aborted) throw e;
+                places = []; // cai pro Overpass abaixo
+            }
+        }
+        if (!places.length) {
+            places = await _buscarPlacesOverpass(type, controller.signal);
+        }
+
+        if (idBusca !== _buscaAtual) return; // uma busca mais nova já está em andamento
+
+        _placesCache[type] = places;
+
+        if (!places.length) {
+            listContainer.innerHTML = '<div class="empty-msg" style="text-align:center;font-size:.75rem;padding:10px 0;">Nenhum local encontrado em um raio de 10km.</div>';
+            return;
+        }
+        _renderizarPlaces(places, type, iconClass);
+    } catch (e) {
+        if (controller.signal.aborted) return; // cancelado de propósito, não é erro real
+        if (idBusca !== _buscaAtual) return;
+        console.warn('Busca de locais próximos falhou:', e);
+        listContainer.innerHTML = '<div class="empty-msg" style="text-align:center;font-size:.75rem;padding:10px 0;">{{ t("Não foi possível buscar locais próximos agora. Tente novamente em instantes.") }}</div>';
+    }
+}
+
+function calcDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+initMapaGuia();
+
+{% endif %}
+</script>
+
+</body>
+</html>

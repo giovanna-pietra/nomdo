@@ -1,0 +1,167 @@
+{% extends "base_auth.html" %}
+
+{% block title %}{{ t('Assinatura — Nomdo') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.pag-icone { text-align: center; font-size: 2.4rem; color: #0052D4; margin-bottom: 10px; }
+.pag-titulo { text-align: center; font-size: 1.2rem; font-weight: 800; margin: 0 0 6px; color: #1e293b; }
+.pag-sub { text-align: center; font-size: 0.88rem; color: #64748b; margin: 0 0 22px; }
+.pag-btn {
+    width: 100%; border: none; background: linear-gradient(135deg,#0052D4,#0052D4);
+    color: #fff; font-weight: 700; font-size: 0.95rem; padding: 14px 0;
+    border-radius: 12px; cursor: pointer; margin-top: 4px;
+}
+.pag-btn:disabled { opacity: .55; cursor: not-allowed; }
+.pag-aviso {
+    background: rgba(67,100,247,0.08); border: 1px solid rgba(67,100,247,0.12); color: #4364F7; border-radius: 10px;
+    padding: 12px 14px; font-size: 0.82rem; margin-bottom: 18px; text-align: center;
+}
+.pag-status {
+    text-align: center; font-size: 0.8rem; color: #64748b; margin-top: 14px;
+}
+
+/* ===== CARDS DE PLANO ===== */
+.planos-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 18px;
+}
+.plano-card {
+    position: relative; display: block; cursor: pointer;
+    border: 2px solid rgba(0,82,212,0.14); border-radius: 14px;
+    padding: 20px 14px 16px; text-align: center;
+    background: rgba(0,82,212,0.03);
+    transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+.plano-card:hover { transform: translateY(-2px); }
+.plano-card input[type="radio"] {
+    position: absolute; top: 12px; right: 12px; width: 18px; height: 18px; accent-color: #0052D4;
+}
+.plano-card.selecionada {
+    border-color: #0052D4; box-shadow: 0 4px 16px rgba(0,82,212,0.18);
+    background: rgba(0,82,212,0.08);
+}
+.plano-badge {
+    position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    background: #0052D4; color: #fff; font-size: 0.68rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+}
+.plano-badge-atual { background: #16a34a; }
+.plano-nome { font-size: 0.86rem; font-weight: 700; color: #1e293b; margin: 6px 0 10px; }
+.plano-preco { font-size: 1.5rem; font-weight: 800; color: #0052D4; }
+.plano-preco-periodo { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-left: 2px; }
+
+@media (max-width: 640px) {
+    .planos-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .pag-titulo { font-size: 1rem; }
+    .pag-sub { font-size: 0.82rem; }
+    .pag-aviso { padding: 10px 12px; font-size: 0.78rem; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark .pag-titulo { color: rgba(255, 255, 255, 0.92) !important; }
+body.theme-dark .pag-sub { color: rgba(255, 255, 255, 0.70) !important; }
+body.theme-dark .pag-status { color: rgba(255, 255, 255, 0.70) !important; }
+body.theme-dark .plano-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+body.theme-dark .plano-card.selecionada {
+    background: rgba(0,82,212,0.18) !important;
+}
+body.theme-dark .plano-nome { color: rgba(255, 255, 255, 0.92) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if bloqueado_ajudante %}
+<div class="pag-icone"><i class="fa-solid fa-user-group"></i></div>
+<h1 class="pag-titulo">{{ t('O acesso depende da conta principal') }}</h1>
+<p class="pag-sub">
+    {% if dono %}
+        {{ t('Você está aqui como Anfitrião-ajudante de %(dono)s.', dono=dono.nome) }}
+    {% else %}
+        {{ t('Você está aqui como Anfitrião-ajudante.') }}
+    {% endif %}
+    {{ t('Quem gerencia o pagamento e a liberação do acesso é essa conta — não é algo que você precisa (ou consegue) resolver por aqui.') }}
+</p>
+<div class="pag-aviso">
+    {{ t('Fale com %(pessoa)s%(contato)s pra regularizar o acesso.', pessoa=(dono.nome if dono else t('quem te convidou')), contato=(' (' + dono.email + ')' if dono and dono.email else '')) }}
+</div>
+
+{% else %}
+{% set assinatura_ativa = assinatura_atual and assinatura_atual.status in ('active', 'overdue') %}
+
+<div class="pag-icone"><i class="fa-solid fa-lock"></i></div>
+<h1 class="pag-titulo">{{ t('Escolha seu plano') }}</h1>
+<p class="pag-sub">{{ t('Planos por quantidade de imóveis — sem taxa de adesão, cancele quando quiser.') }}</p>
+
+{% if not asaas_configurado %}
+<div class="pag-aviso">
+    {{ t('O pagamento online ainda está sendo configurado. Assim que estiver disponível, você poderá assinar por aqui mesmo.') }}
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('pagamento.checkout') }}" id="formPlanos">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="planos-grid">
+        {% for p in planos %}
+        {% set e_recomendado = (p.chave == plano_recomendado) %}
+        {% set e_atual = assinatura_ativa and assinatura_atual.plano == p.chave %}
+        {% set selecionado = e_atual or (not assinatura_ativa and e_recomendado) %}
+        <label class="plano-card {% if selecionado %}selecionada{% endif %}">
+            <input type="radio" name="plano" value="{{ p.chave }}" {% if selecionado %}checked{% endif %}>
+            {% if e_atual %}
+                <span class="plano-badge plano-badge-atual">{{ t('Plano atual') }}</span>
+            {% elif e_recomendado %}
+                <span class="plano-badge">{{ t('Recomendado') }}</span>
+            {% endif %}
+            <div class="plano-nome">
+                {% if p.limite == 3 %}
+                    {{ t('Até 3 imóveis') }}
+                {% elif p.limite == 10 %}
+                    {{ t('Até 10 imóveis') }}
+                {% else %}
+                    {{ t('11 imóveis ou mais') }}
+                {% endif %}
+            </div>
+            <div class="plano-preco">
+                R$ {{ "%.2f"|format(p.valor_cents / 100)|replace(".", ",") }}<span class="plano-preco-periodo">{{ t('/mês') }}</span>
+            </div>
+        </label>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="pag-btn" {% if not asaas_configurado %}disabled{% endif %}>
+        <i class="fa-solid fa-lock-open"></i>
+        {% if assinatura_ativa %}{{ t('Trocar de Plano') }}{% else %}{{ t('Assinar Agora') }}{% endif %}
+    </button>
+</form>
+
+{% if assinatura_atual and assinatura_atual.status == 'pending' %}
+<p class="pag-status">
+    <i class="fa-solid fa-circle-notch fa-spin"></i> {{ t('Já existe uma cobrança pendente pra você — confira seu e-mail ou WhatsApp pra concluir o pagamento.') }}
+</p>
+{% elif assinatura_ativa and assinatura_atual.proximo_vencimento %}
+<p class="pag-status">
+    {{ t('Próxima cobrança em %(data)s.', data=assinatura_atual.proximo_vencimento.strftime('%d/%m/%Y')) }}
+</p>
+{% endif %}
+
+<script>
+document.querySelectorAll('.plano-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+        document.querySelectorAll('.plano-card').forEach(function (c) { c.classList.remove('selecionada'); });
+        card.classList.add('selecionada');
+        var radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+    });
+});
+</script>
+
+{% endif %}
+{% endblock %}

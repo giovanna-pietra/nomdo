@@ -1,0 +1,603 @@
+{% extends "base_dash.html" %}
+
+{% block title %}{{ t('Manutenções') }}{% endblock %}
+{% block titulo %}{{ t('Manutenções') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+    --p:        #0052D4;
+    --p-mid:    #4364F7;
+    --p-soft:   rgba(0,82,212,0.08);
+    --p-border: rgba(0,82,212,0.12);
+    --p-glow:   rgba(0,82,212,.15);
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --ink-3:    #64748b;
+    --ink-4:    #94a3b8;
+
+    --surface:  #ffffff;
+    --bg:       rgba(0,82,212,0.08);
+    --border:   #e2e8f0;
+
+    --green:    #1a7a1c;
+    --green-bg: rgba(111,252,113,0.25);
+    --amber:    #b8860b;
+    --amber-bg: rgba(252,207,111,0.25);
+    --red:      #c0392b;
+    --red-bg:   rgba(252,111,111,0.18);
+    --blue:     #0052D4;
+    --blue-bg:  rgba(0,82,212,0.08);
+
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 32px;
+
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 18px rgba(0,0,0,.07);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,.10);
+    --t: .18s;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.pagina { padding: 24px; max-width: 920px; margin: 0 auto; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding: 2px;
+}
+.page-header h1 { margin: 0; font-size: 21px; font-weight: 800; color: var(--ink); }
+.page-header p { margin: 6px 0 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; max-width: 560px; }
+
+.btn-primario {
+    border: none;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: #fff;
+    border-radius: 12px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-primario:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+/* ── FILTROS ─────────────────────────────────────────────── */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+}
+.filtros label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-right: 4px;
+}
+.filtros select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    cursor: pointer;
+}
+.filtros select:focus { outline: none; border-color: var(--p-mid); }
+.filtro-contagem { margin-left: auto; font-size: 12.5px; color: var(--ink-4); font-weight: 600; }
+
+/* ── LISTA DE TAREFAS ────────────────────────────────────── */
+.lista-tarefas { display: flex; flex-direction: column; gap: 10px; }
+
+.tarefa-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.tarefa-card.removendo { opacity: 0 !important; transform: scale(.97); pointer-events: none; }
+.tarefa-card.concluida { opacity: .6; }
+
+.tarefa-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    background: var(--bg);
+    color: var(--p);
+}
+
+.tarefa-info { flex: 1; min-width: 0; }
+.tarefa-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+.tarefa-info .tarefa-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.tarefa-info .tarefa-desc { margin-top: 4px; font-size: 12.5px; color: var(--ink-3); }
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.badge.pendente { background: var(--amber-bg); color: var(--amber); }
+.badge.concluida { background: var(--green-bg); color: var(--green); }
+
+.tarefa-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tarefa-actions button {
+    width: 34px; height: 34px; border: none; background: var(--bg);
+    color: var(--ink-3); cursor: pointer; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background var(--t), color var(--t);
+}
+.tarefa-actions button.acao-editar:hover { background: var(--p-soft); color: var(--p); }
+.tarefa-actions button.acao-concluir:hover { background: var(--green-bg); color: var(--green); }
+.tarefa-actions button.acao-excluir:hover { background: var(--red-bg); color: var(--red); }
+
+/* ── ESTADO VAZIO ────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+.empty-state i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.modal-box {
+    background: var(--surface);
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 480px;
+    width: 92%;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    border: none;
+    margin: auto;
+    animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+dialog.modal-box::backdrop { background: rgba(15,15,26,.55); backdrop-filter: blur(5px); }
+@keyframes modalIn { from{transform:scale(.88);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--t), transform var(--t);
+}
+.modal-close:hover { background: var(--red-bg); color: var(--red); transform: rotate(90deg); }
+.modal-box h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink); }
+.modal-box p  { margin: 0 0 22px; font-size: 13px; color: var(--ink-3); }
+.form-group   { margin-bottom: 16px; }
+.form-group label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color var(--t), box-shadow var(--t);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--p-mid); background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(0,82,212,.1);
+}
+.form-group textarea { resize: vertical; min-height: 70px; }
+.btn-salvar {
+    width: 100%; height: 46px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--p), var(--p-mid));
+    color: white; font-weight: 800; font-size: 14px; cursor: pointer;
+    margin-top: 6px; box-shadow: 0 6px 20px var(--p-glow);
+    transition: filter var(--t), transform var(--t);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-salvar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--ink-2);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+.toast.success { background: linear-gradient(135deg,#6FB1FC,#6FB1FC); }
+.toast.error { background: linear-gradient(135deg,#0052D4,#0052D4); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .pagina { padding: 14px; }
+    .page-header { flex-direction: column; }
+    .btn-primario { width: 100%; justify-content: center; }
+    .tarefa-card { flex-wrap: wrap; }
+    .tarefa-info { flex-basis: 100%; order: 1; }
+    .modal-box { padding: 24px 20px 20px; }
+    .toast { width: 90%; text-align: center; }
+}
+
+/* ===== DARK MODE ===== */
+body.theme-dark {
+    --surface:  #0052D4;
+    --bg:       rgba(255,255,255,0.06);
+    --border:   rgba(255,255,255,0.12);
+    --ink:      rgba(255,255,255,0.92);
+    --ink-2:    rgba(255,255,255,0.85);
+    --ink-3:    rgba(255,255,255,0.72);
+    --ink-4:    rgba(255,255,255,0.55);
+    --p-soft:   rgba(255,255,255,0.08);
+    --p-border: rgba(255,255,255,0.14);
+}
+body.theme-dark .tarefa-icon {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.92) !important;
+}
+body.theme-dark .filtros,
+body.theme-dark .tarefa-card,
+body.theme-dark .empty-state {
+    background: rgba(255,255,255,0.06) !important;
+}
+</style>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="toast" id="toast"></div>
+
+<!-- ── MODAL DE MANUTENÇÃO (criar/editar) ─────────────────── -->
+<dialog class="modal-box" id="modalManutencao">
+    <button class="modal-close" type="button" onclick="fecharModal()">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h3 id="modalTitulo"><i class="fa-solid fa-screwdriver-wrench" style="color:var(--p-mid);margin-right:8px;"></i>{{ t('Registrar Manutenção') }}</h3>
+    <p id="modalSubtitulo">{{ t('Descreva o problema para registrá-lo no imóvel.') }}</p>
+
+    <input type="hidden" id="manut-id" value="">
+
+    <div class="form-group">
+        <label>{{ t('Imóvel') }}</label>
+        <select id="manut-imovel-select">
+            <option value="">{{ t('Selecione…') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}">{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label>{{ t('Título') }}</label>
+        <input type="text" id="manut-titulo" placeholder="{{ t('Ex: Ar-condicionado com defeito') }}">
+    </div>
+    <div class="form-group">
+        <label>{{ t('Descrição') }} <span style="font-weight:400;text-transform:none;">{{ t('(opcional)') }}</span></label>
+        <textarea id="manut-descricao" placeholder="{{ t('Descreva com mais detalhes…') }}"></textarea>
+    </div>
+    <button class="btn-salvar" type="button" onclick="salvarManutencao()">
+        <i class="fa-solid fa-floppy-disk"></i> {{ t('Salvar') }}
+    </button>
+</dialog>
+
+<section class="pagina">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ t('Manutenções') }}</h1>
+            <p>{{ t('Registre, acompanhe e resolva problemas dos seus imóveis em um só lugar.') }}</p>
+        </div>
+        <button type="button" class="btn-primario" onclick="abrirModalNova()">
+            <i class="fa-solid fa-plus"></i> {{ t('Registrar Manutenção') }}
+        </button>
+    </div>
+
+    <div class="filtros">
+        <label for="filtro-imovel">{{ t('Imóvel') }}</label>
+        <select id="filtro-imovel">
+            <option value="">{{ t('Todos') }}</option>
+            {% for im in imoveis %}
+            <option value="{{ im.id }}" {% if filtro_imovel_id == im.id %}selected{% endif %}>{{ im.titulo }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="filtro-status">{{ t('Status') }}</label>
+        <select id="filtro-status">
+            <option value="" {% if filtro_status == '' %}selected{% endif %}>{{ t('Todas') }}</option>
+            <option value="pendente" {% if filtro_status == 'pendente' %}selected{% endif %}>{{ t('Pendentes') }}</option>
+            <option value="concluida" {% if filtro_status == 'concluida' %}selected{% endif %}>{{ t('Concluídas') }}</option>
+        </select>
+
+        <span class="filtro-contagem">{{ tarefas|length }} {{ t('manutenção(ões)') }}</span>
+    </div>
+
+    <div class="lista-tarefas" id="listaTarefas">
+        {% for tarefa in tarefas %}
+        <div class="tarefa-card {% if tarefa.concluida %}concluida{% endif %}"
+             data-tarefa-id="{{ tarefa.id }}"
+             data-titulo="{{ tarefa.titulo|e }}"
+             data-descricao="{{ (tarefa.descricao or '')|e }}"
+             data-imovel-id="{{ tarefa.imovel_id or '' }}">
+            <div class="tarefa-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <div class="tarefa-info">
+                <strong>{{ tarefa.titulo }}</strong>
+                <div class="tarefa-meta">
+                    <span><i class="fa-solid fa-building"></i> {{ tarefa.imovel.titulo if tarefa.imovel else "—" }}</span>
+                    <span><i class="fa-solid fa-calendar"></i> {{ tarefa.created_at.strftime('%d/%m/%Y') if tarefa.created_at else "—" }}</span>
+                </div>
+                {% if tarefa.descricao %}
+                <div class="tarefa-desc">{{ tarefa.descricao }}</div>
+                {% endif %}
+            </div>
+            <span class="badge {% if tarefa.concluida %}concluida{% else %}pendente{% endif %}">
+                {% if tarefa.concluida %}<i class="fa-solid fa-check"></i> {{ t('Concluída') }}{% else %}<i class="fa-solid fa-clock"></i> {{ t('Pendente') }}{% endif %}
+            </span>
+            <div class="tarefa-actions">
+                <button type="button" class="acao-editar" data-action="editar" data-id="{{ tarefa.id }}" title="{{ t('Editar') }}">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button type="button" class="acao-concluir" data-action="concluir" data-id="{{ tarefa.id }}" title="{% if tarefa.concluida %}{{ t('Reabrir') }}{% else %}{{ t('Concluir') }}{% endif %}">
+                    <i class="fa-solid {% if tarefa.concluida %}fa-rotate-left{% else %}fa-check{% endif %}"></i>
+                </button>
+                <button type="button" class="acao-excluir" data-action="excluir" data-id="{{ tarefa.id }}" title="{{ t('Excluir') }}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state" id="estadoVazio">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+            <p>{{ t('Nenhuma manutenção registrada ainda. Use o botão acima para registrar a primeira.') }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ─────────────────────────────────────────────
+   TOAST + CLIENTE HTTP CENTRAL
+───────────────────────────────────────────── */
+function mostrarToast(msg, tipo = '') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = `toast ${tipo} show`;
+    setTimeout(() => { t.className = `toast ${tipo}`; }, 3200);
+}
+
+async function apiRequest(url, options = {}) {
+    try {
+        const resp = await fetch(url, options);
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.success === false) throw new Error(data.message || `{{ t('Erro') }} ${resp.status}`);
+        return data;
+    } catch (e) {
+        console.error(`[manutencoes] Erro em ${url}:`, e);
+        mostrarToast(e.message || '{{ t("Erro de conexão.") }}', 'error');
+        throw e;
+    }
+}
+
+/* ─────────────────────────────────────────────
+   FILTROS — recarrega a página via query params
+───────────────────────────────────────────── */
+function aplicarFiltros() {
+    const imovel = document.getElementById('filtro-imovel').value;
+    const status = document.getElementById('filtro-status').value;
+    const params = new URLSearchParams();
+    if (imovel) params.set('imovel_id', imovel);
+    if (status) params.set('status', status);
+    const qs = params.toString();
+    window.location.href = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+}
+
+document.getElementById('filtro-imovel').addEventListener('change', aplicarFiltros);
+document.getElementById('filtro-status').addEventListener('change', aplicarFiltros);
+
+/* ─────────────────────────────────────────────
+   MODAL — criar / editar
+───────────────────────────────────────────── */
+const modal = document.getElementById('modalManutencao');
+
+function abrirModalNova() {
+    document.getElementById('manut-id').value = '';
+    document.getElementById('manut-imovel-select').value = '';
+    document.getElementById('manut-imovel-select').disabled = false;
+    document.getElementById('manut-titulo').value = '';
+    document.getElementById('manut-descricao').value = '';
+    document.getElementById('modalTitulo').innerHTML =
+        '<i class="fa-solid fa-screwdriver-wrench" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Registrar Manutenção") }}';
+    document.getElementById('modalSubtitulo').innerText = '{{ t("Descreva o problema para registrá-lo no imóvel.") }}';
+    modal.showModal();
+    setTimeout(() => document.getElementById('manut-titulo').focus(), 100);
+}
+
+function abrirModalEdicao(card) {
+    document.getElementById('manut-id').value = card.dataset.tarefaId;
+    document.getElementById('manut-imovel-select').value = card.dataset.imovelId || '';
+    document.getElementById('manut-imovel-select').disabled = true; // imóvel não muda numa edição
+    document.getElementById('manut-titulo').value = card.dataset.titulo || '';
+    document.getElementById('manut-descricao').value = card.dataset.descricao || '';
+    document.getElementById('modalTitulo').innerHTML =
+        '<i class="fa-solid fa-pen" style="color:var(--p-mid);margin-right:8px;"></i>{{ t("Editar Manutenção") }}';
+    document.getElementById('modalSubtitulo').innerText = '{{ t("Atualize o título ou a descrição desta manutenção.") }}';
+    modal.showModal();
+    setTimeout(() => document.getElementById('manut-titulo').focus(), 100);
+}
+
+function fecharModal() {
+    modal.close();
+}
+
+modal.addEventListener('click', e => {
+    if (e.target === modal) modal.close();
+});
+
+async function salvarManutencao() {
+    const id        = document.getElementById('manut-id').value;
+    const imovelId  = document.getElementById('manut-imovel-select').value;
+    const titulo    = document.getElementById('manut-titulo').value.trim();
+    const descricao = document.getElementById('manut-descricao').value.trim();
+
+    if (!id && !imovelId) {
+        mostrarToast('{{ t("Selecione um imóvel.") }}', 'error');
+        return;
+    }
+    if (!titulo) {
+        mostrarToast('{{ t("Informe o título.") }}', 'error');
+        return;
+    }
+
+    const btn = document.querySelector('#modalManutencao .btn-salvar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t("Salvando…") }}';
+
+    try {
+        if (id) {
+            await apiRequest(`/api/hub/tarefa/editar/${id}`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ titulo, descricao }),
+            });
+            mostrarToast('{{ t("Manutenção atualizada!") }}', 'success');
+        } else {
+            await apiRequest('/api/hub/manutencao', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ imovel_id: parseInt(imovelId), titulo, descricao, tipo: 'manutencao' }),
+            });
+            mostrarToast('{{ t("Manutenção registrada!") }}', 'success');
+        }
+        fecharModal();
+        // Criar/editar afeta título, descrição e potencialmente a ordenação
+        // (pendentes primeiro) — recarregar é o jeito mais simples e
+        // confiável de refletir isso sem duplicar a lógica de renderização
+        // do servidor no cliente.
+        setTimeout(() => window.location.reload(), 400);
+    } catch (e) {
+        // apiRequest já mostrou o toast de erro.
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> {{ t("Salvar") }}';
+    }
+}
+
+/* ─────────────────────────────────────────────
+   CONCLUIR / EXCLUIR — UI otimista com um único listener delegado
+───────────────────────────────────────────── */
+function _mostrarEstadoVazioSeNecessario() {
+    const lista = document.getElementById('listaTarefas');
+    if (lista && !lista.querySelector('.tarefa-card')) {
+        lista.innerHTML = `
+            <div class="empty-state" id="estadoVazio">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <p>{{ t('Nenhuma manutenção registrada ainda. Use o botão acima para registrar a primeira.') }}</p>
+            </div>`;
+    }
+}
+
+async function concluirTarefa(id, card) {
+    card.classList.add('removendo');
+    try {
+        const data = await apiRequest(`/api/hub/tarefa/concluir/${id}`, { method: 'POST' });
+        mostrarToast(data.concluida ? '{{ t("Manutenção concluída!") }}' : '{{ t("Manutenção reaberta.") }}', 'success');
+        setTimeout(() => { card.remove(); _mostrarEstadoVazioSeNecessario(); }, 220);
+    } catch (e) {
+        card.classList.remove('removendo');
+    }
+}
+
+async function excluirTarefa(id, card) {
+    const result = await Swal.fire({
+        title: '{{ t("Excluir manutenção?") }}',
+        text: '{{ t("Essa ação não poderá ser desfeita.") }}',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#0052D4',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '{{ t("Sim, excluir") }}',
+        cancelButtonText: '{{ t("Cancelar") }}',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    card.classList.add('removendo');
+    try {
+        await apiRequest(`/api/hub/tarefa/excluir/${id}`, { method: 'DELETE' });
+        mostrarToast('{{ t("Manutenção excluída.") }}', 'success');
+        setTimeout(() => { card.remove(); _mostrarEstadoVazioSeNecessario(); }, 220);
+    } catch (e) {
+        card.classList.remove('removendo');
+    }
+}
+
+document.getElementById('listaTarefas').addEventListener('click', e => {
+    const card = e.target.closest('.tarefa-card');
+    if (!card) return;
+    const id = card.dataset.tarefaId;
+
+    const btnEditar = e.target.closest('[data-action="editar"]');
+    if (btnEditar) { abrirModalEdicao(card); return; }
+
+    const btnConcluir = e.target.closest('[data-action="concluir"]');
+    if (btnConcluir) { concluirTarefa(id, card); return; }
+
+    const btnExcluir = e.target.closest('[data-action="excluir"]');
+    if (btnExcluir) { excluirTarefa(id, card); return; }
+});
+</script>
+{% endblock %}

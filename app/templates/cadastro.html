@@ -1,0 +1,340 @@
+{% extends 'base_auth.html' %}
+
+{% block title %}{{ t('Cadastro') }}{% endblock %}
+
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/css/intlTelInput.css"
+>
+<style>
+    .tel-error-msg {
+        display: none;
+        color: #0052D4;
+        font-size: 0.78rem;
+        margin-top: 4px;
+    }
+
+    /* ===== DARK MODE ===== */
+    body.theme-dark .subtitle {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+
+    body.theme-dark .divider::before,
+    body.theme-dark .divider::after {
+        background: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-dark .divider span {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+
+    body.theme-dark .btn-google {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
+        box-shadow: none !important;
+    }
+
+    body.theme-dark .btn-google:hover {
+        background: rgba(255, 255, 255, 0.14) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    body.theme-dark .footer-links {
+        border-top-color: rgba(255, 255, 255, 0.12) !important;
+    }
+
+    body.theme-dark .footer-links p {
+        color: rgba(255, 255, 255, 0.70) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-negative-70" style="text-align: center;">
+    {{ t('Cadastro') }}
+</h1>
+
+<p class="subtitle" style="text-align: center;">
+    {{ t('Crie sua conta para acessar seu painel de gerenciamento!') }}
+</p>
+
+<form method="POST">
+
+    <!-- NOME -->
+    <div class="input-group">
+
+        <label for="name">
+            {{ t('Nome') }}:
+        </label>
+
+        <input
+            type="text"
+            name="name"
+            id="name"
+            placeholder="{{ t('Seu nome completo') }}"
+            required
+        >
+
+    </div>
+
+    <!-- EMAIL -->
+    <div class="input-group">
+
+        <label for="email">
+            {{ t('Email') }}:
+        </label>
+
+        <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="seu@email.com"
+            required
+        >
+
+    </div>
+
+    <!-- TELEFONE -->
+    <div class="input-group">
+
+        <label for="telefone">
+            {{ t('Telefone') }}:
+        </label>
+
+        <input
+            type="tel"
+            name="telefone"
+            id="telefone"
+            required
+        >
+
+        <span id="telError" class="tel-error-msg">
+            {{ t('Número de telefone inválido.') }}
+        </span>
+
+        <input type="hidden" name="telefone_completo" id="telefone_completo">
+
+    </div>
+
+    <!-- GÊNERO -->
+<div class="input-group">
+
+    <label for="genero">
+        {{ t('Gênero') }}:
+    </label>
+
+    <select
+        name="genero"
+        id="genero"
+        required
+    >
+
+        <option value="">
+            {{ t('Selecione') }}
+        </option>
+
+        <option value="Feminino">
+            {{ t('Feminino') }}
+        </option>
+
+        <option value="Masculino">
+            {{ t('Masculino') }}
+        </option>
+
+        <option value="Prefiro não responder">
+            {{ t('Prefiro não responder') }}
+        </option>
+
+    </select>
+
+</div>
+
+<!-- DATA DE NASCIMENTO -->
+<div class="input-group">
+
+    <label for="data_nascimento">
+        {{ t('Data de nascimento') }}:
+    </label>
+
+    <input
+        type="date"
+        name="data_nascimento"
+        id="data_nascimento"
+        required
+    >
+
+    <span id="dataNascError" class="tel-error-msg">
+        {{ t('Você precisa ter pelo menos 13 anos para se cadastrar.') }}
+    </span>
+
+</div>
+
+    <!-- SENHA -->
+    <div class="input-group">
+
+        <label for="senha">
+            {{ t('Senha') }}:
+        </label>
+
+        <input
+            type="password"
+            name="senha"
+            id="senha"
+            placeholder="********"
+            minlength="8"
+            required
+        >
+
+    </div>
+
+    <!-- BOTÃO -->
+    <button type="submit" class="btn-login">
+
+        {{ t('Cadastrar') }}
+
+    </button>
+
+    <!-- DIVISOR -->
+    <div class="divider">
+
+        <span>{{ t('ou') }}</span>
+
+    </div>
+
+    <!-- GOOGLE -->
+    <a
+        href="{{ url_for('auth.login_google') }}"
+        class="btn-google"
+    >
+
+        <img
+            src="{{ url_for('static', filename='img/google_icon.png') }}"
+            alt="Google"
+            width="18"
+        >
+
+        {{ t('Cadastrar com Google') }}
+
+    </a>
+
+</form>
+
+<!-- LINKS -->
+<div class="footer-links" style="text-align: center;">
+
+    <p>
+
+        {{ t('Já tem uma conta?') }}
+
+        <a href="{{ url_for('auth.login') }}">
+            {{ t('Entrar') }}
+        </a>
+
+    </p>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/js/intlTelInput.min.js"></script>
+
+<script>
+
+const telInput = document.querySelector('#telefone');
+const iti = window.intlTelInput(telInput, {
+    initialCountry: 'br',
+    preferredCountries: ['br', 'us', 'pt'],
+    separateDialCode: true,
+    autoPlaceholder: 'aggressive',
+    nationalMode: true,
+    strictMode: true,
+    utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@24.3.4/build/js/utils.js',
+});
+
+function validarTelefone() {
+
+    const errorSpan = document.querySelector('#telError');
+
+    if (telInput.value.trim() === '') {
+        errorSpan.textContent = '{{ t("Informe seu telefone.") }}';
+        errorSpan.style.display = 'block';
+        return false;
+    }
+
+    if (!iti.isValidNumber()) {
+        errorSpan.textContent = '{{ t("Número de telefone inválido.") }}';
+        errorSpan.style.display = 'block';
+        return false;
+    }
+
+    errorSpan.style.display = 'none';
+    document.querySelector('#telefone_completo').value = iti.getNumber();
+    return true;
+
+}
+
+// Idade mínima de cadastro: 13 anos (também validado no servidor —
+// isso aqui só evita a viagem até o backend pra descobrir que não deu).
+const IDADE_MINIMA = 13;
+const dataNascInput = document.querySelector('#data_nascimento');
+
+(function limitarDataNascimento() {
+    const hoje = new Date();
+    const limite = new Date(hoje.getFullYear() - IDADE_MINIMA, hoje.getMonth(), hoje.getDate());
+    dataNascInput.max = limite.toISOString().split('T')[0];
+})();
+
+function validarIdade() {
+    const errorSpan = document.querySelector('#dataNascError');
+    if (!dataNascInput.value) {
+        errorSpan.style.display = 'none';
+        return true;
+    }
+
+    const nascimento = new Date(dataNascInput.value + 'T00:00:00');
+    const hoje = new Date();
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const aindaNaoFezAniversario =
+        (hoje.getMonth() < nascimento.getMonth()) ||
+        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
+    if (aindaNaoFezAniversario) idade -= 1;
+
+    if (idade < IDADE_MINIMA) {
+        errorSpan.style.display = 'block';
+        return false;
+    }
+
+    errorSpan.style.display = 'none';
+    return true;
+}
+
+document.querySelector('form').addEventListener('submit', function(event) {
+
+    if (!validarTelefone()) {
+        event.preventDefault();
+        return;
+    }
+
+    if (!validarIdade()) {
+        event.preventDefault();
+        return;
+    }
+
+    const btn = document.querySelector('.btn-login');
+
+    btn.innerHTML =
+        '<i class="fa fa-spinner fa-spin"></i> {{ t("Cadastrando...") }}';
+
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+
+});
+
+</script>
+
+{% endblock %}

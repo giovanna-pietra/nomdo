@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Nomdo{% endblock %}</title>
+
+    <!-- Tipografia da marca Nomdo: Poppins Bold (títulos) + Poppins Regular (texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <!-- Sem tema escuro de propósito: estas telas (login, cadastro,
+         completar perfil, convite, esqueci/resetar senha, pagamento,
+         verificação de código) fazem parte do fluxo de entrada/conta, não
+         das telas "de sistema" — ficam sempre no tema claro, independente
+         da preferência salva no perfil do usuário. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_login.css') }}">
+
+    <!-- Ícone -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/icone_fundo.png') }}?v=3">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body data-tour-page="{% block tour_page %}{% endblock %}">
+
+    <!-- HEADER -->
+    <header class="navbar">
+        <div class="logo">
+            <a href="{{ url_for('main.index') }}">
+                <img
+                    src="{{ url_for('static', filename='img/logo_header.png') }}"
+                    alt="Logo"
+                    class="img-logo"
+                >
+            </a>
+        </div>
+        <div style="margin-left:auto;">
+            {% include "partials/seletor_idioma.html" %}
+        </div>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main class="login-container">
+        <div class="login-box">
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+        </div>
+    </main>
+
+    <!-- Botão de ajuda — mesmo tour guiado usado no painel logado,
+         disponível também nas telas de cadastro/entrada. -->
+    <button type="button" class="nomdo-help-fab" onclick="NomdoTour.start(document.body.getAttribute('data-tour-page'))" title="Ajuda / Como funciona esta página" aria-label="Ajuda">
+        <span class="nomdo-help-pulse"></span>
+        <i class="fa-solid fa-question"></i>
+    </button>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <br>
+        <p><span class="footer-line1">© 2026 Pietra Enterprise Ltda.</span> <span class="footer-line2">Todos os direitos reservados.</span></p>
+        <br>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>
