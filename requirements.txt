@@ -27,6 +27,7 @@ gunicorn==22.0.0
 
 # ── Utilitários ──────────────────────────────────────────────
 python-dateutil==2.9.0
+python-slugify==8.0.4          # slugify() usado em app/models/imovel.py
 
 # ── Notificações push no navegador (Web Push / VAPID) ─────────
 pywebpush==2.0.1
