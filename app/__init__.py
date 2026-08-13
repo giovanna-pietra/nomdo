@@ -10,6 +10,7 @@ from datetime import timedelta
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask, request, session, redirect, url_for, g
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.extensions import db, migrate, csrf, oauth, login_manager
 from config import get_config
@@ -25,6 +26,16 @@ def create_app(config_name: str | None = None) -> Flask:
         template_folder="templates",
         static_folder="static",
     )
+
+    # =========================================================
+    # PROXY (Render, Railway, etc.)
+    # =========================================================
+    # O Render termina o HTTPS antes da nossa app e encaminha por HTTP
+    # internamente, informando o esquema real no header X-Forwarded-Proto.
+    # Sem isso, url_for(_external=True) gera "http://..." em vez de
+    # "https://...", e o login com Google falha com redirect_uri_mismatch
+    # mesmo com a URL certa cadastrada no Google Cloud Console.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # =========================================================
     # CONFIG
