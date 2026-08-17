@@ -52,6 +52,12 @@ mobile/.expo/
 mobile/nomdo/
 mobile/*.log
 
+# ── App mobile (Capacitor — casca nativa do site) ───────────────
+mobile-capacitor/node_modules/
+mobile-capacitor/android/
+mobile-capacitor/ios/
+mobile-capacitor/*.log
+
 # ── Sobra de scaffold rodado na pasta errada (pode apagar manualmente) ──
 /nomdo/
 

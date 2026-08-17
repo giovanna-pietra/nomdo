@@ -1,0 +1,12 @@
+{
+  "appId": "com.pietra.nomdo.web",
+  "appName": "Nomdo",
+  "webDir": "www",
+  "server": {
+    "url": "https://nomdo.onrender.com",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

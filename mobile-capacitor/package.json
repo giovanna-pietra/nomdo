@@ -1,0 +1,17 @@
+{
+  "name": "nomdo-capacitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Casca nativa (Capacitor) que empacota o site Nomdo (Flask, hospedado no Render) como app instalavel, sem depender do Expo/React Native.",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}
