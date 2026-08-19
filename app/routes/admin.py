@@ -10,7 +10,7 @@ from app.utils.i18n import t_flash
 
 admin_bp = Blueprint('admin', __name__)
 
-ADMIN_EMAIL = "giovanna.perovano@clona.com.br"
+ADMIN_EMAIL = "grouppietra@gmail.com"
 
 
 def admin_required(f):

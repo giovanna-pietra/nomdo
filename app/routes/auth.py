@@ -48,7 +48,7 @@ auth_bp = Blueprint(
     __name__
 )
 
-ADMIN_EMAIL = "giovanna.perovano@clona.com.br"
+ADMIN_EMAIL = "grouppietra@gmail.com"
 
 
 # ============================================================

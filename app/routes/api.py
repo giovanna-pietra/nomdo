@@ -83,7 +83,7 @@ def api_login_required(func):
     return wrapper
 
 
-ADMIN_EMAIL = "giovanna.perovano@clona.com.br"  # mesma constante de app/routes/admin.py
+ADMIN_EMAIL = "grouppietra@gmail.com"  # mesma constante de app/routes/admin.py
 
 
 def api_admin_required(func):
