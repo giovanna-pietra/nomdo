@@ -91,71 +91,12 @@ def create_app(config_name: str | None = None) -> Flask:
             session.modified = True
 
     # =========================================================
-    # PAYWALL — gate global de acesso (Asaas)
-    # =========================================================
-
-    @app.before_request
-    def gate_paywall():
-        """
-        Bloqueia o acesso de quem ainda não pagou, redirecionando pra
-        /pagamento — mas só quando PAYWALL_ATIVO=True (ou seja, só depois
-        que uma chave real da Asaas for configurada). Até lá esse gate
-        não faz nada, então nada muda pra quem já usa o sistema hoje.
-
-        Donos/admins (is_admin) nunca são bloqueados.
-        """
-        if not app.config.get("PAYWALL_ATIVO"):
-            return None
-
-        endpoint = request.endpoint
-        if not endpoint:
-            return None
-
-        # Rotas sempre livres: estáticos, autenticação, o próprio paywall,
-        # cron interno e qualquer página pública acessada pelo hóspede
-        # (guia digital, avaliação, formulário de documentos).
-        # "main.index" ("/") de propósito NÃO está isenta aqui — pra quem
-        # não está logado ela já é livre mesmo assim (sai cedo abaixo, sem
-        # user_id na sessão); isentar também deixaria o logo do cabeçalho
-        # (base_auth.html) virar um jeito de escapar do paywall sem pagar
-        # (mesma brecha corrigida no gate_perfil_incompleto acima).
-        blueprint_livre = {
-            "static", "auth", "pagamento", "cron", "guia_publico",
-            "documentos", "api",
-        }
-        endpoints_publicos = {
-            "imoveis.pagina_publica_imovel",
-            "imoveis.pagina_avaliacao_hospede",
-            "imoveis.enviar_avaliacao_hospede",
-        }
-
-        blueprint_atual = endpoint.split(".")[0] if "." in endpoint else endpoint
-        if blueprint_atual in blueprint_livre or endpoint in endpoints_publicos:
-            return None
-
-        user_id = session.get("user_id")
-        if not user_id:
-            return None  # sem sessão -> login_required de cada rota já cuida
-
-        from app.models import User
-        user = db.session.get(User, user_id)
-        if not user:
-            return None
-        if user.is_admin:
-            return None
-
-        # Um Anfitrião-ajudante não paga por conta própria — o acesso
-        # depende do pagamento da conta Proprietária a que está vinculado
-        # (User.owner_id resolve pra si mesmo em contas independentes).
-        dono = user if not user.e_ajudante else db.session.get(User, user.owner_id)
-        if dono and (dono.is_admin or dono.pagamento_ativo):
-            return None
-
-        return redirect(url_for("pagamento.pagina_pagamento"))
-
-    # =========================================================
     # PERFIL INCOMPLETO — gate global (telefone + data de nascimento + gênero)
     # =========================================================
+    # Registrado ANTES do paywall de propósito: quem acabou de se cadastrar
+    # (principalmente via Google, que nunca manda telefone/nascimento/gênero)
+    # precisa completar o perfil primeiro — só depois disso é que faz
+    # sentido mostrar a tela de pagamento.
 
     @app.before_request
     def gate_perfil_incompleto():
@@ -204,6 +145,74 @@ def create_app(config_name: str | None = None) -> Flask:
             return redirect(url_for("usuario.completar_perfil"))
 
         return None
+
+    # =========================================================
+    # PAYWALL — gate global de acesso (Asaas)
+    # =========================================================
+
+    @app.before_request
+    def gate_paywall():
+        """
+        Bloqueia o acesso de quem ainda não pagou, redirecionando pra
+        /pagamento — mas só quando PAYWALL_ATIVO=True (ou seja, só depois
+        que uma chave real da Asaas for configurada). Até lá esse gate
+        não faz nada, então nada muda pra quem já usa o sistema hoje.
+
+        Donos/admins (is_admin) nunca são bloqueados.
+        """
+        if not app.config.get("PAYWALL_ATIVO"):
+            return None
+
+        endpoint = request.endpoint
+        if not endpoint:
+            return None
+
+        # Rotas sempre livres: estáticos, autenticação, o próprio paywall,
+        # cron interno e qualquer página pública acessada pelo hóspede
+        # (guia digital, avaliação, formulário de documentos). Também
+        # isenta completar-perfil/excluir-conta (mesma brecha do gate
+        # gate_perfil_incompleto acima): sem isso, quem ainda não pagou
+        # nunca conseguiria nem abrir a tela de completar o perfil, porque
+        # este gate já teria redirecionado pra /pagamento antes.
+        # "main.index" ("/") de propósito NÃO está isenta aqui — pra quem
+        # não está logado ela já é livre mesmo assim (sai cedo abaixo, sem
+        # user_id na sessão); isentar também deixaria o logo do cabeçalho
+        # (base_auth.html) virar um jeito de escapar do paywall sem pagar.
+        blueprint_livre = {
+            "static", "auth", "pagamento", "cron", "guia_publico",
+            "documentos", "api",
+        }
+        endpoints_publicos = {
+            "imoveis.pagina_publica_imovel",
+            "imoveis.pagina_avaliacao_hospede",
+            "imoveis.enviar_avaliacao_hospede",
+            "usuario.completar_perfil",
+            "usuario.excluir_conta",
+        }
+
+        blueprint_atual = endpoint.split(".")[0] if "." in endpoint else endpoint
+        if blueprint_atual in blueprint_livre or endpoint in endpoints_publicos:
+            return None
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return None  # sem sessão -> login_required de cada rota já cuida
+
+        from app.models import User
+        user = db.session.get(User, user_id)
+        if not user:
+            return None
+        if user.is_admin:
+            return None
+
+        # Um Anfitrião-ajudante não paga por conta própria — o acesso
+        # depende do pagamento da conta Proprietária a que está vinculado
+        # (User.owner_id resolve pra si mesmo em contas independentes).
+        dono = user if not user.e_ajudante else db.session.get(User, user.owner_id)
+        if dono and (dono.is_admin or dono.pagamento_ativo):
+            return None
+
+        return redirect(url_for("pagamento.pagina_pagamento"))
 
     # =========================================================
     # FILTRO DE MOEDA — {{ valor|moeda }} ou {{ valor|moeda(current_currency) }}
