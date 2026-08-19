@@ -17,7 +17,7 @@ class User(TimestampMixin, db.Model):
 
     # ── Paywall (Asaas) ───────────────────────────────────────
     # pagamento_ativo = já pagou o acesso (pagamento único, "para sempre").
-    # Donos/admins (ver ADMIN_EMAIL em auth.py) nunca precisam pagar —
+    # Donos/admins (ver ADMIN_EMAILS em auth.py) nunca precisam pagar —
     # o gate global em app/__init__.py já libera quem é is_admin.
     pagamento_ativo   = db.Column(db.Boolean, default=False, nullable=False)
     asaas_customer_id = db.Column(db.String(60), nullable=True)

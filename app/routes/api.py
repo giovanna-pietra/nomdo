@@ -83,7 +83,7 @@ def api_login_required(func):
     return wrapper
 
 
-ADMIN_EMAIL = "grouppietra@gmail.com"  # mesma constante de app/routes/admin.py
+ADMIN_EMAILS = ("grouppietra@gmail.com", "giovanna.perovano@clona.com.br")  # mesma constante de app/routes/admin.py
 
 
 def api_admin_required(func):
@@ -91,7 +91,7 @@ def api_admin_required(func):
     @api_login_required
     def wrapper(*args, **kwargs):
         user = g.current_user
-        if user.is_admin or user.email.lower() == ADMIN_EMAIL.lower():
+        if user.is_admin or user.email.lower() in ADMIN_EMAILS:
             return func(*args, **kwargs)
         return jsonify({"erro": "Acesso restrito ao Painel Master."}), 403
 
@@ -1491,7 +1491,7 @@ def painel_master_editar_usuario(user_id: int):
     if "is_active" in dados:
         usuario.is_active = bool(dados.get("is_active"))
 
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         usuario.is_admin = True
     elif "is_admin" in dados:
         usuario.is_admin = bool(dados.get("is_admin"))
@@ -1504,7 +1504,7 @@ def painel_master_editar_usuario(user_id: int):
 @api_admin_required
 def painel_master_deletar_usuario(user_id: int):
     usuario = User.query.get_or_404(user_id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         return jsonify({"erro": "Você não pode deletar a conta master."}), 400
 
     db.session.delete(usuario)
@@ -1516,7 +1516,7 @@ def painel_master_deletar_usuario(user_id: int):
 @api_admin_required
 def painel_master_toggle_ativo(user_id: int):
     usuario = User.query.get_or_404(user_id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         return jsonify({"erro": "Você não pode desativar a conta master."}), 400
 
     usuario.is_active = not bool(usuario.is_active)
@@ -1528,7 +1528,7 @@ def painel_master_toggle_ativo(user_id: int):
 @api_admin_required
 def painel_master_toggle_admin(user_id: int):
     usuario = User.query.get_or_404(user_id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         return jsonify({"erro": "A conta master sempre permanece admin."}), 400
 
     usuario.is_admin = not bool(usuario.is_admin)

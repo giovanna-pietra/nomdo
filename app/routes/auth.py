@@ -48,7 +48,7 @@ auth_bp = Blueprint(
     __name__
 )
 
-ADMIN_EMAIL = "grouppietra@gmail.com"
+ADMIN_EMAILS = ("grouppietra@gmail.com", "giovanna.perovano@clona.com.br")
 
 
 # ============================================================
@@ -90,7 +90,7 @@ def criar_sessao(user, remember=True):
     session.clear()
 
     # === CORREÇÃO CRUCIAL: FORÇAR ADMIN SEM APAGAR A CATEGORIA JÁ DEFINIDA ===
-    if user.email and user.email.lower() == ADMIN_EMAIL.lower():
+    if user.email and user.email.lower() in ADMIN_EMAILS:
         user.is_admin = True
         # Se o admin ainda não tiver nenhuma categoria definida, podemos dar um padrão,
         # mas se já tiver, nós NÃO tocamos nela mais!
@@ -107,7 +107,7 @@ def criar_sessao(user, remember=True):
     session["user_categoria"] = user.categoria if user.categoria else ""
 
     session["is_admin"] = bool(getattr(user, "is_admin", False)) or (
-        user.email.lower() == ADMIN_EMAIL.lower()
+        user.email.lower() in ADMIN_EMAILS
     )
     
     # Login persistente

@@ -10,7 +10,7 @@ from app.utils.i18n import t_flash
 
 admin_bp = Blueprint('admin', __name__)
 
-ADMIN_EMAIL = "grouppietra@gmail.com"
+ADMIN_EMAILS = ("grouppietra@gmail.com", "giovanna.perovano@clona.com.br")
 
 
 def admin_required(f):
@@ -21,13 +21,13 @@ def admin_required(f):
         if session.get("is_admin") is True:
             return f(*args, **kwargs)
 
-        if user_email and user_email == ADMIN_EMAIL.lower():
+        if user_email and user_email in ADMIN_EMAILS:
             return f(*args, **kwargs)
 
         user_id = session.get("user_id")
         if user_id:
             user = db.session.get(User, user_id)
-            if user and (getattr(user, "is_admin", False) or user.email.lower() == ADMIN_EMAIL.lower()):
+            if user and (getattr(user, "is_admin", False) or user.email.lower() in ADMIN_EMAILS):
                 session["is_admin"] = True
                 return f(*args, **kwargs)
 
@@ -201,7 +201,7 @@ def editar_usuario(id):
         usuario.is_active = request.form.get("is_active") == "1"
         
         # AJUSTE DE SEGURANÇA: Se for o e-mail master, força is_admin como verdadeiro
-        if usuario.email.lower() == ADMIN_EMAIL.lower():
+        if usuario.email.lower() in ADMIN_EMAILS:
             usuario.is_admin = True
         else:
             usuario.is_admin = request.form.get("is_admin") == "1"
@@ -216,7 +216,7 @@ def editar_usuario(id):
 @login_required
 def deletar_usuario(id):
     usuario = User.query.get_or_404(id)
-    if usuario.email == ADMIN_EMAIL:
+    if usuario.email.lower() in ADMIN_EMAILS:
         flash(t_flash("Você não pode deletar a si mesma!"), "erro")
     else:
         db.session.delete(usuario)
@@ -230,7 +230,7 @@ def deletar_usuario(id):
 @login_required
 def toggle_usuario_ativo(id: int):
     usuario = User.query.get_or_404(id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         flash(t_flash("Você não pode desativar a conta master."), "erro")
         return redirect(url_for("admin.usuarios"))
     usuario.is_active = not bool(usuario.is_active)
@@ -244,7 +244,7 @@ def toggle_usuario_ativo(id: int):
 @login_required
 def toggle_usuario_admin(id: int):
     usuario = User.query.get_or_404(id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         flash(t_flash("A conta master sempre permanece admin."), "info")
         return redirect(url_for("admin.usuarios"))
     usuario.is_admin = not bool(usuario.is_admin)
@@ -278,7 +278,7 @@ def deletar_imovel(id: int):
 @login_required
 def alterar_role_usuario(id):
     usuario = User.query.get_or_404(id)
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         flash(t_flash("A conta master não pode ter o cargo alterado."), "erro")
         return redirect(url_for("admin.usuarios"))
 
@@ -289,7 +289,7 @@ def alterar_role_usuario(id):
         usuario.is_admin = False
 
     # CORREÇÃO ADICIONADA: Se por algum motivo o email for alterado no form para o master, força admin
-    if usuario.email.lower() == ADMIN_EMAIL.lower():
+    if usuario.email.lower() in ADMIN_EMAILS:
         usuario.is_admin = True
 
     db.session.commit()
