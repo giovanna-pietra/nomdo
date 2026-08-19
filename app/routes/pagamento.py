@@ -2,9 +2,9 @@
 app/routes/pagamento.py
 Paywall — assinatura mensal recorrente via Asaas, por faixa de
 quantidade de imóveis (ver app/services/planos.py):
-    até 3 imóveis   -> R$ 10/mês  ("ate_3")
-    até 10 imóveis  -> R$ 20/mês  ("ate_10")
-    11+ imóveis     -> R$ 30/mês  ("mais_10")
+    até 5 imóveis   -> R$ 20/mês  ("ate_5")
+    até 10 imóveis  -> R$ 35/mês  ("ate_10")
+    11+ imóveis     -> R$ 50/mês  ("mais_10")
 
 Donos/admins nunca passam por aqui: o gate global (app/__init__.py) já
 libera quem é is_admin antes de chegar numa rota protegida. Um

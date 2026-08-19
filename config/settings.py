@@ -261,9 +261,9 @@ class BaseConfig:
     # Planos por quantidade de imóveis do Proprietário (ver
     # app/services/planos.py — PLANOS é a fonte da verdade, os valores
     # abaixo só configuram os preços de cada faixa):
-    #   até 3 imóveis   -> "ate_3"   -> PLANO_ATE_3_CENTS   (padrão R$ 10,00)
-    #   até 10 imóveis  -> "ate_10"  -> PLANO_ATE_10_CENTS  (padrão R$ 20,00)
-    #   11+ imóveis     -> "mais_10" -> PLANO_MAIS_10_CENTS (padrão R$ 30,00)
+    #   até 5 imóveis   -> "ate_5"   -> PLANO_ATE_5_CENTS   (padrão R$ 20,00)
+    #   até 10 imóveis  -> "ate_10"  -> PLANO_ATE_10_CENTS  (padrão R$ 35,00)
+    #   11+ imóveis     -> "mais_10" -> PLANO_MAIS_10_CENTS (padrão R$ 50,00)
     # =========================================================
 
     PAYWALL_ATIVO = os.environ.get("PAYWALL_ATIVO", "False") == "True"
@@ -278,9 +278,9 @@ class BaseConfig:
     # cadastrar a URL do webhook (/webhooks/asaas).
     ASAAS_WEBHOOK_TOKEN = os.environ.get("ASAAS_WEBHOOK_TOKEN", "")
 
-    PLANO_ATE_3_CENTS = int(os.environ.get("PLANO_ATE_3_CENTS", 1000))
-    PLANO_ATE_10_CENTS = int(os.environ.get("PLANO_ATE_10_CENTS", 2000))
-    PLANO_MAIS_10_CENTS = int(os.environ.get("PLANO_MAIS_10_CENTS", 3000))
+    PLANO_ATE_5_CENTS = int(os.environ.get("PLANO_ATE_5_CENTS", 2000))
+    PLANO_ATE_10_CENTS = int(os.environ.get("PLANO_ATE_10_CENTS", 3500))
+    PLANO_MAIS_10_CENTS = int(os.environ.get("PLANO_MAIS_10_CENTS", 5000))
 
     # =========================================================
     # NOTIFICAÇÕES PUSH NO NAVEGADOR (Web Push / VAPID)

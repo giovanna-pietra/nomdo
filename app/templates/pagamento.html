@@ -121,8 +121,8 @@ body.theme-dark .plano-nome { color: rgba(255, 255, 255, 0.92) !important; }
                 <span class="plano-badge">{{ t('Recomendado') }}</span>
             {% endif %}
             <div class="plano-nome">
-                {% if p.limite == 3 %}
-                    {{ t('Até 3 imóveis') }}
+                {% if p.limite == 5 %}
+                    {{ t('Até 5 imóveis') }}
                 {% elif p.limite == 10 %}
                     {{ t('Até 10 imóveis') }}
                 {% else %}
