@@ -38,6 +38,7 @@
     {% endif %}
 {% endwith %}
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="input-group">
                     <label for="email">{{ t('E-mail cadastrado') }}:</label>
                     <input type="email" id="email" name="email" placeholder="seu@email.com" required>

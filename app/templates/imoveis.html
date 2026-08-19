@@ -1441,6 +1441,7 @@ document.addEventListener('DOMContentLoaded', function () {
             {{ t('Registre uma nova entrada de hóspede neste imóvel.') }}
         </p>
         <form id="form-estadia" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-section-title">{{ t('Hóspede & Canal') }}</div>
             <div class="form-row form-row-2">
                 <div class="form-group">
@@ -1667,6 +1668,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <h2 id="modalImovelTitulo" style="font-weight:800;margin-bottom:4px;">{{ t('Novo Imóvel') }}</h2>
         <p style="font-size:0.78rem;color:var(--text-soft);margin-bottom:20px;">{{ t('Preencha os dados do imóvel para adicioná-lo ao seu portfólio.') }}</p>
         <form id="formImovel" action="{{ url_for('imoveis.salvar_imovel') }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-section-title" style="color:#0052D4;border-bottom-color:rgba(0,82,212,0.18);"><i class="fa-solid fa-id-card" style="margin-right:4px;"></i> {{ t('Identificação') }}</div>
             <div class="form-group">
                 <label for="imovel_titulo">{{ t('Título do Imóvel') }}</label>
@@ -1924,6 +1926,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <h2 id="modalGrupoTitulo" style="font-weight:800;margin-bottom:4px;">{{ t('Novo Grupo') }}</h2>
         <p id="modalGrupoSubtitulo" style="font-size:0.78rem;color:var(--text-soft);margin-bottom:20px;">{{ t('Agrupe imóveis para organizar sua carteira.') }}</p>
         <form id="formGrupo" action="{{ url_for('imoveis.salvar_grupo') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" id="grupo_edit_id" name="grupo_edit_id" value="">
             <div class="form-group">
                 <label for="grupo_nome">{{ t('Nome do Grupo') }}</label>

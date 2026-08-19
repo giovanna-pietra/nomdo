@@ -219,11 +219,13 @@
             </a>
         </div>
 
-        <form 
-            id="formPerfil" 
-            method="POST" 
-            enctype="multipart/form-data" 
+        <form
+            id="formPerfil"
+            method="POST"
+            enctype="multipart/form-data"
             onsubmit="return validarForm(event)"
+        >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         >
 
             <!-- FOTO -->
@@ -499,11 +501,12 @@
         <!-- ZONA DE PERIGO -->
         <div class="danger-zone">
 
-            <form 
+            <form
                 id="formExcluir"
                 action="{{ url_for('usuario.excluir_conta') }}"
                 method="POST"
             >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <button 
                     type="button"
