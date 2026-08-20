@@ -325,7 +325,7 @@
                     <div class="user-avatar-container">
                         <div class="user-avatar dynamic-color" data-name="{{ nome_usuario }}">
                             {% if user and user.foto %}
-                                <img src="{{ url_for('static', filename=user.foto) }}" alt="Foto do usuário">
+                                <img src="{{ user.foto|url_upload }}" alt="Foto do usuário">
                             {% else %}
                                 {{ nome_usuario[0] if nome_usuario else '?' }}
                             {% endif %}

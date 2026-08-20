@@ -227,6 +227,16 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app.jinja_env.filters["moeda"] = _filtro_moeda
 
+    # =========================================================
+    # FILTRO DE UPLOAD — {{ imovel.foto_principal|url_upload }}
+    # Monta a URL pública do arquivo (R2 se configurado, senão o
+    # /static/uploads local de sempre) — ver app/utils/upload.py.
+    # =========================================================
+
+    from app.utils import url_arquivo_publico as _url_upload_filtro
+
+    app.jinja_env.filters["url_upload"] = _url_upload_filtro
+
     @app.before_request
     def _definir_moeda_atual():
         """Guarda a moeda do usuário logado em `g` pro filtro `moeda`

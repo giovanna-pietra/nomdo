@@ -26,7 +26,7 @@ from app.models import User, Imovel, Estadia, Grupo, HubTarefa, ConviteAnfitriao
 from app.models.financas import Financeiro, FinanceiroDespesa, DespesaGeral
 from app.models.hub import TIPOS_LEMBRETE
 from app.routes.hub import processar_lembretes, DIAS_PILHA_PADRAO
-from app.utils import formatar_nome_exibicao
+from app.utils import formatar_nome_exibicao, url_arquivo_publico
 from app.services.email_service import enviar_email_convite_anfitriao
 from app.services import enviar_email_despedida
 
@@ -273,20 +273,19 @@ def dashboard():
 # ============================================================
 
 def _url_foto(nome_arquivo):
-    if not nome_arquivo:
-        return None
-    return f"{request.host_url.rstrip('/')}/static/uploads/{nome_arquivo}"
+    """
+    URL pública da foto (imóvel ou avatar) — R2 se configurado, senão
+    /static/uploads local (ver app/utils/upload.py:url_arquivo_publico).
+    Aceita tanto "foto.jpg" (Imovel.foto_principal) quanto o antigo
+    "uploads/foto.jpg" de contas mais velhas (User.foto) — normaliza os
+    dois casos internamente.
+    """
+    return url_arquivo_publico(nome_arquivo)
 
 
-def _url_foto_usuario(caminho):
-    """
-    User.foto já é salvo com o prefixo 'uploads/' embutido (diferente de
-    Imovel.foto_principal, que salva só o nome do arquivo) — por isso tem
-    um helper próprio, pra não duplicar 'uploads/uploads/...' na URL.
-    """
-    if not caminho:
-        return None
-    return f"{request.host_url.rstrip('/')}/static/{caminho}"
+# Mantido como alias — User.foto e Imovel.foto_principal usam a mesma
+# função agora que url_arquivo_publico() normaliza os dois formatos.
+_url_foto_usuario = _url_foto
 
 
 def _imovel_publico(imovel: Imovel) -> dict:
@@ -1346,9 +1345,10 @@ def excluir_conta_perfil():
 
         if user.foto:
             from app.utils import deletar_arquivo
-            # user.foto é salvo como "uploads/<arquivo>" — deletar_arquivo
-            # espera só o nome do arquivo (mesma convenção de Imovel.foto_principal).
-            deletar_arquivo(user.foto.split("/", 1)[-1])
+            # deletar_arquivo() já normaliza via os.path.basename — funciona
+            # tanto com o nome puro (contas novas) quanto com o antigo
+            # "uploads/<arquivo>" (contas mais velhas, ver usuario.py).
+            deletar_arquivo(user.foto)
 
         db.session.delete(user)
         db.session.commit()

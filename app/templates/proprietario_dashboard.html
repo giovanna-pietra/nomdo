@@ -585,7 +585,7 @@
             <div class="pd-imovel-card collapsed">
                 <div class="pd-imovel-header pd-imovel-header-toggle" onclick="pdToggleCard(this)">
                     {% if im.foto_principal %}
-                        <img src="/static/uploads/{{ im.foto_principal }}" class="pd-imovel-foto" alt="">
+                        <img src="{{ im.foto_principal|url_upload }}" class="pd-imovel-foto" alt="">
                     {% else %}
                         <div class="pd-imovel-foto pattern-{{ (im.id * 3 + 1) % 8 }}" style="display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-house"></i></div>
                     {% endif %}

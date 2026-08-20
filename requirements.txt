@@ -31,3 +31,10 @@ python-slugify==8.0.4          # slugify() usado em app/models/imovel.py
 
 # ── Notificações push no navegador (Web Push / VAPID) ─────────
 pywebpush==2.0.1
+
+# ── Armazenamento persistente de arquivos (Cloudflare R2, S3-compatible) ──
+# Sem as variáveis R2_* configuradas, o app cai pro disco local de sempre —
+# mas o disco do Render é efêmero (uploads somem a cada redeploy), então em
+# produção o R2 é o que faz fotos de imóvel/avatar/documentos "ficarem
+# salvos pra sempre".
+boto3==1.35.99

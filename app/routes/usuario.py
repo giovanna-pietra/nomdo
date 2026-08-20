@@ -80,7 +80,12 @@ def usuario():
 
             if filename:
 
-                user.foto = f"uploads/{filename}"
+                # Antes gravava com o prefixo "uploads/" embutido — agora
+                # grava só o nome puro, igual a Imovel.foto_principal (fica
+                # consistente, e o filtro url_upload normaliza os dois jeitos
+                # ao montar a URL, então contas antigas continuam exibindo
+                # a foto certinho).
+                user.foto = filename
 
         # ==================================================
         # DADOS

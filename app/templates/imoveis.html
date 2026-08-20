@@ -2021,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', function () {
              data-ativo="{{ '1' if imovel.ativo else '0' }}"
              onclick="visualizarImovel('{{ imovel.id }}')">
             {% if imovel.foto_principal %}
-            <img src="{{ url_for('static', filename='uploads/' ~ imovel.foto_principal) }}" class="imovel-img" alt="{{ imovel.titulo }}">
+            <img src="{{ imovel.foto_principal|url_upload }}" class="imovel-img" alt="{{ imovel.titulo }}">
             {% else %}
             <div class="imovel-img-fallback pattern-{{ (imovel.id * 3 + 1) % 8 }}">
                 <i class="fa-solid fa-house-chimney"></i><span>{{ imovel.titulo }}</span>

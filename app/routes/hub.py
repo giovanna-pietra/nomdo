@@ -31,7 +31,7 @@ from __future__ import annotations
 import json
 from datetime import date, timedelta
 
-from flask import Blueprint, current_app, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request, session, url_for
 
 from app.extensions import db
 from app.models import Imovel, Estadia, HubTarefa, LembreteConfig, User, EventoPrecificacao
@@ -41,7 +41,7 @@ from app.services import eventos_service
 from app.services.email_service import enviar_email_lembrete
 from app.services.push_service import enviar_push_notificacao
 from app.services.precificacao import calcular_oportunidades, _percentuais_do_usuario
-from app.utils import login_required, get_effective_owner_id
+from app.utils import login_required, get_effective_owner_id, url_arquivo_publico
 
 hub_bp = Blueprint("hub", __name__)
 
@@ -561,7 +561,7 @@ def hub_dados():
             "nivel": nivel,
             "alertas": alertas,
             "dias_pilha": dias_pilha if dias_pilha < 999 else None,
-            "foto_principal": im.foto_principal,
+            "foto_principal": url_arquivo_publico(im.foto_principal),
         })
 
     dados_imoveis.sort(key=lambda x: x["score"])
@@ -1031,7 +1031,15 @@ def documentos_recebidos():
         respostas = []
         for r in (f.respostas or []):
             valor = r.get("valor") or ""
-            url_arquivo = f"/static/uploads/{valor}" if r.get("tipo") == "foto" and valor else None
+            # Documentos do hóspede (RG/CPF etc.) não ficam mais em
+            # /static/uploads (pasta pública) — ver LGPD fix em
+            # app/routes/pg_documentos_recebidos.py. Precisa passar pela
+            # mesma rota protegida (login + posse do imóvel), senão o link
+            # aqui simplesmente não funciona mais.
+            url_arquivo = (
+                url_for("documentos_recebidos.servir_arquivo", nome_arquivo=valor)
+                if r.get("tipo") == "foto" and valor else None
+            )
             respostas.append({
                 "nome": r.get("nome"),
                 "tipo": r.get("tipo"),

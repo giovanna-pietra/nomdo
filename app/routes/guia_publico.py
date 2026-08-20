@@ -16,6 +16,7 @@ import requests
 from flask import Blueprint, render_template, jsonify, abort, current_app, request
 
 from app.models import Imovel
+from app.utils import url_arquivo_publico
 
 guia_publico_bp = Blueprint("guia_publico", __name__)
 
@@ -181,7 +182,7 @@ def locais_proximos(slug):
 def guia_hospede_json(slug):
     imovel = _buscar_imovel_publico(slug)
 
-    foto_url = f"/static/uploads/{imovel.foto_principal}" if imovel.foto_principal else None
+    foto_url = url_arquivo_publico(imovel.foto_principal)
 
     return jsonify({
         "titulo":   imovel.titulo,

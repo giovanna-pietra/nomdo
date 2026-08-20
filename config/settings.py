@@ -140,6 +140,34 @@ class BaseConfig:
         )
     )
 
+    # =========================================================
+    # CLOUDFLARE R2 (armazenamento persistente — fotos de imóvel, avatar
+    # e documentos do hóspede sobrevivem a redeploy)
+    #
+    # O filesystem do Render é efêmero: tudo que é salvo em disco local
+    # (UPLOAD_FOLDER / UPLOAD_FOLDER_DOCUMENTOS acima) é perdido a cada
+    # redeploy/restart/spin-down. Sem essas 5 variáveis preenchidas, o app
+    # continua funcionando exatamente como hoje (salva em disco local) —
+    # é só que os arquivos não sobrevivem a um redeploy. Preenchendo as 5,
+    # app/utils/upload.py passa a usar o R2 automaticamente, sem precisar
+    # mudar mais nada.
+    #
+    # Onde conseguir cada valor (painel da Cloudflare, aba R2):
+    #   R2_ENDPOINT_URL    -> "S3 API" do bucket: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+    #   R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY -> "Manage API tokens" > Create API token
+    #   R2_BUCKET_NAME     -> nome do bucket criado (ex: "nomdo-uploads")
+    #   R2_PUBLIC_BASE_URL -> domínio público do bucket: ative "Public
+    #                         Development URL" nas configurações do bucket
+    #                         (algo como https://pub-xxxx.r2.dev) ou conecte
+    #                         um domínio/subdomínio próprio
+    # =========================================================
+
+    R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+    R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+    R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "")
+    R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
+    R2_PUBLIC_BASE_URL = os.environ.get("R2_PUBLIC_BASE_URL", "")
+
     # Extensões permitidas
     ALLOWED_EXTENSIONS = {
         "png",

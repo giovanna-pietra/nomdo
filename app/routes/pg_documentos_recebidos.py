@@ -15,16 +15,18 @@ esta página não inventa um botão pra isso.
 """
 from __future__ import annotations
 
+import mimetypes
 import os
 
 from flask import (
     Blueprint, render_template, request, url_for,
-    send_from_directory, current_app, abort,
+    Response, abort,
 )
 
 from app.models import FormularioDocumentos
 from app.models.imovel import Imovel
 from app.utils.auth import login_required, get_effective_owner_id
+from app.utils.upload import ler_arquivo_documento
 
 documentos_recebidos_bp = Blueprint("documentos_recebidos", __name__)
 
@@ -109,8 +111,9 @@ def servir_arquivo(nome_arquivo):
 
     Substitui o link antigo (/static/uploads/<arquivo>), que era público:
     qualquer um com a URL exata via, sem exigir login. Esses documentos
-    ficam em UPLOAD_FOLDER_DOCUMENTOS, fora de app/static, então essa rota
-    é o único jeito de acessá-los.
+    ficam em UPLOAD_FOLDER_DOCUMENTOS (local) ou no prefixo "documentos/"
+    do R2 quando configurado (sempre fora de app/static), então essa rota
+    é o único jeito de acessá-los — ver app/utils/upload.py:ler_arquivo_documento.
     """
     owner_id = get_effective_owner_id()
 
@@ -135,6 +138,11 @@ def servir_arquivo(nome_arquivo):
     if not pertence_ao_anfitriao:
         abort(404)
 
-    return send_from_directory(
-        current_app.config["UPLOAD_FOLDER_DOCUMENTOS"], nome_seguro
+    conteudo, content_type = ler_arquivo_documento(nome_seguro)
+    if conteudo is None:
+        abort(404)
+
+    return Response(
+        conteudo,
+        mimetype=content_type or mimetypes.guess_type(nome_seguro)[0] or "application/octet-stream",
     )
