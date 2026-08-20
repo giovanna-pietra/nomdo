@@ -66,6 +66,26 @@ class HubTarefa(TimestampMixin, db.Model):
         index=True,
     )
 
+    # Autoria — quem de fato registrou/concluiu a tarefa (diferente de
+    # `user_id`, que é sempre o Proprietário "dono" dos dados — ver
+    # get_effective_owner_id). Útil numa equipe com mais de uma pessoa
+    # (Proprietário + Anfitriões-ajudantes) pra saber quem fez o quê.
+    # Fica nulo em dois casos: tarefa gerada automaticamente pelo motor de
+    # lembretes (processar_lembretes, sem ninguém "apertando o botão"), ou
+    # registro antigo, de antes dessa coluna existir.
+    criado_por_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    concluido_por_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     titulo    = db.Column(db.String(200), nullable=False)
     descricao = db.Column(db.Text, nullable=True)
 
@@ -88,6 +108,11 @@ class HubTarefa(TimestampMixin, db.Model):
     # Relacionamento para pegar o nome do imóvel facilmente
     imovel    = db.relationship("Imovel", backref="tarefas", lazy="select")
     estadia   = db.relationship("Estadia", backref="tarefas_hub", lazy="select")
+
+    # Sem backref pro lado do User (evita colidir com outros relacionamentos
+    # já existentes em User) — só precisamos ler o nome de quem criou/concluiu.
+    criado_por    = db.relationship("User", foreign_keys=[criado_por_id], lazy="select")
+    concluido_por = db.relationship("User", foreign_keys=[concluido_por_id], lazy="select")
 
     def __repr__(self):
         return f"<HubTarefa {self.tipo}: {self.titulo}>"

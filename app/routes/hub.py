@@ -41,7 +41,7 @@ from app.services import eventos_service
 from app.services.email_service import enviar_email_lembrete
 from app.services.push_service import enviar_push_notificacao
 from app.services.precificacao import calcular_oportunidades, _percentuais_do_usuario
-from app.utils import login_required, get_effective_owner_id, url_arquivo_publico
+from app.utils import login_required, get_effective_owner_id, url_arquivo_publico, formatar_nome_exibicao
 
 hub_bp = Blueprint("hub", __name__)
 
@@ -585,6 +585,11 @@ def hub_dados():
             "criado_em": t.created_at.strftime("%d/%m/%Y %H:%M"),
             "data_prevista": t.data_prevista.isoformat() if t.data_prevista else None,
             "data_prevista_fmt": t.data_prevista.strftime("%d/%m/%Y") if t.data_prevista else None,
+            # Autoria — None quando a tarefa foi gerada automaticamente pelo
+            # motor de lembretes, ou quando concluida=False (nunca foi
+            # concluída por ninguém).
+            "criado_por": formatar_nome_exibicao(t.criado_por.nome) if t.criado_por else None,
+            "concluido_por": formatar_nome_exibicao(t.concluido_por.nome) if t.concluido_por else None,
         })
 
     lembretes_json = []
@@ -685,6 +690,7 @@ def registrar_manutencao():
         tipo=data.get("tipo") or "manutencao",
         data_prevista=_parse_data_prevista(data.get("data_prevista")),
         concluida=False,
+        criado_por_id=session.get("user_id"),
     )
     db.session.add(tarefa)
     db.session.commit()
@@ -717,6 +723,7 @@ def registrar_troca_pilha(imovel_id: int):
     ).all()
     for t in pendentes:
         t.concluida = True
+        t.concluido_por_id = session.get("user_id")
 
     db.session.commit()
 
@@ -741,6 +748,10 @@ def concluir_tarefa(tarefa_id: int):
         return jsonify({"success": False, "message": "Tarefa não encontrada."}), 404
 
     tarefa.concluida = not tarefa.concluida
+    # Reabrir (concluida volta a False) limpa quem tinha concluído — não
+    # faz sentido continuar mostrando "concluído por Fulano" numa tarefa
+    # pendente de novo.
+    tarefa.concluido_por_id = session.get("user_id") if tarefa.concluida else None
 
     # Se for a tarefa de troca de pilha, marcar como trocada de fato no imóvel.
     if tarefa.concluida and tarefa.tipo == "pilha_fechadura" and tarefa.imovel_id:
@@ -887,6 +898,8 @@ def listar_tarefas_historico():
         "concluida": t.concluida,
         "criado_em": t.created_at.strftime("%d/%m/%Y %H:%M") if t.created_at else None,
         "atualizado_em": t.updated_at.strftime("%d/%m/%Y %H:%M") if t.updated_at else None,
+        "criado_por": formatar_nome_exibicao(t.criado_por.nome) if t.criado_por else None,
+        "concluido_por": formatar_nome_exibicao(t.concluido_por.nome) if t.concluido_por else None,
     } for t in tarefas]
 
     return jsonify({"success": True, "tarefas": resultado})

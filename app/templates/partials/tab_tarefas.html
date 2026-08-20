@@ -497,6 +497,11 @@ body.theme-dark .modal-box h3 i {
                 {% else %}
                 <span><i class="fa-solid fa-calendar"></i> {{ tarefa.created_at.strftime('%d/%m/%Y') if tarefa.created_at else "—" }}</span>
                 {% endif %}
+                {% if tarefa.concluida and tarefa.concluido_por %}
+                <span title="{{ t('Concluído por') }} {{ tarefa.concluido_por.nome }}"><i class="fa-solid fa-user-check"></i> {{ tarefa.concluido_por.nome|nome_exibicao }}</span>
+                {% elif tarefa.criado_por %}
+                <span title="{{ t('Registrado por') }} {{ tarefa.criado_por.nome }}"><i class="fa-solid fa-user"></i> {{ tarefa.criado_por.nome|nome_exibicao }}</span>
+                {% endif %}
             </div>
             {% if tarefa.descricao %}
             <div class="tarefa-desc">{{ tarefa.descricao }}</div>

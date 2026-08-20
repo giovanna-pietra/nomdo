@@ -910,6 +910,8 @@ def hub_tarefas_dados():
             "criado_em": t.created_at.strftime("%d/%m/%Y %H:%M"),
             "data_prevista": t.data_prevista.isoformat() if t.data_prevista else None,
             "data_prevista_fmt": t.data_prevista.strftime("%d/%m/%Y") if t.data_prevista else None,
+            "criado_por": formatar_nome_exibicao(t.criado_por.nome) if t.criado_por else None,
+            "concluido_por": formatar_nome_exibicao(t.concluido_por.nome) if t.concluido_por else None,
         })
 
     return jsonify({
@@ -946,6 +948,7 @@ def hub_registrar_manutencao():
         descricao=dados.get("descricao", ""),
         tipo=dados.get("tipo") or "manutencao",
         concluida=False,
+        criado_por_id=g.current_user.id,
     )
     db.session.add(tarefa)
     db.session.commit()
@@ -968,6 +971,7 @@ def hub_registrar_troca_pilha(imovel_id: int):
     ).all()
     for t in pendentes:
         t.concluida = True
+        t.concluido_por_id = g.current_user.id
 
     db.session.commit()
     return jsonify({
@@ -986,6 +990,7 @@ def hub_concluir_tarefa(tarefa_id: int):
         return jsonify({"success": False, "message": "Tarefa não encontrada."}), 404
 
     tarefa.concluida = not tarefa.concluida
+    tarefa.concluido_por_id = g.current_user.id if tarefa.concluida else None
     if tarefa.concluida and tarefa.tipo == "pilha_fechadura" and tarefa.imovel_id:
         imovel = db.session.get(Imovel, tarefa.imovel_id)
         if imovel:

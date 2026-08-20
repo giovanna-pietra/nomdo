@@ -237,6 +237,16 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app.jinja_env.filters["url_upload"] = _url_upload_filtro
 
+    # =========================================================
+    # FILTRO DE NOME CURTO — {{ user.nome|nome_exibicao }}
+    # Usado pra mostrar de forma compacta quem criou/concluiu uma tarefa do
+    # Hub (ver HubTarefa.criado_por/concluido_por em app/models/hub.py).
+    # =========================================================
+
+    from app.utils import formatar_nome_exibicao as _nome_exibicao_filtro
+
+    app.jinja_env.filters["nome_exibicao"] = _nome_exibicao_filtro
+
     @app.before_request
     def _definir_moeda_atual():
         """Guarda a moeda do usuário logado em `g` pro filtro `moeda`
