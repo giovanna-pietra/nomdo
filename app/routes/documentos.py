@@ -16,7 +16,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from app.extensions import db
 from app.models import FormularioDocumentos
 from app.services.documentos_service import campos_do_imovel
-from app.utils import salvar_arquivo, deletar_arquivo
+from app.utils import salvar_arquivo_documento, deletar_arquivo_documento
 
 documentos_bp = Blueprint("documentos", __name__)
 
@@ -72,7 +72,7 @@ def enviar_formulario(token):
         campo_nome = f"campo_{i}"
         if campo["tipo"] == "foto":
             arquivo = request.files.get(campo_nome)
-            valor = salvar_arquivo(arquivo) if arquivo and arquivo.filename else ""
+            valor = salvar_arquivo_documento(arquivo) if arquivo and arquivo.filename else ""
         else:
             valor = (request.form.get(campo_nome) or "").strip()
 
@@ -97,7 +97,7 @@ def enviar_formulario(token):
         # órfão, já que essa resposta não vai ser gravada.
         for resposta in respostas:
             if resposta["tipo"] == "foto" and resposta["valor"]:
-                deletar_arquivo(resposta["valor"])
+                deletar_arquivo_documento(resposta["valor"])
 
         return redirect(url_for(
             "documentos.pagina_formulario",

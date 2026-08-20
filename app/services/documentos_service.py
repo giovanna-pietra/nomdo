@@ -26,10 +26,17 @@ from app.extensions import db
 from app.models import Imovel, Estadia, User, FormularioDocumentos
 from app.services.email_service import enviar_email_formulario_documentos
 from app.services.push_service import enviar_push_notificacao
+from app.utils import deletar_arquivo_documento
 
 DIAS_ANTES_PADRAO = 3
 DIAS_EXPIRA_APOS_CHECKOUT = 3
 MAX_TENTATIVAS = 1  # envio único (sem lembretes, diferente do condomínio)
+
+# LGPD — minimização de dados: não faz sentido guardar documento pessoal
+# do hóspede (RG/CPF, foto do pet etc.) indefinidamente depois que a
+# estadia já terminou. 14 dias dá margem pro anfitrião resolver qualquer
+# pendência (cobrança de dano, disputa etc.) sem manter o dado pra sempre.
+DIAS_RETENCAO_DOCUMENTOS_APOS_CHECKOUT = 14
 
 DEFAULT_CAMPOS_DOCUMENTOS = [
     {"nome": "RG ou CPF", "tipo": "foto", "obrigatorio": True},
@@ -158,6 +165,57 @@ def processar_formularios_documentos(user: User, base_url: str) -> dict:
             current_app.logger.exception(
                 "Falha ao enviar formulário de documentos para a estadia %s", est.id
             )
+
+    if houve_mudanca:
+        db.session.commit()
+
+    return resultado
+
+
+def apagar_documentos_antigos(user: User) -> dict:
+    """
+    LGPD — apaga os arquivos (RG/CPF, foto do pet etc.) e limpa as
+    respostas dos formulários cuja estadia já fez check-out há mais de
+    DIAS_RETENCAO_DOCUMENTOS_APOS_CHECKOUT dias. Idempotente: uma vez
+    limpo, `respostas_json` fica vazio e o formulário não é mais
+    candidato nas próximas execuções.
+    """
+    hoje = date.today()
+    resultado = {"formularios_limpos": 0, "arquivos_apagados": 0}
+
+    imoveis_ids = [
+        im.id for im in Imovel.query.filter_by(user_id=user.id).all()
+    ]
+    if not imoveis_ids:
+        return resultado
+
+    limite = hoje - timedelta(days=DIAS_RETENCAO_DOCUMENTOS_APOS_CHECKOUT)
+
+    candidatos = (
+        FormularioDocumentos.query
+        .join(Estadia, FormularioDocumentos.estadia_id == Estadia.id)
+        .filter(
+            FormularioDocumentos.imovel_id.in_(imoveis_ids),
+            FormularioDocumentos.respostas_json.isnot(None),
+            FormularioDocumentos.respostas_json != "[]",
+            Estadia.data_checkout.isnot(None),
+            Estadia.data_checkout <= limite,
+        )
+        .all()
+    )
+
+    houve_mudanca = False
+    for form in candidatos:
+        for resposta in (form.respostas or []):
+            if resposta.get("tipo") == "foto" and resposta.get("valor"):
+                deletar_arquivo_documento(resposta["valor"])
+                resultado["arquivos_apagados"] += 1
+
+        # Limpa também os campos de texto (placa do carro etc.) — mesma
+        # lógica de minimização, não só as fotos.
+        form.respostas = []
+        resultado["formularios_limpos"] += 1
+        houve_mudanca = True
 
     if houve_mudanca:
         db.session.commit()

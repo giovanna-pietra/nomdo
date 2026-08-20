@@ -247,6 +247,11 @@ input[type=file] {
         </div>
         {% endfor %}
 
+        <p class="aviso-privacidade" style="font-size:0.78rem;color:var(--text-soft, #6b7280);margin:14px 0 18px;line-height:1.5;">
+          <i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>
+          {{ t('Seus documentos são usados só pra confirmar sua identidade nesta estadia, ficam acessíveis apenas ao anfitrião responsável pelo imóvel, e são apagados automaticamente até 14 dias depois do check-out.') }}
+        </p>
+
         <button type="submit" class="btn-enviar">{{ t('Enviar documentos') }}</button>
       </form>
     </div>

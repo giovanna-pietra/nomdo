@@ -15,7 +15,12 @@ esta página não inventa um botão pra isso.
 """
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request
+import os
+
+from flask import (
+    Blueprint, render_template, request, url_for,
+    send_from_directory, current_app, abort,
+)
 
 from app.models import FormularioDocumentos
 from app.models.imovel import Imovel
@@ -62,7 +67,8 @@ def pagina():
             for r in (f.respostas or []):
                 valor = r.get("valor") or ""
                 url_arquivo = (
-                    f"/static/uploads/{valor}" if r.get("tipo") == "foto" and valor else None
+                    url_for("documentos_recebidos.servir_arquivo", nome_arquivo=valor)
+                    if r.get("tipo") == "foto" and valor else None
                 )
                 respostas.append({
                     "nome": r.get("nome"),
@@ -90,4 +96,45 @@ def pagina():
         imoveis=lista_imoveis,
         filtro_imovel_id=filtro_imovel_id,
         filtro_status=filtro_status,
+    )
+
+
+@documentos_recebidos_bp.route("/documentos-recebidos/arquivo/<string:nome_arquivo>")
+@login_required
+def servir_arquivo(nome_arquivo):
+    """
+    Serve um documento (foto de RG/CPF, do pet etc.) só se ele pertencer a
+    um FormularioDocumentos de um imóvel do anfitrião logado (ou de quem
+    ele efetivamente representa — ver get_effective_owner_id).
+
+    Substitui o link antigo (/static/uploads/<arquivo>), que era público:
+    qualquer um com a URL exata via, sem exigir login. Esses documentos
+    ficam em UPLOAD_FOLDER_DOCUMENTOS, fora de app/static, então essa rota
+    é o único jeito de acessá-los.
+    """
+    owner_id = get_effective_owner_id()
+
+    imoveis_ids = [
+        im.id for im in Imovel.query.filter_by(user_id=owner_id).all()
+    ]
+    if not imoveis_ids:
+        abort(404)
+
+    # os.path.basename bloqueia tentativa de path traversal ("../../etc").
+    nome_seguro = os.path.basename(nome_arquivo)
+
+    formularios = FormularioDocumentos.query.filter(
+        FormularioDocumentos.imovel_id.in_(imoveis_ids)
+    ).all()
+
+    pertence_ao_anfitriao = any(
+        r.get("tipo") == "foto" and (r.get("valor") or "") == nome_seguro
+        for f in formularios
+        for r in (f.respostas or [])
+    )
+    if not pertence_ao_anfitriao:
+        abort(404)
+
+    return send_from_directory(
+        current_app.config["UPLOAD_FOLDER_DOCUMENTOS"], nome_seguro
     )

@@ -25,7 +25,9 @@ from flask import Blueprint, current_app, jsonify, request
 from app.models import User
 from app.routes.hub import processar_lembretes, processar_push_checkin_hoje
 from app.services.hospede_notificacoes import processar_emails_hospede
-from app.services.documentos_service import processar_formularios_documentos
+from app.services.documentos_service import (
+    processar_formularios_documentos, apagar_documentos_antigos,
+)
 
 cron_bp = Blueprint("cron", __name__)
 
@@ -62,6 +64,8 @@ def processar_lembretes_globais():
         "avaliacoes_solicitadas": 0,
         "convites_documentos_enviados": 0,
         "avisos_checkin_enviados": 0,
+        "documentos_formularios_limpos": 0,
+        "documentos_arquivos_apagados": 0,
         "erros": 0,
     }
 
@@ -102,6 +106,16 @@ def processar_lembretes_globais():
             resumo["erros"] += 1
             current_app.logger.exception(
                 "Falha ao processar formulários de documentos para o usuário %s", user.id
+            )
+
+        try:
+            r_limpeza = apagar_documentos_antigos(user)
+            resumo["documentos_formularios_limpos"] += r_limpeza.get("formularios_limpos", 0)
+            resumo["documentos_arquivos_apagados"] += r_limpeza.get("arquivos_apagados", 0)
+        except Exception:
+            resumo["erros"] += 1
+            current_app.logger.exception(
+                "Falha ao apagar documentos antigos do usuário %s", user.id
             )
 
         resumo["usuarios_processados"] += 1

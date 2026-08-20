@@ -54,6 +54,7 @@ def create_app(config_name: str | None = None) -> Flask:
     # =========================================================
 
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    os.makedirs(app.config["UPLOAD_FOLDER_DOCUMENTOS"], exist_ok=True)
 
     # =========================================================
     # EXTENSÕES

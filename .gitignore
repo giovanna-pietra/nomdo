@@ -30,6 +30,9 @@ env/
 static/uploads/*
 !static/uploads/.gitkeep
 
+# ── Documentos privados do hóspede (RG/CPF etc. — fora de static/) ──
+uploads_privados/
+
 # ── Logs ─────────────────────────────────────────────────────
 logs/
 *.log

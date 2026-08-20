@@ -119,6 +119,19 @@ class BaseConfig:
         "uploads"
     )
 
+    # Documentos sensíveis do hóspede (RG/CPF, foto do pet etc. — ver
+    # app/routes/documentos.py) NÃO ficam em app/static: essa pasta fica
+    # fora da árvore servida publicamente pelo Flask, e só é acessível via
+    # rota protegida (documentos_recebidos.servir_arquivo), que confere
+    # login + posse do imóvel antes de mostrar a imagem. Antes, esses
+    # arquivos iam pra UPLOAD_FOLDER (público) — qualquer um com a URL
+    # exata conseguia ver, sem exigir login nenhum.
+    UPLOAD_FOLDER_DOCUMENTOS = os.path.join(
+        BASE_DIR,
+        "uploads_privados",
+        "documentos"
+    )
+
     # 5MB
     MAX_CONTENT_LENGTH = int(
         os.environ.get(
