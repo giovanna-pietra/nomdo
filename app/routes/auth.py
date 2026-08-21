@@ -48,7 +48,7 @@ auth_bp = Blueprint(
     __name__
 )
 
-ADMIN_EMAILS = ("grouppietra@gmail.com", "giovanna.perovano@clona.com.br")
+ADMIN_EMAILS = ("grouppietra@gmail.com", "giovanna.perovano@pietragroup.com.br")
 
 
 # ============================================================
