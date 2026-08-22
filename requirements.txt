@@ -38,3 +38,9 @@ pywebpush==2.0.1
 # produção o R2 é o que faz fotos de imóvel/avatar/documentos "ficarem
 # salvos pra sempre".
 boto3==1.35.99
+
+# ── Envio de e-mail via API HTTP (Resend) ─────────────────────
+# Sem RESEND_API_KEY configurada, o app cai pro SMTP do Gmail de sempre —
+# mas a Render bloqueia a porta SMTP de saída, então em produção o Resend
+# é o que faz os e-mails (verificação, recuperação de senha etc.) chegarem.
+resend==2.39.0

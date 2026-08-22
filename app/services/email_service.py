@@ -40,7 +40,85 @@ class _SMTP_SSL_IPv4(smtplib.SMTP_SSL):
         return self.context.wrap_socket(novo_socket, server_hostname=self._host)
 
 
+def _extrair_partes_mensagem(mensagem: MIMEMultipart) -> tuple[str, list]:
+    """
+    Percorre um MIMEMultipart já montado por `_montar_mensagem()` e extrai
+    o HTML e os anexos no formato que a API do Resend espera. Só existe
+    pra reaproveitar `_montar_mensagem()`/`_smtp_enviar()` sem precisar
+    duplicar a lógica de montagem do e-mail em cada função "enviar_*".
+    """
+    html = ""
+    anexos = []
+
+    for parte in mensagem.walk():
+
+        disposicao = str(parte.get("Content-Disposition", ""))
+
+        if parte.get_content_type() == "text/html" and "attachment" not in disposicao:
+            payload = parte.get_payload(decode=True)
+            if payload:
+                html = payload.decode(parte.get_content_charset() or "utf-8", errors="replace")
+
+        elif "attachment" in disposicao:
+            payload = parte.get_payload(decode=True)
+            nome_arquivo = parte.get_filename()
+            if payload and nome_arquivo:
+                anexos.append({"filename": nome_arquivo, "content": list(payload)})
+
+    return html, anexos
+
+
+def _resend_enviar(destinatario: str, mensagem: MIMEMultipart) -> None:
+    """
+    Envia via API HTTP do Resend (porta 443) em vez de SMTP. Usado quando
+    RESEND_API_KEY está configurada — necessário em produção no Render,
+    que bloqueia a porta SMTP de saída (ver _SMTP_SSL_IPv4 acima pro
+    histórico completo do diagnóstico).
+    """
+    import resend
+
+    resend.api_key = current_app.config["RESEND_API_KEY"]
+    remetente = current_app.config["EMAIL_REMETENTE"]
+    assunto = mensagem["Subject"]
+    html, anexos = _extrair_partes_mensagem(mensagem)
+
+    params = {
+        "from": remetente,
+        "to": [destinatario],
+        "subject": assunto,
+        "html": html,
+    }
+
+    if anexos:
+        params["attachments"] = anexos
+
+    try:
+
+        resend.Emails.send(params)
+
+        current_app.logger.info(
+            "E-mail enviado (Resend) para %s",
+            destinatario
+        )
+
+    except Exception as exc:
+
+        current_app.logger.error(
+            "Erro ao enviar e-mail (Resend) para %s: %s",
+            destinatario,
+            exc
+        )
+
+
 def _smtp_enviar(destinatario: str, mensagem: MIMEMultipart) -> None:
+
+    # Se RESEND_API_KEY estiver configurada (produção no Render), usa o
+    # Resend em vez do SMTP do Gmail abaixo — que a Render bloqueia na
+    # porta de saída. Sem a chave (ex.: dev local), continua tudo como
+    # antes, sem precisar de nenhuma conta no Resend.
+    if current_app.config.get("RESEND_API_KEY"):
+        _resend_enviar(destinatario, mensagem)
+        return
 
     remetente = current_app.config["EMAIL_REMETENTE"]
     senha = current_app.config["EMAIL_SENHA"]

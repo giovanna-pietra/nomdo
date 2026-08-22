@@ -209,6 +209,13 @@ class BaseConfig:
         ""
     )
 
+    # Envio via Resend (API HTTP, porta 443) — usado no lugar do SMTP acima
+    # quando configurado. Necessário porque a Render bloqueia a porta SMTP
+    # de saída (465/587) em alguns planos, causando timeout no envio direto
+    # pelo Gmail. Se RESEND_API_KEY estiver vazia, o código volta a usar o
+    # SMTP do Gmail acima (bom para rodar local/dev sem depender do Resend).
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+
     # =========================================================
     # GOOGLE MAPS (widget "O que fazer por perto" no guia do hóspede)
     # Sem GOOGLE_MAPS_API_KEY configurada, a seção de mapa/lugares
