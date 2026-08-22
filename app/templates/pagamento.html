@@ -23,7 +23,15 @@
 
 /* ===== CARDS DE PLANO ===== */
 .planos-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid;
+    /* minmax(0, 1fr) em vez de só "1fr": a função mínima automática de uma
+       trilha de grid também é "auto" (= min-content) por padrão, então só
+       zerar o min-width do item (.plano-card, abaixo) não bastava — a
+       própria coluna ainda se recusava a ficar menor que o conteúdo mais
+       largo. Com minmax(0, 1fr) a coluna pode encolher até 0 e o texto
+       quebra a linha em vez de empurrar a grade pra fora da caixa. */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     margin-bottom: 18px;
 }
 .plano-card {
@@ -55,7 +63,7 @@
 }
 .plano-badge-atual { background: #16a34a; }
 .plano-nome { font-size: 0.78rem; font-weight: 700; color: #1e293b; margin: 6px 0 10px; }
-.plano-preco { font-size: 1.22rem; font-weight: 800; color: #0052D4; }
+.plano-preco { font-size: 1.22rem; font-weight: 800; color: #0052D4; overflow-wrap: anywhere; }
 .plano-preco-periodo { font-size: 0.66rem; font-weight: 600; color: #64748b; margin-left: 1px; }
 
 @media (max-width: 640px) {
