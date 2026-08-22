@@ -23,7 +23,15 @@ def _smtp_enviar(destinatario: str, mensagem: MIMEMultipart) -> None:
 
     try:
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as servidor:
+        # timeout=10: sem isso, se o SMTP do Gmail ficar lento/inacessível
+        # (rede da hospedagem, bloqueio de saída, etc.) a conexão trava sem
+        # limite — o request de cadastro/login fica pendurado até o gunicorn
+        # matar o worker por timeout (120s, ver gunicorn.conf.py), e quem
+        # está usando o site recebe "502 Bad Gateway" em vez do fluxo normal
+        # (que já tolera falha de e-mail sem travar nada). Com o timeout
+        # aqui, uma falha de rede vira erro rápido e só loga, como já era
+        # a intenção original deste try/except.
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as servidor:
 
             servidor.login(remetente, senha)
             servidor.send_message(mensagem)
