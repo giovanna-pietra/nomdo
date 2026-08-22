@@ -5,6 +5,7 @@ Serviço centralizado de envio de e-mails.
 
 from email.mime.application import MIMEApplication
 import smtplib
+import socket
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,6 +16,29 @@ from flask import current_app
 # ==========================================================
 # SMTP
 # ==========================================================
+
+class _SMTP_SSL_IPv4(smtplib.SMTP_SSL):
+    """
+    Igual a smtplib.SMTP_SSL, só que força a resolução do host em IPv4.
+
+    Motivo: smtplib._get_socket() usa socket.create_connection(), que
+    chama getaddrinfo() sem especificar família (deixa o SO escolher IPv4
+    ou IPv6). Em alguns ambientes de hospedagem em container (visto em
+    produção no Render), "smtp.gmail.com" resolve pra um endereço IPv6 sem
+    rota de saída configurada, e a conexão falha na hora com
+    "OSError: [Errno 101] Network is unreachable" — mesmo o IPv4
+    funcionando normalmente pro resto do tráfego do site (Postgres,
+    páginas etc). Forçando AF_INET aqui, ignora qualquer candidato IPv6
+    problemático e conecta direto pelo IPv4.
+    """
+
+    def _get_socket(self, host, port, timeout):
+        if timeout is not None and not timeout:
+            raise ValueError("Non-blocking socket (timeout=0) is not supported")
+        endereco_ipv4 = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)[0][4]
+        novo_socket = socket.create_connection(endereco_ipv4, timeout, self.source_address)
+        return self.context.wrap_socket(novo_socket, server_hostname=self._host)
+
 
 def _smtp_enviar(destinatario: str, mensagem: MIMEMultipart) -> None:
 
@@ -31,7 +55,7 @@ def _smtp_enviar(destinatario: str, mensagem: MIMEMultipart) -> None:
         # (que já tolera falha de e-mail sem travar nada). Com o timeout
         # aqui, uma falha de rede vira erro rápido e só loga, como já era
         # a intenção original deste try/except.
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as servidor:
+        with _SMTP_SSL_IPv4("smtp.gmail.com", 465, timeout=10) as servidor:
 
             servidor.login(remetente, senha)
             servidor.send_message(mensagem)
