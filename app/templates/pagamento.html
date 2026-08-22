@@ -23,15 +23,22 @@
 
 /* ===== CARDS DE PLANO ===== */
 .planos-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
     margin-bottom: 18px;
 }
 .plano-card {
     position: relative; display: block; cursor: pointer;
     border: 2px solid rgba(0,82,212,0.14); border-radius: 14px;
-    padding: 20px 14px 16px; text-align: center;
+    padding: 20px 10px 16px; text-align: center;
     background: rgba(0,82,212,0.03);
     transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+    /* Item de grid tem min-width:auto por padrão — sem isso, ele se recusa
+       a encolher menos que o conteúdo mais largo lá dentro (ex: "11 imóveis
+       ou mais" ou "R$ 50,00"), o que empurrava a grade de 3 colunas pra
+       fora da .login-box (380px) e cortava o card, já que a caixa usa
+       overflow-x:hidden. Mesmo bug do comentário em style_login.css,
+       só que dentro do grid em vez do flex. */
+    min-width: 0;
 }
 .plano-card:hover { transform: translateY(-2px); }
 .plano-card input[type="radio"] {
@@ -47,9 +54,9 @@
     padding: 3px 10px; border-radius: 999px; white-space: nowrap;
 }
 .plano-badge-atual { background: #16a34a; }
-.plano-nome { font-size: 0.86rem; font-weight: 700; color: #1e293b; margin: 6px 0 10px; }
-.plano-preco { font-size: 1.5rem; font-weight: 800; color: #0052D4; }
-.plano-preco-periodo { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-left: 2px; }
+.plano-nome { font-size: 0.78rem; font-weight: 700; color: #1e293b; margin: 6px 0 10px; }
+.plano-preco { font-size: 1.22rem; font-weight: 800; color: #0052D4; }
+.plano-preco-periodo { font-size: 0.66rem; font-weight: 600; color: #64748b; margin-left: 1px; }
 
 @media (max-width: 640px) {
     .planos-grid { grid-template-columns: 1fr; }
