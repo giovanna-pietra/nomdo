@@ -1785,7 +1785,8 @@ body.theme-dark #modalTitle {
             const response = await fetch('/api/financas/lancamento/salvar', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': window.NOMDO_CSRF_TOKEN
                 },
                 body: JSON.stringify(payload)
             });
@@ -1951,7 +1952,8 @@ body.theme-dark #modalTitle {
                 {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': window.NOMDO_CSRF_TOKEN
                     }
                 }
             );
@@ -2047,7 +2049,8 @@ body.theme-dark #modalTitle {
             const response = await fetch(`/api/despesas-gerais/excluir/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': window.NOMDO_CSRF_TOKEN
                 }
             });
 

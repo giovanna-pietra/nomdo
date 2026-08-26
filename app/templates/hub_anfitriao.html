@@ -583,7 +583,18 @@ let _dadosHub = null;
 ───────────────────────────────────────────── */
 async function apiRequest(url, options = {}) {
     try {
-        const resp = await fetch(url, options);
+        // Toda rota de POST/PUT/DELETE por aqui (fora do blueprint /api/
+        // com token mobile) passa pela proteção CSRF do Flask-WTF. Em dev
+        // isso fica desligado (WTF_CSRF_ENABLED=False), por isso o bug só
+        // aparecia em produção: sem esse header, o Flask rejeitava a
+        // requisição com 400 "CSRF token missing" antes mesmo de chegar
+        // na rota — window.NOMDO_CSRF_TOKEN já existia (setado em
+        // base_dash.html) mas nunca era usado em lugar nenhum.
+        const headers = { ...(options.headers || {}) };
+        if (!headers['X-CSRFToken'] && typeof window.NOMDO_CSRF_TOKEN !== 'undefined') {
+            headers['X-CSRFToken'] = window.NOMDO_CSRF_TOKEN;
+        }
+        const resp = await fetch(url, { ...options, headers });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok || data.success === false) {
             throw new Error(data.message || `Erro ${resp.status}`);
