@@ -107,6 +107,7 @@ def _user_publico(user: User) -> dict:
         "papel": user.papel,
         "is_admin": bool(user.is_admin),
         "e_ajudante": user.e_ajudante,
+        "e_auxiliar": user.e_auxiliar,
         "foto": _url_foto_usuario(user.foto),
         "theme": user.theme,
     }
@@ -1025,6 +1026,8 @@ def _anfitriao_publico(user: User) -> dict:
         "nome": formatar_nome_exibicao(user.nome),
         "email": user.email,
         "foto": _url_foto_usuario(user.foto),
+        "categoria": user.categoria,
+        "e_auxiliar": user.e_auxiliar,
     }
 
 
@@ -1033,6 +1036,7 @@ def _convite_publico(convite: ConviteAnfitriao) -> dict:
         "id": convite.id,
         "email": convite.email,
         "status": convite.status,
+        "papel": convite.papel,
         "criado_em": convite.created_at.strftime("%d/%m/%Y") if convite.created_at else "",
         "expirado": convite.expirado(),
     }
@@ -1073,6 +1077,10 @@ def convidar_anfitriao():
     if email == (user.email or "").strip().lower():
         return jsonify({"erro": "Você não pode convidar a si mesma(o)."}), 400
 
+    papel = (dados.get("papel") or "anfitriao").strip().lower()
+    if papel not in ("anfitriao", "auxiliar"):
+        papel = "anfitriao"
+
     convidado = User.query.filter_by(email=email).first()
     if convidado and convidado.proprietario_id == user.id:
         return jsonify({"erro": "Esse e-mail já é um Anfitrião da sua equipe."}), 400
@@ -1087,6 +1095,7 @@ def convidar_anfitriao():
         proprietario_id=user.id,
         email=email,
         token=ConviteAnfitriao.gerar_token(),
+        papel=papel,
     )
     db.session.add(convite)
     db.session.commit()
@@ -1098,6 +1107,7 @@ def convidar_anfitriao():
             nome_proprietario=formatar_nome_exibicao(user.nome),
             link_convite=link,
             ja_tem_conta=bool(convidado),
+            papel=papel,
         )
     except Exception:
         pass  # não bloqueia o fluxo se o e-mail falhar — o convite já existe
@@ -1248,6 +1258,7 @@ def _perfil_completo(user: User) -> dict:
         "data_nascimento": user.data_nascimento.strftime("%Y-%m-%d") if user.data_nascimento else None,
         "categoria": user.categoria,
         "e_ajudante": user.e_ajudante,
+        "e_auxiliar": user.e_auxiliar,
         "foto": _url_foto_usuario(user.foto),
         "theme": user.theme,
         "language": user.language,
@@ -1297,9 +1308,11 @@ def editar_perfil():
 
     if "categoria" in dados:
         categoria_escolhida = (dados.get("categoria") or "").strip()
-        if user.e_ajudante:
-            user.categoria = "Anfitrião"
-        elif categoria_escolhida in ("Anfitrião", "Proprietário"):
+        # Ajudante (Anfitrião ou Auxiliar) nunca troca de categoria por
+        # aqui — mantém o que foi definido na aceitação do convite (ver
+        # equipe.py). Antes isso forçava "Anfitrião" incondicionalmente,
+        # o que rebaixava um Auxiliar de volta a cada edição de perfil.
+        if not user.e_ajudante and categoria_escolhida in ("Anfitrião", "Proprietário"):
             user.categoria = categoria_escolhida
 
     db.session.commit()

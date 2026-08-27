@@ -77,6 +77,10 @@ def convidar():
         flash(t_flash("Informe um e-mail."), "erro")
         return redirect(url_for("equipe.equipe"))
 
+    papel = (request.form.get("papel") or "anfitriao").strip().lower()
+    if papel not in ("anfitriao", "auxiliar"):
+        papel = "anfitriao"
+
     if email == (user.email or "").strip().lower():
         flash(t_flash("Você não pode convidar a si mesma(o)."), "erro")
         return redirect(url_for("equipe.equipe"))
@@ -98,6 +102,7 @@ def convidar():
         proprietario_id=user.id,
         email=email,
         token=ConviteAnfitriao.gerar_token(),
+        papel=papel,
     )
     db.session.add(convite)
     db.session.commit()
@@ -109,6 +114,7 @@ def convidar():
             nome_proprietario=formatar_nome_exibicao(user.nome),
             link_convite=link,
             ja_tem_conta=bool(convidado),
+            papel=papel,
         )
     except Exception:
         pass  # não bloqueia o fluxo se o e-mail falhar — o convite já existe
@@ -191,11 +197,12 @@ def aceitar_convite(token):
         return redirect(url_for("reservas.dashboard"))
 
     user.proprietario_id = convite.proprietario_id
-    # Quem aceita um convite passa a ser Anfitrião-ajudante daquela conta —
-    # a categoria é travada em "Anfitrião" independente do que a pessoa
-    # tinha escolhido antes (ver também usuario.py, que impede um ajudante
-    # de voltar a marcar "Proprietário").
-    user.categoria = "Anfitrião"
+    # Quem aceita um convite passa a ser Anfitrião-ajudante ou Auxiliar
+    # daquela conta, conforme o que foi escolhido no convite — travado
+    # independente do que a pessoa tinha marcado antes (ver também
+    # usuario.py, que impede voltar a marcar "Proprietário" ou trocar de
+    # papel sozinho).
+    user.categoria = "Auxiliar" if convite.papel == "auxiliar" else "Anfitrião"
     convite.status = "aceito"
     convite.aceito_em = datetime.utcnow()
     convite.anfitriao_id = user.id
@@ -205,4 +212,6 @@ def aceitar_convite(token):
     session.pop("convite_token_pendente", None)
 
     flash(t_flash("Convite aceito! Agora você opera junto com essa conta."), "sucesso")
+    if user.categoria == "Auxiliar":
+        return redirect(url_for("main.hub_anfitriao", tab="tarefas"))
     return redirect(url_for("reservas.dashboard"))

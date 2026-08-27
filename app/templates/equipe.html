@@ -152,6 +152,55 @@
         white-space: nowrap;
     }
 
+    .badge-papel {
+        background: rgba(0,82,212,0.08);
+        color: #0052D4;
+        border-radius: 999px;
+        padding: 2px 9px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        white-space: nowrap;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+    .badge-papel-auxiliar {
+        background: rgba(148,163,184,0.18);
+        color: #475569;
+    }
+
+    .convite-form label.campo-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #475569;
+        margin: 0 0 6px;
+    }
+    .convite-form select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 0.93rem;
+        outline: none;
+        margin-bottom: 6px;
+        font-family: inherit;
+        box-sizing: border-box;
+        background: #fff;
+        cursor: pointer;
+    }
+    .convite-form select:focus {
+        border-color: #0052D4;
+        box-shadow: 0 0 0 3px rgba(0,82,212,0.1);
+    }
+    .convite-form .papel-hint {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        margin: 0 0 16px;
+        line-height: 1.5;
+    }
+
     /* ── Modal "Convidar Anfitrião" (mesmo padrão de imoveis.html) ── */
     .modal-equipe {
         display: none;
@@ -304,7 +353,7 @@
         <div class="settings-card-header">
             <div class="titulo-wrap">
                 <h3><i class="fa-solid fa-user-group"></i> {{ t('Sua equipe') }}</h3>
-                <p class="desc">{{ t('Convide alguém por e-mail pra te ajudar a cuidar dos seus imóveis, estadias e do hub operacional. Quem aceitar não vê seu dashboard financeiro — só a parte de operação.') }}</p>
+                <p class="desc">{{ t('Convide alguém por e-mail pra te ajudar — como Anfitrião (opera imóveis, estadias e o hub) ou como Auxiliar (só limpeza/manutenção, sem ver nenhum dado). Ninguém da equipe vê seu dashboard financeiro nem paga pela conta.') }}</p>
             </div>
             <button type="button" class="btn-primary" onclick="abrirModalConvidar()">
                 <i class="fa-solid fa-user-plus"></i> {{ t('Convidar') }}
@@ -315,7 +364,7 @@
             {% for a in anfitrioes %}
             <div class="equipe-item">
                 <div class="equipe-item-info">
-                    <span>{{ a.nome }}</span>
+                    <span>{{ a.nome }} <span class="badge-papel {% if a.e_auxiliar %}badge-papel-auxiliar{% endif %}">{{ t('Auxiliar') if a.e_auxiliar else t('Anfitrião') }}</span></span>
                     <span class="hint">{{ a.email }}</span>
                 </div>
                 <div class="equipe-item-actions">
@@ -345,7 +394,7 @@
             {% for c in convites_pendentes %}
             <div class="equipe-item">
                 <div class="equipe-item-info">
-                    <span>{{ c.email }}</span>
+                    <span>{{ c.email }} <span class="badge-papel {% if c.papel == 'auxiliar' %}badge-papel-auxiliar{% endif %}">{{ t('Auxiliar') if c.papel == 'auxiliar' else t('Anfitrião') }}</span></span>
                     <span class="hint">{{ t('Enviado em %(data)s', data=c.created_at.strftime('%d/%m/%Y')) }}</span>
                 </div>
                 <div class="equipe-item-actions">
@@ -376,11 +425,19 @@
         <button type="button" class="modal-equipe-close" onclick="fecharModalConvidar()" aria-label="{{ t('Fechar') }}">
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <h3><i class="fa-solid fa-user-plus"></i> {{ t('Convidar Anfitrião') }}</h3>
-        <p class="desc">{{ t('Envie um convite por e-mail. A pessoa só passa a operar os seus imóveis depois de aceitar usando esse mesmo e-mail.') }}</p>
+        <h3><i class="fa-solid fa-user-plus"></i> {{ t('Convidar pra equipe') }}</h3>
+        <p class="desc">{{ t('Envie um convite por e-mail. A pessoa só ganha acesso depois de aceitar usando esse mesmo e-mail.') }}</p>
         <form class="convite-form" method="post" action="{{ url_for('equipe.convidar') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="email" name="email" placeholder="email@exemplo.com" required autofocus>
+
+            <label class="campo-label" for="papelConvite">{{ t('Tipo de acesso') }}</label>
+            <select name="papel" id="papelConvite" onchange="atualizarDicaPapel()">
+                <option value="anfitriao">{{ t('Anfitrião — opera imóveis, estadias e o Hub') }}</option>
+                <option value="auxiliar">{{ t('Auxiliar — só limpeza/manutenção, sem ver dados') }}</option>
+            </select>
+            <p class="papel-hint" id="dicaPapel">{{ t('Acessa e opera imóveis, estadias e o dia a dia da conta — só não vê o dashboard financeiro nem paga.') }}</p>
+
             <button type="submit" class="btn-primary">
                 <i class="fa-solid fa-paper-plane"></i> {{ t('Enviar convite') }}
             </button>
@@ -391,6 +448,15 @@
 
 {% block extra_js %}
 <script>
+function atualizarDicaPapel() {
+    const select = document.getElementById('papelConvite');
+    const dica = document.getElementById('dicaPapel');
+    if (!select || !dica) return;
+    dica.textContent = select.value === 'auxiliar'
+        ? '{{ t("Só vê e marca as tarefas de limpeza/manutenção e o checklist de condição do imóvel — sem acesso a estadias, hóspedes, finanças ou qualquer outro dado.") }}'
+        : '{{ t("Acessa e opera imóveis, estadias e o dia a dia da conta — só não vê o dashboard financeiro nem paga.") }}';
+}
+
 function abrirModalConvidar() {
     const m = document.getElementById('modalConvidarAnfitriao');
     if (m) m.classList.add('aberto');

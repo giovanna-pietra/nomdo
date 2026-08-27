@@ -113,11 +113,14 @@ def usuario():
 
         # Só "Anfitrião" ou "Proprietário" são valores válidos — qualquer
         # outra coisa (form adulterado, campo vazio) mantém o valor atual
-        # em vez de gravar lixo. Uma conta Anfitrião-ajudante (vinculada a
-        # outro Proprietário) nunca pode virar "Proprietário" por aqui —
-        # a categoria dela é sempre travada em "Anfitrião" (ver equipe.py).
+        # em vez de gravar lixo. Uma conta ajudante (vinculada a outro
+        # Proprietário — Anfitrião ou Auxiliar) nunca pode trocar de
+        # categoria por aqui: mantém sempre o que foi definido na aceitação
+        # do convite (ver equipe.py) — ANTES isso forçava "Anfitrião" pra
+        # qualquer ajudante, o que rebaixava um Auxiliar de volta pra
+        # Anfitrião a cada vez que salvasse o próprio perfil.
         if user.e_ajudante:
-            user.categoria = "Anfitrião"
+            pass
         elif categoria_escolhida in ("Anfitrião", "Proprietário"):
             user.categoria = categoria_escolhida
 

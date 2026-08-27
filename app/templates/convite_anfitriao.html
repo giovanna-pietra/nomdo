@@ -98,7 +98,11 @@
     <div class="convite-icon info"><i class="fa-solid fa-handshake"></i></div>
     <h1 class="convite-titulo">{{ t('Você foi convidado(a)! 🤝') }}</h1>
     <p class="convite-subtitulo">
+        {% if convite.papel == 'auxiliar' %}
+        {{ t('%(nome)s te convidou pra ajudar como Auxiliar no Nomdo.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}<br>
+        {% else %}
         {{ t('%(nome)s te convidou pra ajudar como Anfitrião no Nomdo.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}<br>
+        {% endif %}
         {{ t('E-mail convidado:') }} <span class="convite-email-badge">{{ convite.email }}</span>
     </p>
 
@@ -123,7 +127,11 @@
     <div class="convite-icon sucesso"><i class="fa-solid fa-people-group"></i></div>
     <h1 class="convite-titulo">{{ t('Aceitar convite') }}</h1>
     <p class="convite-subtitulo">
+        {% if convite.papel == 'auxiliar' %}
+        {{ t('%(nome)s quer sua ajuda como Auxiliar. Ao aceitar, você passa a ver e marcar as tarefas de limpeza/manutenção e o checklist de condição do imóvel — sem acesso a estadias, hóspedes, finanças ou qualquer outro dado dessa conta.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}
+        {% else %}
         {{ t('%(nome)s quer sua ajuda como Anfitrião. Ao aceitar, você passa a ver e operar os imóveis, estadias e o hub dessa conta.', nome=(convite.proprietario.nome if convite.proprietario else t('Alguém'))) }}
+        {% endif %}
     </p>
 
     <form method="POST" action="{{ url_for('equipe.aceitar_convite', token=convite.token) }}">

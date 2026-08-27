@@ -474,13 +474,18 @@ body.theme-dark .tab-btn.active {
 
     <!-- BARRA DE ABAS -->
     <nav class="tab-bar" id="hubTabBar">
+        {% if not hub_auxiliar %}
         <button type="button" class="tab-btn" data-tab="hoje"><i class="fa-solid fa-house"></i> {{ t('Hoje') }}</button>
+        {% endif %}
         <button type="button" class="tab-btn" data-tab="tarefas"><i class="fa-solid fa-broom"></i> {{ t('Cuidados do Imóvel') }}</button>
         <button type="button" class="tab-btn" data-tab="checklists"><i class="fa-solid fa-list-check"></i> {{ t('Checklists') }}</button>
+        {% if not hub_auxiliar %}
         <button type="button" class="tab-btn" data-tab="rotinas"><i class="fa-solid fa-repeat"></i> {{ t('Rotinas') }}</button>
         <button type="button" class="tab-btn" data-tab="precificacao"><i class="fa-solid fa-tag"></i> {{ t('Precificação') }}</button>
+        {% endif %}
     </nav>
 
+    {% if not hub_auxiliar %}
     <!-- ABA: HOJE (Central Operacional minimalista) -->
     <div class="tab-panel" data-tab="hoje">
 
@@ -533,6 +538,7 @@ body.theme-dark .tab-btn.active {
         </div>
 
     </div>
+    {% endif %}
 
     <!-- ABA: CUIDADOS DO IMÓVEL (limpeza + manutenção + reposição, unificada) -->
     <div class="tab-panel" data-tab="tarefas">
@@ -548,6 +554,7 @@ body.theme-dark .tab-btn.active {
         {% endwith %}
     </div>
 
+    {% if not hub_auxiliar %}
     <!-- ABA: ROTINAS E LEMBRETES -->
     <div class="tab-panel" data-tab="rotinas">
         {% with rotinas=rotinas_rotinas, imoveis=rotinas_imoveis, tipos_lembrete=rotinas_tipos_lembrete, tipos_evento=rotinas_tipos_evento, filtro_imovel_id=rotinas_filtro_imovel_id, filtro_tipo=rotinas_filtro_tipo %}
@@ -561,6 +568,7 @@ body.theme-dark .tab-btn.active {
             {% include "partials/tab_precificacao.html" %}
         {% endwith %}
     </div>
+    {% endif %}
 
 </section>
 
@@ -1050,11 +1058,14 @@ function inicializarDelegacaoEventos() {
    history.pushState (?tab=...) pra permitir favoritar/compartilhar uma
    aba específica e o botão voltar do navegador funcionar entre elas.
 ───────────────────────────────────────────── */
-const ABAS_HUB = ['hoje', 'tarefas', 'checklists', 'rotinas', 'precificacao'];
+const HUB_AUXILIAR = {{ 'true' if hub_auxiliar else 'false' }};
+const ABAS_HUB = HUB_AUXILIAR
+    ? ['tarefas', 'checklists']
+    : ['hoje', 'tarefas', 'checklists', 'rotinas', 'precificacao'];
 const _abasJaIniciadas = new Set();
 
 function ativarTab(tab, atualizarUrl = true) {
-    if (!ABAS_HUB.includes(tab)) tab = 'hoje';
+    if (!ABAS_HUB.includes(tab)) tab = ABAS_HUB[0];
 
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -1068,7 +1079,7 @@ function ativarTab(tab, atualizarUrl = true) {
     }
 
     if (atualizarUrl) {
-        const url = tab === 'hoje' ? window.location.pathname : `${window.location.pathname}?tab=${tab}`;
+        const url = tab === ABAS_HUB[0] ? window.location.pathname : `${window.location.pathname}?tab=${tab}`;
         history.pushState({ tab }, '', url);
     }
 }
@@ -1085,7 +1096,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 window.addEventListener('popstate', e => {
-    const tab = (e.state && e.state.tab) || new URLSearchParams(location.search).get('tab') || 'hoje';
+    const tab = (e.state && e.state.tab) || new URLSearchParams(location.search).get('tab') || ABAS_HUB[0];
     ativarTab(tab, false);
 });
 
@@ -1094,71 +1105,99 @@ window.addEventListener('popstate', e => {
 ───────────────────────────────────────────── */
 aplicarSaudacao();
 inicializarDelegacaoEventos();
-carregarHub();
+if (!HUB_AUXILIAR) carregarHub();
 ativarTab("{{ tab_ativa|default('hoje') }}", false);
 
 /* ─────────────────────────────────────────────
    TOUR GUIADO (ver app/static/js/onboarding.js)
+   Auxiliar só tem 2 abas no DOM (tarefas/checklists) — os passos que
+   dependem de "hoje"/rotinas/precificação nem existem na página pra essa
+   conta, então o tour registrado é bem mais curto.
 ───────────────────────────────────────────── */
-NomdoTour.register('hub', [
-    {
-        selector: '#hubTabBar',
-        title: '{{ t("Abas do Hub") }}',
-        text: '{{ t("O Hub do Anfitrião reúne tudo que você usa no dia a dia em 5 abas: Hoje, Cuidados do Imóvel, Checklists, Rotinas e Precificação.") }}',
-        position: 'bottom'
-    },
-    {
-        selector: '.hub-header',
-        title: '{{ t("Sua central do dia") }}',
-        text: '{{ t("Aqui fica um resumo rápido da sua operação — check-ins, check-outs e o que precisa da sua atenção hoje.") }}',
-        position: 'bottom'
-    },
-    {
-        before: function () { ativarTab('hoje', false); },
-        selector: '#prioridadesContainer',
-        title: '{{ t("Prioridades do Dia") }}',
-        text: '{{ t("A lista mais importante da tela: tarefas e situações urgentes que precisam ser resolvidas hoje, em ordem de prioridade.") }}',
-        position: 'auto'
-    },
-    {
-        selector: '#insightsContainer',
-        title: '{{ t("Insights Inteligentes") }}',
-        text: '{{ t("Alertas e sugestões automáticas geradas a partir dos seus dados — por exemplo, um imóvel parado há muito tempo ou uma oportunidade de preço.") }}',
-        position: 'auto'
-    },
-    {
-        before: function () { ativarTab('tarefas', false); },
-        beforeDelay: 300,
-        selector: '.tab-panel[data-tab="tarefas"]',
-        title: '{{ t("Cuidados do Imóvel") }}',
-        text: '{{ t("Limpezas, manutenções e reposições em um só lugar. Crie tarefas avulsas ou recorrentes e marque como concluídas quando resolver.") }}',
-        position: 'auto'
-    },
-    {
-        before: function () { ativarTab('checklists', false); },
-        beforeDelay: 300,
-        selector: '.tab-panel[data-tab="checklists"]',
-        title: '{{ t("Checklists de Hospedagem") }}',
-        text: '{{ t("Monte checklists de antes/depois da estadia (o que verificar, limpar ou repor) pra nunca esquecer um passo na virada de hóspede.") }}',
-        position: 'auto'
-    },
-    {
-        before: function () { ativarTab('rotinas', false); },
-        beforeDelay: 300,
-        selector: '.tab-panel[data-tab="rotinas"]',
-        title: '{{ t("Rotinas e Lembretes") }}',
-        text: '{{ t("Cadastre rotinas recorrentes (trocar gás, revisar ar-condicionado etc.) e lembretes pontuais pra cada imóvel — o sistema avisa quando vence.") }}',
-        position: 'auto'
-    },
-    {
-        before: function () { ativarTab('precificacao', false); },
-        beforeDelay: 300,
-        selector: '.tab-panel[data-tab="precificacao"]',
-        title: '{{ t("Precificação Inteligente") }}',
-        text: '{{ t("Feriados, datas comerciais e eventos próximos que são boas oportunidades pra ajustar o preço da diária — com até 1 ano de antecedência.") }}',
-        position: 'auto',
-        after: function () { ativarTab('hoje', false); }
-    }
-]);
+if (HUB_AUXILIAR) {
+    NomdoTour.register('hub', [
+        {
+            selector: '#hubTabBar',
+            title: '{{ t("Abas do Hub") }}',
+            text: '{{ t("Aqui você vê e marca as tarefas de limpeza/manutenção e o checklist de condição do imóvel.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.tab-panel[data-tab="tarefas"]',
+            title: '{{ t("Cuidados do Imóvel") }}',
+            text: '{{ t("Limpezas, manutenções e reposições em um só lugar. Marque como concluída quando resolver.") }}',
+            position: 'auto'
+        },
+        {
+            before: function () { ativarTab('checklists', false); },
+            beforeDelay: 300,
+            selector: '.tab-panel[data-tab="checklists"]',
+            title: '{{ t("Checklists de Hospedagem") }}',
+            text: '{{ t("O que verificar, limpar ou repor antes/depois da estadia — sem nome de hóspede, só as datas e o imóvel.") }}',
+            position: 'auto'
+        }
+    ]);
+} else {
+    NomdoTour.register('hub', [
+        {
+            selector: '#hubTabBar',
+            title: '{{ t("Abas do Hub") }}',
+            text: '{{ t("O Hub do Anfitrião reúne tudo que você usa no dia a dia em 5 abas: Hoje, Cuidados do Imóvel, Checklists, Rotinas e Precificação.") }}',
+            position: 'bottom'
+        },
+        {
+            selector: '.hub-header',
+            title: '{{ t("Sua central do dia") }}',
+            text: '{{ t("Aqui fica um resumo rápido da sua operação — check-ins, check-outs e o que precisa da sua atenção hoje.") }}',
+            position: 'bottom'
+        },
+        {
+            before: function () { ativarTab('hoje', false); },
+            selector: '#prioridadesContainer',
+            title: '{{ t("Prioridades do Dia") }}',
+            text: '{{ t("A lista mais importante da tela: tarefas e situações urgentes que precisam ser resolvidas hoje, em ordem de prioridade.") }}',
+            position: 'auto'
+        },
+        {
+            selector: '#insightsContainer',
+            title: '{{ t("Insights Inteligentes") }}',
+            text: '{{ t("Alertas e sugestões automáticas geradas a partir dos seus dados — por exemplo, um imóvel parado há muito tempo ou uma oportunidade de preço.") }}',
+            position: 'auto'
+        },
+        {
+            before: function () { ativarTab('tarefas', false); },
+            beforeDelay: 300,
+            selector: '.tab-panel[data-tab="tarefas"]',
+            title: '{{ t("Cuidados do Imóvel") }}',
+            text: '{{ t("Limpezas, manutenções e reposições em um só lugar. Crie tarefas avulsas ou recorrentes e marque como concluídas quando resolver.") }}',
+            position: 'auto'
+        },
+        {
+            before: function () { ativarTab('checklists', false); },
+            beforeDelay: 300,
+            selector: '.tab-panel[data-tab="checklists"]',
+            title: '{{ t("Checklists de Hospedagem") }}',
+            text: '{{ t("Monte checklists de antes/depois da estadia (o que verificar, limpar ou repor) pra nunca esquecer um passo na virada de hóspede.") }}',
+            position: 'auto'
+        },
+        {
+            before: function () { ativarTab('rotinas', false); },
+            beforeDelay: 300,
+            selector: '.tab-panel[data-tab="rotinas"]',
+            title: '{{ t("Rotinas e Lembretes") }}',
+            text: '{{ t("Cadastre rotinas recorrentes (trocar gás, revisar ar-condicionado etc.) e lembretes pontuais pra cada imóvel — o sistema avisa quando vence.") }}',
+            position: 'auto'
+        },
+        {
+            before: function () { ativarTab('precificacao', false); },
+            beforeDelay: 300,
+            selector: '.tab-panel[data-tab="precificacao"]',
+            title: '{{ t("Precificação Inteligente") }}',
+            text: '{{ t("Feriados, datas comerciais e eventos próximos que são boas oportunidades pra ajustar o preço da diária — com até 1 ano de antecedência.") }}',
+            position: 'auto',
+            after: function () { ativarTab('hoje', false); }
+        }
+    ]);
+}
 </script>
 {% endblock %}

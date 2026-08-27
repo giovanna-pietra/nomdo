@@ -102,7 +102,7 @@ def _estadia_atual(imovel_id: int, owner_id: int, hoje: date):
     return None, ""
 
 
-def contexto_checklists(owner_id, request_args=None):
+def contexto_checklists(owner_id, request_args=None, ocultar_dados_reserva=False):
     """
     Monta o dict de contexto usado pelo template da aba de Checklists
     (partials/tab_checklists.html). Extraído de `pagina()` pra poder ser
@@ -143,8 +143,8 @@ def contexto_checklists(owner_id, request_args=None):
         if estadia:
             estadia_atual = {
                 "situacao": situacao,
-                "antes": _checklist_para_estadia(estadia, imovel_selecionado, "antes"),
-                "depois": _checklist_para_estadia(estadia, imovel_selecionado, "depois"),
+                "antes": _checklist_para_estadia(estadia, imovel_selecionado, "antes", ocultar_dados_reserva),
+                "depois": _checklist_para_estadia(estadia, imovel_selecionado, "depois", ocultar_dados_reserva),
             }
 
     return {

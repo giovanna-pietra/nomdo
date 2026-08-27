@@ -25,6 +25,14 @@ class ConviteAnfitriao(TimestampMixin, db.Model):
     email = db.Column(db.String(120), nullable=False, index=True)
     token = db.Column(db.String(64), unique=True, nullable=False, index=True)
 
+    # anfitriao | auxiliar — que tipo de conta a pessoa vira ao aceitar.
+    # Anfitrião opera imóveis/estadias/hub (só não vê financeiro nem paga).
+    # Auxiliar é bem mais restrito: só executa tarefas operacionais do Hub
+    # (limpeza/manutenção + checklist de condição do imóvel), sem acesso a
+    # nenhum outro dado — ver User.e_auxiliar e gate_auxiliar_acesso() em
+    # app/__init__.py.
+    papel = db.Column(db.String(20), nullable=False, default="anfitriao")
+
     # pendente | aceito | cancelado
     status = db.Column(db.String(20), nullable=False, default="pendente")
 

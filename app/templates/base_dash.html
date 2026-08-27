@@ -215,7 +215,7 @@
         <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="{{ t('Abrir menu') }}">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <a href="{{ url_for('reservas.dashboard') }}">
+        <a href="{{ url_for('main.hub_anfitriao') if user and user.e_auxiliar else url_for('reservas.dashboard') }}">
             <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
             <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
         </a>
@@ -232,13 +232,13 @@
 
                 <div class="sidebar-top-row">
                     <div class="logo">
-                        <a href="{{ url_for('reservas.dashboard') }}">
+                        <a href="{{ url_for('main.hub_anfitriao') if user and user.e_auxiliar else url_for('reservas.dashboard') }}">
                             <img src="{{ url_for('static', filename='img/logo_header.png') }}" alt="Logo Nomdo" class="img-logo img-logo-light">
                             <img src="{{ url_for('static', filename='img/logo_escuro.png') }}" alt="Logo Nomdo" class="img-logo img-logo-dark">
                         </a>
                     </div>
 
-                    <a href="{{ url_for('reservas.dashboard') }}" class="sidebar-icon-logo-link">
+                    <a href="{{ url_for('main.hub_anfitriao') if user and user.e_auxiliar else url_for('reservas.dashboard') }}" class="sidebar-icon-logo-link">
                         <img src="{{ url_for('static', filename='img/icone_fundo.png') }}" alt="Nomdo" class="sidebar-icon-logo">
                     </a>
 
@@ -253,6 +253,17 @@
                 </div>
 
                 <ul class="nav-links">
+                    {% if user and user.e_auxiliar %}
+                    <!-- Auxiliar: não vê Início/Imóveis/Finanças/Dashboard/Equipe —
+                         só o Hub, onde ficam as tarefas e o checklist que ele
+                         pode acessar (ver gate_auxiliar_acesso em app/__init__.py). -->
+                    <li class="{% if request.endpoint == 'main.hub_anfitriao' %}active{% endif %}">
+                        <a href="{{ url_for('main.hub_anfitriao') }}" title="{{ t('Hub') }}">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            <span>{{ t('Hub') }}</span>
+                        </a>
+                    </li>
+                    {% else %}
                     <li class="{% if request.endpoint == 'reservas.dashboard' %}active{% endif %}">
                         <a href="{{ url_for('reservas.dashboard') }}" title="{{ t('Início') }}">
                             <i class="fa-solid fa-house"></i>
@@ -313,6 +324,8 @@
                             <span>{{ t('Configurações') }}</span>
                         </a>
                     </li> -->
+
+                    {% endif %}
 
                 </ul>
 

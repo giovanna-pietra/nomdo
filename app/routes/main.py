@@ -791,6 +791,13 @@ def hub_anfitriao():
     """
     owner_id = get_effective_owner_id()
 
+    # Quem está logado de fato (pode ser diferente do owner_id, quando é um
+    # Anfitrião-ajudante ou Auxiliar operando por conta do Proprietário).
+    # Usado só pra saber o QUE mostrar (abas visíveis, dados sensíveis) —
+    # todo dado em si continua escopado por owner_id, como sempre.
+    user_logado = db.session.get(User, session.get("user_id"))
+    e_auxiliar = bool(user_logado and user_logado.e_auxiliar)
+
     try:
         from app.routes.hub import processar_lembretes
         # Os imóveis pertencem à conta Proprietária — se quem está logado é
@@ -815,10 +822,19 @@ def hub_anfitriao():
     from app.routes.pg_rotinas import contexto_rotinas
     from app.routes.pg_precificacao import contexto_precificacao
 
-    ABAS_VALIDAS = {"hoje", "tarefas", "checklists", "rotinas", "precificacao"}
-    tab_ativa = request.args.get("tab", "hoje")
+    # Auxiliar só pode ver Tarefas e Checklists — nada de Hoje (mostra
+    # próximo hóspede + dicas de precificação), Rotinas (autoria de regras)
+    # ou Precificação (revenue-adjacent). Ver gate_auxiliar_acesso() em
+    # app/__init__.py, que já bloqueia acesso direto às rotas dessas abas
+    # mesmo se alguém tentar burlar o ?tab= da URL.
+    ABAS_VALIDAS = (
+        {"tarefas", "checklists"}
+        if e_auxiliar else
+        {"hoje", "tarefas", "checklists", "rotinas", "precificacao"}
+    )
+    tab_ativa = request.args.get("tab", "tarefas" if e_auxiliar else "hoje")
     if tab_ativa not in ABAS_VALIDAS:
-        tab_ativa = "hoje"
+        tab_ativa = "tarefas" if e_auxiliar else "hoje"
 
     args_vazios = MultiDict()
 
@@ -826,18 +842,35 @@ def hub_anfitriao():
         owner_id, request.args if tab_ativa == "tarefas" else args_vazios
     )
     ctx_checklists = contexto_checklists(
-        owner_id, request.args if tab_ativa == "checklists" else args_vazios
+        owner_id,
+        request.args if tab_ativa == "checklists" else args_vazios,
+        ocultar_dados_reserva=e_auxiliar,
     )
-    ctx_rotinas = contexto_rotinas(
-        owner_id, request.args if tab_ativa == "rotinas" else args_vazios
-    )
-    ctx_precificacao = contexto_precificacao(
-        owner_id, request.args if tab_ativa == "precificacao" else args_vazios
-    )
+
+    # Auxiliar nunca vê Rotinas nem Precificação — nem sequer roda as
+    # queries dessas abas (evita trabalho à toa e, mais importante, evita
+    # qualquer chance de um dado escapar pro template por engano).
+    if e_auxiliar:
+        ctx_rotinas = {
+            "rotinas": [], "imoveis": [], "tipos_lembrete": [],
+            "tipos_evento": [], "filtro_imovel_id": None, "filtro_tipo": "",
+        }
+        ctx_precificacao = {
+            "pct_precificacao": {}, "imoveis": [], "eventos": [],
+            "oportunidades": [], "niveis_impacto": {},
+        }
+    else:
+        ctx_rotinas = contexto_rotinas(
+            owner_id, request.args if tab_ativa == "rotinas" else args_vazios
+        )
+        ctx_precificacao = contexto_precificacao(
+            owner_id, request.args if tab_ativa == "precificacao" else args_vazios
+        )
 
     return render_template(
         "hub_anfitriao.html",
         tab_ativa=tab_ativa,
+        hub_auxiliar=e_auxiliar,
         # Cuidados do Imóvel (aba unificada)
         tarefas_pendentes=ctx_tarefas["tarefas_pendentes"],
         tarefas_concluidas=ctx_tarefas["tarefas_concluidas"],

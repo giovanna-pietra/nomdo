@@ -72,9 +72,10 @@ def _tentar_aceitar_convite_pendente(user, token):
         return
 
     user.proprietario_id = convite.proprietario_id
-    # Mesma regra de equipe.py: aceitar um convite trava a categoria em
-    # "Anfitrião", já que a pessoa passa a ser ajudante de outra conta.
-    user.categoria = "Anfitrião"
+    # Mesma regra de equipe.py: aceitar um convite trava a categoria
+    # conforme o papel escolhido no convite ("Anfitrião" ou "Auxiliar"),
+    # já que a pessoa passa a ser ajudante de outra conta.
+    user.categoria = "Auxiliar" if convite.papel == "auxiliar" else "Anfitrião"
     convite.status = "aceito"
     convite.aceito_em = datetime.utcnow()
     convite.anfitriao_id = user.id

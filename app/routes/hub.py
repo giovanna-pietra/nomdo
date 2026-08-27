@@ -109,8 +109,19 @@ def _item_key(momento: str, texto: str) -> str:
     return f"{momento}:{texto}"
 
 
-def _checklist_para_estadia(estadia: Estadia, imovel: Imovel | None, momento_filtro: str) -> dict:
-    """Monta a lista de itens (só de um momento) + progresso pra uma estadia."""
+def _checklist_para_estadia(
+    estadia: Estadia,
+    imovel: Imovel | None,
+    momento_filtro: str,
+    ocultar_dados_reserva: bool = False,
+) -> dict:
+    """
+    Monta a lista de itens (só de um momento) + progresso pra uma estadia.
+
+    `ocultar_dados_reserva=True` remove nome do hóspede — usado quando quem
+    está vendo é um Auxiliar (ver User.e_auxiliar): esse papel só pode saber
+    QUANDO precisa ir a QUAL imóvel, nunca quem é o hóspede.
+    """
     template = [i for i in _checklist_template(imovel) if i["momento"] == momento_filtro]
     status = _checklist_status(estadia)
     itens = [
@@ -123,8 +134,10 @@ def _checklist_para_estadia(estadia: Estadia, imovel: Imovel | None, momento_fil
     ]
     return {
         "estadia_id": estadia.id,
-        "hospede": estadia.nome_hospede,
+        "hospede": None if ocultar_dados_reserva else estadia.nome_hospede,
         "imovel": imovel.titulo if imovel else "—",
+        "data_checkin": estadia.data_checkin.strftime("%d/%m/%Y") if estadia.data_checkin else None,
+        "data_checkout": estadia.data_checkout.strftime("%d/%m/%Y") if estadia.data_checkout else None,
         "itens": itens,
         "total": len(itens),
         "concluidos": sum(1 for i in itens if i["concluido"]),

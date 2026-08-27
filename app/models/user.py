@@ -109,8 +109,20 @@ class User(TimestampMixin, db.Model):
 
     @property
     def e_ajudante(self) -> bool:
-        """True se esta conta é um Anfitrião-ajudante (trabalha para outra conta)."""
+        """True se esta conta é um Anfitrião-ajudante ou Auxiliar (trabalha para outra conta)."""
         return self.proprietario_id is not None
+
+    @property
+    def e_auxiliar(self) -> bool:
+        """
+        True só para o tipo de ajudante mais restrito: Auxiliar. Não tem
+        acesso a NENHUM dado (sem estadias, hóspedes, finanças, imóveis) —
+        só executa tarefas operacionais do Hub (limpeza/manutenção e o
+        checklist de condição do imóvel). Ver gate_auxiliar_acesso() em
+        app/__init__.py, que é quem realmente impõe essa restrição em
+        toda rota da aplicação.
+        """
+        return self.e_ajudante and self.categoria == "Auxiliar"
 
     # ── Senha helpers ────────────────────────────────────────
     @property

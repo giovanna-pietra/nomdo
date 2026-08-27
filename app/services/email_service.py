@@ -455,16 +455,30 @@ def enviar_email_convite_anfitriao(
     nome_proprietario: str,
     link_convite: str,
     ja_tem_conta: bool,
+    papel: str = "anfitriao",
 ) -> bool:
     """
-    Convida alguém para se tornar Anfitrião-ajudante de uma conta
-    Proprietária — passará a ver e operar os imóveis, estadias, hub etc.
-    do Proprietário, sem acesso ao dashboard financeiro dele.
+    Convida alguém pra entrar na equipe de uma conta Proprietária, como
+    Anfitrião-ajudante (acessa e opera imóveis/estadias/hub, sem ver
+    financeiro) ou como Auxiliar (bem mais restrito: só executa tarefas
+    operacionais do Hub — limpeza/manutenção e checklist de condição do
+    imóvel — sem acesso a nenhum outro dado).
     """
     texto_acao = (
         "Basta entrar na sua conta Nomdo e confirmar o convite."
         if ja_tem_conta else
         "Basta criar sua conta gratuita no Nomdo — o convite já estará esperando por você."
+    )
+
+    e_auxiliar = papel == "auxiliar"
+    titulo_convite = "te convidou pra ajudar como Auxiliar" if e_auxiliar else "te convidou pra ajudar como Anfitrião"
+    texto_escopo = (
+        "Você vai poder ver e marcar as tarefas de limpeza/manutenção e o "
+        "checklist de condição do imóvel — sem acesso a estadias, hóspedes, "
+        "finanças ou qualquer outro dado da conta."
+        if e_auxiliar else
+        "Você vai poder acessar e cuidar dos imóveis, estadias e do dia a dia "
+        "operacional dessa conta."
     )
 
     conteudo = f"""
@@ -475,13 +489,12 @@ def enviar_email_convite_anfitriao(
             🤝 Convite de equipe
         </p>
         <p style="margin:8px 0 0;font-size:17px;font-weight:800;color:#1e293b;">
-            {nome_proprietario} te convidou pra ajudar como Anfitrião
+            {nome_proprietario} {titulo_convite}
         </p>
     </div>
 
     <p style="margin:0 0 20px;color:#475569;font-size:14px;line-height:1.6;">
-        Você vai poder acessar e cuidar dos imóveis, estadias e do dia a dia
-        operacional dessa conta. {texto_acao}
+        {texto_escopo} {texto_acao}
     </p>
 
     <div style="text-align:center;">

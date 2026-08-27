@@ -216,6 +216,67 @@ def create_app(config_name: str | None = None) -> Flask:
         return redirect(url_for("pagamento.pagina_pagamento"))
 
     # =========================================================
+    # AUXILIAR — gate global de acesso (allowlist)
+    # =========================================================
+    # Auxiliar é o novo tipo de usuário convidado que NÃO deve ver dado
+    # nenhum de hóspede/financeiro — só ajuda com limpeza/manutenção e o
+    # checklist de condição do imóvel. O template de hub_anfitriao.html já
+    # esconde as abas/dados que ele não deve ver, mas isso sozinho não
+    # impede a conta de digitar direto na barra de endereço uma URL como
+    # /financas ou /estadias e ver tudo — por isso esse gate, no mesmo
+    # padrão do gate_perfil_incompleto/gate_paywall acima: em vez de negar
+    # rota por rota, é uma ALLOWLIST — só passa quem está explicitamente
+    # liberado, tudo mais volta pro Hub.
+    #
+    # Importante: isso NÃO altera em nada o comportamento de hoje pro
+    # Anfitrião-ajudante (User.e_ajudante) — só afeta contas com
+    # categoria "Auxiliar" (User.e_auxiliar). Decisão explícita da dona do
+    # produto: o Anfitrião-ajudante continua com acesso total por enquanto.
+
+    @app.before_request
+    def gate_auxiliar_acesso():
+        endpoint = request.endpoint
+        if not endpoint:
+            return None
+
+        blueprint_livre = {"static", "auth", "push"}
+        endpoints_livres = {
+            "main.index", "main.trocar_idioma",
+            "main.configuracoes", "main.salvar_configuracoes",
+            "main.hub_anfitriao",
+            "usuario.usuario", "usuario.completar_perfil", "usuario.excluir_conta",
+            # Aba "Cuidados do Imóvel" (tarefas de limpeza/manutenção).
+            "tarefas.pagina",
+            "hub.registrar_manutencao", "hub.concluir_tarefa",
+            "hub.excluir_tarefa", "hub.editar_tarefa",
+            "hub.limpar_historico_tarefas", "hub.listar_tarefas_historico",
+            # Aba "Checklists" — só o progresso da estadia atual, não o
+            # editor de modelo (esse fica de fora de propósito).
+            "checklists.pagina",
+            "hub.toggle_checklist_item",
+        }
+
+        blueprint_atual = endpoint.split(".")[0] if "." in endpoint else endpoint
+        if blueprint_atual in blueprint_livre or endpoint in endpoints_livres:
+            return None
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return None
+
+        from app.models import User
+        user = db.session.get(User, user_id)
+        if not user:
+            return None
+        if user.is_admin:
+            return None
+
+        if user.e_auxiliar:
+            return redirect(url_for("main.hub_anfitriao", tab="tarefas"))
+
+        return None
+
+    # =========================================================
     # FILTRO DE MOEDA — {{ valor|moeda }} ou {{ valor|moeda(current_currency) }}
     # =========================================================
 

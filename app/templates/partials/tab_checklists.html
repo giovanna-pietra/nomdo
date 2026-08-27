@@ -430,7 +430,18 @@ body.theme-dark .checklists-modelo-item button[data-action="remover-item"] {
 
         {% if estadia_atual %}
         <div class="checklists-estadia-meta">
+            {% if estadia_atual.antes.hospede or estadia_atual.depois.hospede %}
             <span><i class="fa-solid fa-user"></i> <strong>{{ estadia_atual.antes.hospede or estadia_atual.depois.hospede }}</strong></span>
+            {% endif %}
+            {% set data_ci = estadia_atual.antes.data_checkin or estadia_atual.depois.data_checkin %}
+            {% set data_co = estadia_atual.antes.data_checkout or estadia_atual.depois.data_checkout %}
+            {% if data_ci or data_co %}
+            <span><i class="fa-solid fa-calendar-days"></i>
+                {% if data_ci %}{{ t('Check-in') }} {{ data_ci }}{% endif %}
+                {% if data_ci and data_co %} · {% endif %}
+                {% if data_co %}{{ t('Check-out') }} {{ data_co }}{% endif %}
+            </span>
+            {% endif %}
         </div>
 
         <div class="checklists-editor-colunas">
